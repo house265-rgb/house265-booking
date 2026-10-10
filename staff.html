@@ -1,0 +1,1849 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <style>
+/* =========================================================================
+ * Design system — premium, minimal, mobile-first.
+ * All later phases reuse these tokens and components.
+ * ========================================================================= */
+
+:root {
+  /* Palette — calm, premium neutrals + a single accent */
+  --bg:        #f4f5f7;
+  --surface:   #ffffff;
+  --surface-2: #f8f9fb;
+  --ink:       #1a1d29;
+  --ink-2:     #5b6072;
+  --ink-3:     #9aa0b0;
+  --line:      #e7e9f0;
+
+  --accent:      #4f46e5;   /* indigo */
+  --accent-ink:  #ffffff;
+  --accent-soft: #eef0fe;
+
+  --success:  #16a34a;
+  --success-soft: #e7f6ec;
+  --warning:  #d97706;
+  --warning-soft: #fdf1e0;
+  --danger:   #dc2626;
+  --danger-soft:  #fdeaea;
+
+  --radius:    16px;
+  --radius-sm: 12px;
+  --radius-lg: 22px;
+
+  --shadow-sm: 0 1px 2px rgba(20,24,45,.06), 0 1px 3px rgba(20,24,45,.04);
+  --shadow:    0 4px 16px rgba(20,24,45,.08);
+  --shadow-lg: 0 12px 40px rgba(20,24,45,.16);
+
+  --nav-h: 64px;
+  --top-h: 60px;
+  --maxw: 640px;
+
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans Thai",
+               "Sarabun", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+.hidden { display: none !important; }
+
+/* ------------------------------ Buttons -------------------------------- */
+.btn {
+  appearance: none; border: none; cursor: pointer;
+  border-radius: var(--radius-sm);
+  padding: 14px 18px;
+  font-size: 16px; font-weight: 600;
+  font-family: inherit;
+  transition: transform .05s ease, background .15s ease, opacity .15s ease;
+}
+.btn:active { transform: scale(.98); }
+.btn:disabled { opacity: .55; cursor: default; }
+.btn-block { width: 100%; }
+.btn-primary { background: var(--accent); color: var(--accent-ink); box-shadow: var(--shadow-sm); }
+.btn-primary:hover { background: #4338ca; }
+.btn-success { background: var(--success); color: #fff; }
+.btn-danger  { background: var(--danger);  color: #fff; }
+.btn-ghost   { background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); }
+.btn-sm { padding: 9px 12px; font-size: 14px; border-radius: 10px; }
+
+.ghost-btn {
+  appearance: none; border: none; background: transparent;
+  cursor: pointer; font: inherit; color: var(--ink-2);
+  padding: 8px; border-radius: 10px;
+}
+.ghost-btn:active { background: var(--surface-2); }
+
+/* ------------------------------ Fields --------------------------------- */
+.field { display: block; margin-bottom: 16px; }
+.field-label { display: block; font-size: 13px; color: var(--ink-2); margin-bottom: 6px; font-weight: 600; }
+input, select, textarea {
+  width: 100%; font-family: inherit; font-size: 16px; color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 13px 14px;
+  transition: border .15s ease, box-shadow .15s ease;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft); background: #fff;
+}
+.password-wrap { position: relative; }
+.password-wrap input { padding-right: 46px; }
+.password-wrap .ghost-btn { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); }
+
+/* ------------------------------ Cards ---------------------------------- */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.card-title { font-size: 15px; font-weight: 700; margin: 0 0 12px; }
+
+/* =========================== LOGIN SCREEN ============================== */
+.login-screen {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  background:
+    radial-gradient(1200px 500px at 50% -10%, #eceafe 0%, rgba(236,234,254,0) 60%),
+    var(--bg);
+}
+.login-card {
+  width: 100%; max-width: 400px;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 32px 26px 26px;
+}
+.brand { text-align: center; margin-bottom: 24px; }
+.brand-logo {
+  width: 64px; height: 64px; margin: 0 auto 14px;
+  display: grid; place-items: center; font-size: 30px;
+  background: var(--accent-soft); border-radius: 20px;
+}
+.brand-title { font-size: 22px; margin: 0 0 4px; font-weight: 800; letter-spacing: -.2px; }
+.brand-sub { margin: 0; color: var(--ink-3); font-size: 14px; }
+.login-hint { text-align: center; color: var(--ink-3); font-size: 13px; margin: 16px 0 0; }
+
+/* =========================== APP SHELL ================================= */
+.app-shell { max-width: var(--maxw); margin: 0 auto; min-height: 100vh; position: relative; }
+
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  height: var(--top-h);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px;
+  background: rgba(255,255,255,.9);
+  backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: 1px solid var(--line);
+}
+.topbar-left { display: flex; align-items: center; gap: 10px; }
+.avatar {
+  width: 38px; height: 38px; border-radius: 12px;
+  background: var(--accent); color: #fff;
+  display: grid; place-items: center; font-weight: 800; font-size: 15px;
+}
+.topbar-name { font-weight: 700; font-size: 15px; line-height: 1.1; }
+.topbar-role { font-size: 12px; color: var(--ink-3); }
+.logout-btn { font-size: 13px; color: var(--danger); font-weight: 600; }
+
+.app-main {
+  padding: 16px 16px calc(var(--nav-h) + 24px);
+  min-height: calc(100vh - var(--top-h));
+}
+
+/* --------------------------- Bottom nav -------------------------------- */
+.bottom-nav {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: 0; width: 100%; max-width: var(--maxw);
+  height: var(--nav-h);
+  display: flex; align-items: stretch;
+  background: rgba(255,255,255,.94);
+  backdrop-filter: saturate(180%) blur(12px);
+  border-top: 1px solid var(--line);
+  z-index: 30;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.nav-item {
+  flex: 1; border: none; background: transparent; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; color: var(--ink-3); font-family: inherit; font-size: 11px; font-weight: 600;
+}
+.nav-item .nav-ico { font-size: 20px; line-height: 1; }
+.nav-item.active { color: var(--accent); }
+
+/* --------------------------- Utilities --------------------------------- */
+.section-title { font-size: 20px; font-weight: 800; margin: 4px 0 14px; letter-spacing: -.3px; }
+.muted { color: var(--ink-3); }
+.row { display: flex; gap: 10px; }
+.row.wrap { flex-wrap: wrap; }
+.spacer { flex: 1; }
+.center { text-align: center; }
+.mt-8 { margin-top: 8px; } .mt-16 { margin-top: 16px; }
+
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700;
+}
+.badge-pending   { background: var(--warning-soft); color: var(--warning); }
+.badge-confirmed { background: var(--success-soft); color: var(--success); }
+.badge-rejected  { background: var(--danger-soft);  color: var(--danger); }
+
+.placeholder {
+  text-align: center; color: var(--ink-3); padding: 48px 16px;
+}
+.placeholder .ph-ico { font-size: 40px; margin-bottom: 8px; }
+
+/* ------------------------------ Loading -------------------------------- */
+.loading {
+  position: fixed; inset: 0; z-index: 999;
+  background: rgba(255,255,255,.55); backdrop-filter: blur(2px);
+  display: grid; place-items: center;
+}
+.spinner {
+  width: 42px; height: 42px; border-radius: 50%;
+  border: 4px solid var(--accent-soft); border-top-color: var(--accent);
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ------------------------------- Toast --------------------------------- */
+.toast-wrap {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(var(--nav-h) + 16px); z-index: 1000;
+  display: flex; flex-direction: column; gap: 8px; width: calc(100% - 32px); max-width: 420px;
+  pointer-events: none;
+}
+.toast {
+  background: var(--ink); color: #fff; padding: 12px 16px;
+  border-radius: 12px; box-shadow: var(--shadow-lg); font-size: 14px; font-weight: 500;
+  animation: toastIn .2s ease;
+}
+.toast.success { background: #14532d; }
+.toast.error   { background: #7f1d1d; }
+@keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* --------------------------- Desktop tweaks ---------------------------- */
+@media (min-width: 720px) {
+  body { font-size: 16px; }
+  .app-main { padding: 24px 24px calc(var(--nav-h) + 24px); }
+}
+
+/* =========================================================================
+ * Phase 2–6 components
+ * ========================================================================= */
+
+/* Stat cards grid */
+.stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+.stat-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.stat {
+  background: var(--surface); border-radius: var(--radius); padding: 14px;
+  box-shadow: var(--shadow-sm); border: 1px solid var(--line);
+}
+.stat-label { font-size: 12px; color: var(--ink-3); font-weight: 600; margin-bottom: 4px; }
+.stat-value { font-size: 20px; font-weight: 800; letter-spacing: -.3px; }
+.stat-value.sm { font-size: 17px; }
+.stat.accent { background: var(--accent); border-color: var(--accent); }
+.stat.accent .stat-label { color: rgba(255,255,255,.8); }
+.stat.accent .stat-value { color: #fff; }
+.stat.tint-green  { background: var(--success-soft); border-color: transparent; }
+.stat.tint-amber  { background: var(--warning-soft); border-color: transparent; }
+.stat.tint-red    { background: var(--danger-soft);  border-color: transparent; }
+
+/* Segmented / chip range control */
+.chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 12px; -webkit-overflow-scrolling: touch; }
+.chips::-webkit-scrollbar { display: none; }
+.chip {
+  flex: 0 0 auto; border: 1px solid var(--line); background: var(--surface);
+  color: var(--ink-2); border-radius: 999px; padding: 8px 14px; font-size: 13px;
+  font-weight: 600; cursor: pointer; white-space: nowrap; font-family: inherit;
+}
+.chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* Custom date range row */
+.daterange { display: none; gap: 8px; margin-bottom: 12px; }
+.daterange.show { display: flex; }
+.daterange input { flex: 1; }
+
+/* Lists / rows */
+.list { display: flex; flex-direction: column; gap: 10px; }
+.item {
+  background: var(--surface); border-radius: var(--radius); padding: 14px;
+  box-shadow: var(--shadow-sm); border: 1px solid var(--line);
+}
+.item-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.item-title { font-weight: 700; font-size: 15px; }
+.item-sub { color: var(--ink-3); font-size: 13px; margin-top: 2px; }
+.item-amt { font-weight: 800; font-size: 16px; white-space: nowrap; }
+.item-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 8px; font-size: 13px; color: var(--ink-2); }
+.item-actions { display: flex; gap: 8px; margin-top: 12px; }
+
+/* Tables (responsive) */
+.table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 460px; }
+table.data th, table.data td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.data th { background: var(--surface-2); color: var(--ink-2); font-weight: 700; position: sticky; top: 0; }
+table.data td.num, table.data th.num { text-align: right; }
+table.data tr:last-child td { border-bottom: none; }
+
+/* Forms */
+.form-step { margin-bottom: 14px; }
+.step-no { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 800; margin-right: 8px; }
+.pick-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.pick-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.pick {
+  border: 1px solid var(--line); background: var(--surface); border-radius: 12px;
+  padding: 12px; font-size: 14px; font-weight: 600; cursor: pointer; text-align: center;
+  font-family: inherit; color: var(--ink); transition: all .12s ease;
+}
+.pick small { display: block; font-weight: 500; color: var(--ink-3); margin-top: 2px; }
+.pick.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+
+.qty-row { display: flex; align-items: center; gap: 10px; }
+.qty-btn { width: 46px; height: 46px; border-radius: 12px; border: 1px solid var(--line);
+  background: var(--surface); font-size: 22px; font-weight: 700; cursor: pointer; color: var(--ink); }
+.qty-row input { text-align: center; font-size: 18px; font-weight: 700; }
+
+/* Worker split editor */
+.split-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.split-row .w-name { flex: 1; font-weight: 600; font-size: 14px; }
+.split-row input { width: 86px; text-align: center; }
+
+/* Summary box */
+.summary {
+  background: var(--accent-soft); border-radius: var(--radius); padding: 14px; margin: 14px 0;
+}
+.summary-line { display: flex; justify-content: space-between; font-size: 14px; margin: 3px 0; }
+.summary-total { font-size: 20px; font-weight: 800; color: var(--accent); }
+
+/* FAB */
+.fab {
+  position: fixed; right: 16px; bottom: calc(var(--nav-h) + 16px); z-index: 25;
+  width: 56px; height: 56px; border-radius: 18px; background: var(--accent); color: #fff;
+  border: none; font-size: 26px; box-shadow: var(--shadow-lg); cursor: pointer;
+}
+
+/* Modal / bottom sheet */
+.overlay { position: fixed; inset: 0; background: rgba(20,24,45,.45); z-index: 200;
+  display: flex; align-items: flex-end; justify-content: center; animation: fadeIn .15s ease; }
+.overlay.center { align-items: center; padding: 16px; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.sheet {
+  background: var(--surface); width: 100%; max-width: var(--maxw);
+  border-radius: 22px 22px 0 0; padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+  max-height: 88vh; overflow-y: auto; animation: sheetUp .22s ease;
+}
+.overlay.center .sheet { border-radius: 20px; max-width: 440px; animation: popIn .18s ease; }
+@keyframes sheetUp { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes popIn { from { transform: scale(.95); opacity: .6; } to { transform: none; opacity: 1; } }
+.sheet-grip { width: 40px; height: 4px; border-radius: 2px; background: var(--line); margin: 0 auto 14px; }
+.sheet-title { font-size: 17px; font-weight: 800; margin: 0 0 14px; }
+
+/* Charts (pure CSS/SVG, no external lib) */
+.chart { margin: 8px 0 4px; }
+.bar-row { display: flex; align-items: center; gap: 10px; margin: 7px 0; font-size: 13px; }
+.bar-row .bar-label { width: 96px; flex: 0 0 auto; color: var(--ink-2); font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-track { flex: 1; background: var(--surface-2); border-radius: 8px; height: 22px; overflow: hidden; }
+.bar-fill { height: 100%; background: var(--accent); border-radius: 8px; min-width: 2px;
+  display: flex; align-items: center; justify-content: flex-end; padding-right: 6px;
+  color: #fff; font-size: 11px; font-weight: 700; transition: width .4s ease; }
+.bar-fill.alt { background: #0ea5a4; }
+.spark { display: flex; align-items: flex-end; gap: 3px; height: 90px; padding: 8px 0; }
+.spark-col { flex: 1; background: var(--accent); border-radius: 4px 4px 0 0; min-height: 2px; position: relative; }
+.spark-col.empty { background: var(--line); }
+
+/* Empty state */
+.empty { text-align: center; color: var(--ink-3); padding: 40px 16px; }
+.empty .e-ico { font-size: 36px; margin-bottom: 6px; }
+
+/* Misc */
+.inline-note { font-size: 12px; color: var(--ink-3); margin-top: 6px; }
+.danger-text { color: var(--danger); }
+.pill-check { display: flex; align-items: center; gap: 8px; }
+.selectbar { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.count-badge { background: var(--accent); color: #fff; border-radius: 999px; padding: 2px 10px; font-size: 13px; font-weight: 700; }
+hr.sep { border: none; border-top: 1px solid var(--line); margin: 16px 0; }
+
+/* Booking-style add-job */
+.svc-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; margin-bottom: 12px; box-shadow: var(--shadow-sm); }
+.svc-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.svc-head .svc-title { font-weight: 800; font-size: 16px; }
+.svc-head .svc-title .em { font-size: 20px; margin-right: 6px; }
+.svc-body { margin-top: 12px; }
+.svc-line { border-top: 1px dashed var(--line); padding-top: 12px; margin-top: 12px; }
+.svc-line:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+.svc-line-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.svc-sub { font-size: 12px; color: var(--ink-3); font-weight: 700; margin: 10px 0 6px; }
+
+/* Toggle switch */
+.switch { position: relative; width: 50px; height: 28px; flex: 0 0 auto; }
+.switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+.switch .track { position: absolute; inset: 0; background: var(--line); border-radius: 999px; transition: .2s; }
+.switch .track::before { content: ''; position: absolute; width: 22px; height: 22px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .2s; box-shadow: var(--shadow-sm); }
+.switch input:checked + .track { background: var(--accent); }
+.switch input:checked + .track::before { transform: translateX(22px); }
+
+/* Toggle row (label left, switch right) — compact, no overflow */
+.toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; }
+.toggle-text { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; color: var(--ink-2); line-height: 1.3; }
+</style>
+
+
+</head>
+<body>
+
+  <!-- Global loading overlay -->
+  <div id="loading" class="loading hidden">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toast-wrap" class="toast-wrap"></div>
+
+  <!-- ===================== LOGIN SCREEN ===================== -->
+  <section id="screen-login" class="login-screen">
+    <div class="login-card">
+      <div class="brand">
+        <div class="brand-logo">✂️</div>
+        <h1 class="brand-title">ระบบบันทึกงานช่าง</h1>
+        <p class="brand-sub">ต่อผม · คำนวณรายได้อัตโนมัติ</p>
+      </div>
+
+      <form id="login-form" autocomplete="off">
+        <label class="field">
+          <span class="field-label">ชื่อผู้ใช้</span>
+          <input id="login-user" type="text" inputmode="text" placeholder="เช่น admin" autocapitalize="none" autocomplete="username">
+        </label>
+
+        <label class="field">
+          <span class="field-label">รหัสผ่าน</span>
+          <div class="password-wrap">
+            <input id="login-pass" type="password" placeholder="••••••" autocomplete="current-password">
+            <button type="button" id="toggle-pass" class="ghost-btn" aria-label="แสดงรหัสผ่าน">👁️</button>
+          </div>
+        </label>
+
+        <button type="submit" id="login-btn" class="btn btn-primary btn-block">เข้าสู่ระบบ</button>
+      </form>
+
+      <p class="login-hint">ลืมรหัสผ่าน? ติดต่อผู้จัดการร้าน</p>
+    </div>
+  </section>
+
+  <!-- ===================== APP SHELL ===================== -->
+  <section id="screen-app" class="app-shell hidden">
+    <!-- Top bar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="avatar" id="app-avatar">-</div>
+        <div class="topbar-user">
+          <div class="topbar-name" id="app-username">—</div>
+          <div class="topbar-role" id="app-role">—</div>
+        </div>
+      </div>
+      <button id="logout-btn" class="ghost-btn logout-btn" title="ออกจากระบบ">ออกจากระบบ</button>
+    </header>
+
+    <!-- Main content area – filled per route by JS -->
+    <main id="app-main" class="app-main"></main>
+
+    <!-- Bottom navigation – built per role by JS -->
+    <nav id="bottom-nav" class="bottom-nav"></nav>
+  </section>
+
+  <script>
+/* ===== Scripts ===== */
+/* =========================================================================
+ * Client application (Phase 1: auth + shell + router skeleton).
+ * Later phases add screen renderers into the App.screens map.
+ * ========================================================================= */
+
+const App = {
+  token: null,
+  user: null,
+  isManager: false,
+  route: null,
+  screens: {},        // filled by phase files: screens[routeName] = fn(main)
+  nav: { worker: [], manager: [] }
+};
+
+/* --------------------------- Server bridge ----------------------------- */
+
+/* Server bridge: POST ไปที่ Web App (/exec) แล้วรับ JSON กลับ (host ที่ไหนก็ได้ เช่น GitHub Pages) */
+/* ★ ใส่ URL /exec ของโปรเจกต์ "ระบบบันทึกงานช่าง" ตรงนี้ หลัง Deploy */
+var API_URL = 'https://script.google.com/macros/s/AKfycbz4AXhbNzyR8gt7iSqyMQr6K7SvkQRFAf9axO-1-vzUpAz3jgTlnfUBlncCiLH_P70k/exec';
+function api(action, payload) {
+  return fetch(API_URL, {
+    method: 'POST', redirect: 'follow',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },  // simple request -> ไม่มี CORS preflight
+    body: JSON.stringify({ action: action, token: App.token || '', payload: payload || {} })
+  }).then(function (r) { return r.json(); }).then(function (res) {
+    if (res && res.ok) return res;
+    if (res && res.code === 'SESSION_EXPIRED') forceLogout('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');
+    return Promise.reject(res || { ok: false, message: 'ไม่มีการตอบกลับจากเซิร์ฟเวอร์' });
+  }, function () {
+    return Promise.reject({ ok: false, message: 'การเชื่อมต่อผิดพลาด' });
+  });
+}
+
+/* --------------------------- UI helpers -------------------------------- */
+
+function $(id) { return document.getElementById(id); }
+
+function showLoading(on) { $('loading').classList.toggle('hidden', !on); }
+
+function toast(message, type) {
+  const wrap = $('toast-wrap');
+  const el = document.createElement('div');
+  el.className = 'toast ' + (type || '');
+  el.textContent = message;
+  wrap.appendChild(el);
+  setTimeout(function () {
+    el.style.opacity = '0';
+    setTimeout(function () { el.remove(); }, 200);
+  }, 2600);
+}
+
+function show(screenId) {
+  $('screen-login').classList.toggle('hidden', screenId !== 'login');
+  $('screen-app').classList.toggle('hidden', screenId !== 'app');
+}
+
+/* ----------------------------- Session --------------------------------- */
+
+function saveToken(t) { App.token = t; try { sessionStorage.setItem('sess_token', t); } catch (e) {} }
+function loadToken()  { try { return sessionStorage.getItem('sess_token'); } catch (e) { return null; } }
+function clearToken() { App.token = null; try { sessionStorage.removeItem('sess_token'); } catch (e) {} }
+
+function forceLogout(message) {
+  clearToken();
+  App.user = null;
+  show('login');
+  if (message) toast(message, 'error');
+}
+
+/* ------------------------------ Login ---------------------------------- */
+
+function initLogin() {
+  $('login-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    doLogin();
+  });
+  $('toggle-pass').addEventListener('click', function () {
+    const inp = $('login-pass');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+  });
+}
+
+function doLogin() {
+  const userId = $('login-user').value.trim();
+  const password = $('login-pass').value;
+  if (!userId || !password) { toast('กรุณากรอกชื่อผู้ใช้และรหัสผ่าน', 'error'); return; }
+
+  const btn = $('login-btn');
+  btn.disabled = true; btn.textContent = 'กำลังเข้าสู่ระบบ...';
+  showLoading(true);
+
+  api('login', { userId: userId, password: password })
+    .then(function (res) {
+      saveToken(res.data.token);
+      App.user = res.data.user;
+      $('login-pass').value = '';
+      return enterApp();
+    })
+    .catch(function (err) {
+      toast(err.message || 'เข้าสู่ระบบไม่สำเร็จ', 'error');
+    })
+    .finally(function () {
+      btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ';
+      showLoading(false);
+    });
+}
+
+/* --------------------------- Enter the app ----------------------------- */
+
+function enterApp() {
+  showLoading(true);
+  return api('getBootstrap')
+    .then(function (res) {
+      App.user = res.data.user;
+      App.isManager = res.data.isManager;
+      renderShell();
+      show('app');
+      buildNav();
+      const first = App.isManager ? 'mgr-dashboard' : 'dashboard';
+      navigate(first);
+    })
+    .catch(function (err) {
+      forceLogout(err.message || 'ไม่สามารถโหลดข้อมูลผู้ใช้');
+    })
+    .finally(function () { showLoading(false); });
+}
+
+function renderShell() {
+  const u = App.user;
+  const initial = (u.nickname || u.name || u.userId || '?').trim().charAt(0).toUpperCase();
+  $('app-avatar').textContent = initial || '?';
+  $('app-username').textContent = u.nickname || u.name || u.userId;
+  $('app-role').textContent = roleLabel(u.role);
+}
+
+function roleLabel(role) {
+  if (role === 'admin') return 'ผู้ดูแลระบบ';
+  if (role === 'manager') return 'ผู้จัดการ';
+  return 'ช่าง';
+}
+
+/* ------------------------------ Navigation ----------------------------- */
+
+/* Nav definitions. Screen renderers are attached by later phase files;
+ * until then a placeholder is shown. */
+App.nav.worker = [
+  { route: 'dashboard', icon: '🏠', label: 'หน้าหลัก' },
+  { route: 'add-job',   icon: '➕', label: 'เพิ่มงาน' },
+  { route: 'my-jobs',   icon: '📋', label: 'งานของฉัน' },
+  { route: 'profile',   icon: '👤', label: 'โปรไฟล์' }
+];
+App.nav.manager = [
+  { route: 'mgr-dashboard', icon: '🏠', label: 'หน้าหลัก' },
+  { route: 'pending',       icon: '📋', label: 'รอตรวจ' },
+  { route: 'workers',       icon: '👥', label: 'ช่าง' },
+  { route: 'setup',         icon: '⚙️', label: 'ตั้งค่า' }
+];
+
+function currentNav() { return App.isManager ? App.nav.manager : App.nav.worker; }
+
+function buildNav() {
+  const nav = $('bottom-nav');
+  nav.innerHTML = '';
+  currentNav().forEach(function (item) {
+    const b = document.createElement('button');
+    b.className = 'nav-item';
+    b.dataset.route = item.route;
+    b.innerHTML = '<span class="nav-ico">' + item.icon + '</span><span>' + item.label + '</span>';
+    b.addEventListener('click', function () { navigate(item.route); });
+    nav.appendChild(b);
+  });
+}
+
+function navigate(route) {
+  App.route = route;
+  // highlight nav
+  document.querySelectorAll('.nav-item').forEach(function (el) {
+    el.classList.toggle('active', el.dataset.route === route);
+  });
+  const main = $('app-main');
+  main.innerHTML = '';
+  const renderer = App.screens[route];
+  if (typeof renderer === 'function') {
+    renderer(main);
+  } else {
+    renderPlaceholder(main, route);
+  }
+  main.scrollTop = 0;
+  window.scrollTo(0, 0);
+}
+
+/* Placeholder shown for routes whose phase code is not loaded yet. */
+function renderPlaceholder(main, route) {
+  const labels = {
+    'dashboard': 'Dashboard ช่าง', 'add-job': 'เพิ่มงาน', 'my-jobs': 'งานของฉัน',
+    'income': 'รายได้', 'profile': 'โปรไฟล์',
+    'mgr-dashboard': 'Dashboard ผู้จัดการ', 'pending': 'งานรอตรวจ',
+    'workers': 'จัดการช่าง', 'reports': 'รายงาน/รายได้', 'setup': 'ตั้งค่าระบบ'
+  };
+  main.innerHTML =
+    '<div class="placeholder">' +
+      '<div class="ph-ico">🧩</div>' +
+      '<div style="font-weight:700;color:var(--ink);">' + (labels[route] || route) + '</div>' +
+      '<div class="mt-8">ส่วนนี้จะเพิ่มในเฟสถัดไป</div>' +
+    '</div>';
+}
+
+/* ------------------------------ Logout --------------------------------- */
+
+function initLogout() {
+  $('logout-btn').addEventListener('click', function () {
+    if (!confirm('ต้องการออกจากระบบใช่หรือไม่?')) return;
+    showLoading(true);
+    api('logout').catch(function () {}).finally(function () {
+      showLoading(false);
+      forceLogout('ออกจากระบบแล้ว');
+    });
+  });
+}
+
+/* ------------------------------ Boot ----------------------------------- */
+
+function boot() {
+  initLogin();
+  initLogout();
+
+  const existing = loadToken();
+  if (existing) {
+    App.token = existing;
+    showLoading(true);
+    api('me')
+      .then(function () { return enterApp(); })
+      .catch(function () { forceLogout(); })
+      .finally(function () { showLoading(false); });
+  } else {
+    show('login');
+  }
+}
+
+window.addEventListener('DOMContentLoaded', boot);
+
+/* ===== Components ===== */
+/* =========================================================================
+ * Shared UI components & helpers (used by all screen renderers).
+ * ========================================================================= */
+
+/* ----------------------------- Formatters ------------------------------ */
+function fmtMoney(n) {
+  const v = Math.round((Number(n) || 0) * 100) / 100;
+  return '฿' + v.toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+function fmtNum(n) { return (Number(n) || 0).toLocaleString('th-TH'); }
+function fmtDate(s) {
+  if (!s) return '-';
+  s = String(s);
+  if (s.indexOf('T') !== -1) s = s.slice(0, 10); // ISO timestamp -> date part
+  const p = s.split('-');
+  if (p.length === 3) return p[2] + '/' + p[1] + '/' + p[0];
+  return s;
+}
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function statusBadge(st) {
+  if (st === 'Confirmed') return '<span class="badge badge-confirmed">● ยืนยันแล้ว</span>';
+  if (st === 'Rejected')  return '<span class="badge badge-rejected">● ปฏิเสธ</span>';
+  return '<span class="badge badge-pending">● รอตรวจ</span>';
+}
+
+/* ---------------------------- DOM helper ------------------------------- */
+function h(tag, attrs, html) {
+  const e = document.createElement(tag);
+  if (attrs) Object.keys(attrs).forEach(function (k) {
+    if (k === 'class') e.className = attrs[k];
+    else if (k === 'onclick') e.addEventListener('click', attrs[k]);
+    else e.setAttribute(k, attrs[k]);
+  });
+  if (html !== undefined) e.innerHTML = html;
+  return e;
+}
+
+/* --------------------------- Modal / sheet ----------------------------- */
+function openSheet(title, bodyNode, opts) {
+  opts = opts || {};
+  const overlay = h('div', { class: 'overlay' + (opts.center ? ' center' : '') });
+  const sheet = h('div', { class: 'sheet' });
+  if (!opts.center) sheet.appendChild(h('div', { class: 'sheet-grip' }));
+  if (title) sheet.appendChild(h('div', { class: 'sheet-title' }, esc(title)));
+  if (typeof bodyNode === 'string') sheet.appendChild(h('div', {}, bodyNode));
+  else sheet.appendChild(bodyNode);
+  overlay.appendChild(sheet);
+  overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
+  document.body.appendChild(overlay);
+  function close() { overlay.remove(); }
+  return { close: close, overlay: overlay, sheet: sheet };
+}
+
+function confirmDialog(message, opts) {
+  opts = opts || {};
+  return new Promise(function (resolve) {
+    const body = h('div');
+    body.appendChild(h('p', { class: 'mt-8' }, esc(message)));
+    const row = h('div', { class: 'row mt-16' });
+    const cancel = h('button', { class: 'btn btn-ghost', style: 'flex:1' }, opts.cancelText || 'ยกเลิก');
+    const okBtn = h('button', { class: 'btn ' + (opts.danger ? 'btn-danger' : 'btn-primary'), style: 'flex:1' }, opts.okText || 'ตกลง');
+    row.appendChild(cancel); row.appendChild(okBtn);
+    body.appendChild(row);
+    const dlg = openSheet(opts.title || 'ยืนยัน', body, { center: true });
+    cancel.addEventListener('click', function () { dlg.close(); resolve(false); });
+    okBtn.addEventListener('click', function () { dlg.close(); resolve(true); });
+  });
+}
+
+/* --------------------- Date-range control (chips) ---------------------- */
+const RANGE_PRESETS = [
+  ['today', 'วันนี้'], ['yesterday', 'เมื่อวาน'],
+  ['thisWeek', 'สัปดาห์นี้'], ['lastWeek', 'สัปดาห์ที่แล้ว'],
+  ['thisMonth', 'เดือนนี้'], ['lastMonth', 'เดือนที่แล้ว'],
+  ['thisYear', 'ปีนี้'], ['custom', 'กำหนดเอง']
+];
+
+/**
+ * Render a range control into `container`. Calls onChange({preset,start,end})
+ * immediately and on every change. Returns the current state getter.
+ */
+function rangeControl(container, defaultPreset, onChange) {
+  const state = { preset: defaultPreset || 'today', start: '', end: '' };
+  const chips = h('div', { class: 'chips' });
+  const dr = h('div', { class: 'daterange' });
+  const startI = h('input', { type: 'date' });
+  const endI = h('input', { type: 'date' });
+  dr.appendChild(startI); dr.appendChild(endI);
+
+  function emit() { onChange({ preset: state.preset, start: startI.value, end: endI.value }); }
+
+  RANGE_PRESETS.forEach(function (p) {
+    const c = h('button', { class: 'chip' + (p[0] === state.preset ? ' active' : '') }, p[1]);
+    c.addEventListener('click', function () {
+      state.preset = p[0];
+      chips.querySelectorAll('.chip').forEach(function (x) { x.classList.remove('active'); });
+      c.classList.add('active');
+      dr.classList.toggle('show', p[0] === 'custom');
+      if (p[0] !== 'custom') emit();
+      else if (startI.value && endI.value) emit();
+    });
+    chips.appendChild(c);
+  });
+  startI.addEventListener('change', function () { if (endI.value) emit(); });
+  endI.addEventListener('change', function () { if (startI.value) emit(); });
+
+  container.appendChild(chips);
+  container.appendChild(dr);
+  if (state.preset === 'custom') dr.classList.add('show');
+  // Fire once so the screen loads data for the default preset immediately.
+  if (state.preset !== 'custom') emit();
+  return state;
+}
+
+/* ------------------------------ Charts --------------------------------- */
+function barChart(container, items, labelKey, valueKey, alt) {
+  const wrap = h('div', { class: 'chart' });
+  const max = items.reduce(function (m, it) { return Math.max(m, Number(it[valueKey]) || 0); }, 0) || 1;
+  if (items.length === 0) { wrap.appendChild(h('div', { class: 'muted center' }, 'ไม่มีข้อมูล')); container.appendChild(wrap); return; }
+  items.forEach(function (it) {
+    const pct = Math.max(2, Math.round((Number(it[valueKey]) || 0) / max * 100));
+    const row = h('div', { class: 'bar-row' });
+    row.appendChild(h('div', { class: 'bar-label', title: String(it[labelKey]) }, esc(it[labelKey])));
+    const track = h('div', { class: 'bar-track' });
+    track.appendChild(h('div', { class: 'bar-fill' + (alt ? ' alt' : ''), style: 'width:' + pct + '%' }, fmtMoney(it[valueKey])));
+    row.appendChild(track);
+    wrap.appendChild(row);
+  });
+  container.appendChild(wrap);
+}
+
+function sparkChart(container, daily) {
+  const wrap = h('div', { class: 'spark' });
+  const max = daily.reduce(function (m, d) { return Math.max(m, Number(d.amount) || 0); }, 0) || 1;
+  if (daily.length === 0) { container.appendChild(h('div', { class: 'muted center' }, 'ไม่มีข้อมูล')); return; }
+  daily.forEach(function (d) {
+    const pct = Math.max(2, Math.round((Number(d.amount) || 0) / max * 100));
+    const col = h('div', { class: 'spark-col' + (d.amount ? '' : ' empty'), style: 'height:' + pct + '%',
+      title: fmtDate(d.date) + ' · ' + fmtMoney(d.amount) });
+    wrap.appendChild(col);
+  });
+  container.appendChild(wrap);
+}
+
+/* --------------------------- CSV download ------------------------------ */
+function downloadText(filename, text, mime) {
+  try {
+    const blob = new Blob([text], { type: (mime || 'text/csv') + ';charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = h('a', { href: url, download: filename });
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { a.remove(); URL.revokeObjectURL(url); }, 500);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+/* ------------------------- Empty-state block --------------------------- */
+function emptyState(icon, text) {
+  return '<div class="empty"><div class="e-ico">' + icon + '</div><div>' + esc(text) + '</div></div>';
+}
+
+/* ------------------- Guarded API with loading + toast ------------------ */
+function apiLoad(action, payload, opts) {
+  opts = opts || {};
+  if (opts.loading !== false) showLoading(true);
+  return api(action, payload)
+    .then(function (res) { if (res.message && opts.toast) toast(res.message, 'success'); return res; })
+    .catch(function (err) { toast((err && err.message) || 'เกิดข้อผิดพลาด', 'error'); throw err; })
+    .finally(function () { if (opts.loading !== false) showLoading(false); });
+}
+
+/* ===== ScreensWorker ===== */
+/* =========================================================================
+ * WORKER SCREENS
+ * ========================================================================= */
+
+function uuid() {
+  return 'c-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+}
+
+/* Cache form options for the session (activities/workers/hair lengths). */
+function loadFormOptions(force) {
+  if (App.formOptions && !force) return Promise.resolve(App.formOptions);
+  return apiLoad('getFormOptions', {}, { loading: false }).then(function (res) {
+    App.formOptions = res.data; return res.data;
+  });
+}
+
+function labelWrap(label, inputEl) {
+  const w = h('label', { class: 'field' });
+  w.appendChild(h('span', { class: 'field-label' }, label));
+  w.appendChild(inputEl);
+  return w;
+}
+
+/* Emoji per category (by keyword) just for a friendlier UI. */
+function catEmoji(cat) {
+  if (/ถอด/.test(cat)) return '✂️';
+  if (/ต่อ/.test(cat)) return '💁‍♀️';
+  if (/ปั้น/.test(cat)) return '🎀';
+  if (/ขยับ/.test(cat)) return '🔧';
+  return '💠';
+}
+
+/* Category ordering + rules (owner's request):
+ *  - display order: ถอด → ปั้น → ต่อ
+ *  - hide: ขยับปม
+ *  - flat price (no size / no bundle count): ถอด
+ */
+const CAT_ORDER = ['ถอด', 'ปั้น', 'ต่อ'];
+function catRank(cat) { for (let i = 0; i < CAT_ORDER.length; i++) { if (cat.indexOf(CAT_ORDER[i]) !== -1) return i; } return 99; }
+function isHiddenCat(cat) { return /ขยับ/.test(cat); }
+function isFlatCat(cat) { return /ถอด/.test(cat); }
+
+/* --------------------------- Worker Home (income) ---------------------- */
+App.screens['dashboard'] = function (main) {
+  main.appendChild(h('div', { class: 'section-title' }, 'รายได้ของฉัน'));
+  main.appendChild(h('div', { class: 'muted', style: 'margin:-8px 2px 12px' }, 'สวัสดี ' + esc(App.user.nickname || App.user.name)));
+  const body = h('div'); main.appendChild(body);
+  body.innerHTML = '<div class="muted center" style="padding:30px">กำลังโหลด...</div>';
+  apiLoad('getWorkerHome', {}).then(function (res) { renderWorkerHome(body, res.data); })
+    .catch(function () { body.innerHTML = emptyState('⚠️', 'โหลดไม่สำเร็จ'); });
+  const fab = h('button', { class: 'fab', title: 'เพิ่มงาน' }, '＋');
+  fab.addEventListener('click', function () { navigate('add-job'); });
+  main.appendChild(fab);
+};
+
+function renderWorkerHome(body, d) {
+  body.innerHTML = '';
+  const g = h('div', { class: 'stat-grid' });
+  g.appendChild(h('div', { class: 'stat accent' }, '<div class="stat-label">รายได้วันนี้</div><div class="stat-value">' + fmtMoney(d.income.today) + '</div>'));
+  g.appendChild(h('div', { class: 'stat' }, '<div class="stat-label">สัปดาห์นี้</div><div class="stat-value">' + fmtMoney(d.income.week) + '</div>'));
+  body.appendChild(g);
+  const g2 = h('div', { class: 'stat-grid' });
+  g2.appendChild(h('div', { class: 'stat' }, '<div class="stat-label">เดือนนี้</div><div class="stat-value">' + fmtMoney(d.income.month) + '</div>'));
+  g2.appendChild(h('div', { class: 'stat' }, '<div class="stat-label">ปีนี้</div><div class="stat-value">' + fmtMoney(d.income.year) + '</div>'));
+  body.appendChild(g2);
+  const g3 = h('div', { class: 'stat-grid cols-3' });
+  g3.appendChild(h('div', { class: 'stat tint-amber' }, '<div class="stat-label">รอยืนยัน</div><div class="stat-value sm">' + fmtMoney(d.income.pending) + '</div>'));
+  g3.appendChild(h('div', { class: 'stat tint-green' }, '<div class="stat-label">งานยืนยันแล้ว</div><div class="stat-value sm">' + fmtNum(d.counts.confirmed) + '</div>'));
+  g3.appendChild(h('div', { class: 'stat' }, '<div class="stat-label">รอ/ปฏิเสธ</div><div class="stat-value sm">' + d.counts.pending + '/' + d.counts.rejected + '</div>'));
+  body.appendChild(g3);
+  body.appendChild(h('div', { class: 'inline-note' }, 'รายได้นับเฉพาะงานที่ผู้จัดการยืนยันแล้ว (Confirmed)'));
+
+  body.appendChild(h('div', { class: 'card-title mt-16' }, 'งานล่าสุด'));
+  if (!d.recent.length) { body.appendChild(h('div', {}, emptyState('📭', 'ยังไม่มีงาน'))); return; }
+  const list = h('div', { class: 'list' });
+  d.recent.forEach(function (r) {
+    const it = h('div', { class: 'item' });
+    it.innerHTML = '<div class="item-head"><div><div class="item-title">' + esc(r.workType) + '</div>' +
+      '<div class="item-sub">' + fmtDate(r.workDate) + ' · ' + esc(r.hairLength) + ' · ' + fmtNum(r.quantity) + ' มัด</div></div>' +
+      '<div style="text-align:right"><div class="item-amt">' + fmtMoney(r.workerAmount) + '</div>' + statusBadge(r.status) + '</div></div>';
+    list.appendChild(it);
+  });
+  body.appendChild(list);
+}
+
+/* ============================ Add Job (booking style) ================== */
+App.screens['add-job'] = function (main) {
+  main.appendChild(h('div', { class: 'section-title' }, 'บันทึกงานลูกค้า'));
+  const container = h('div'); main.appendChild(container);
+  container.innerHTML = '<div class="muted center" style="padding:30px">กำลังโหลด...</div>';
+  loadFormOptions(true).then(function (opts) {
+    container.innerHTML = '';
+    buildBookingForm(container, opts);
+  }).catch(function () { container.innerHTML = emptyState('⚠️', 'โหลดข้อมูลไม่สำเร็จ'); });
+};
+
+function buildBookingForm(root, opts) {
+  const state = { workDate: opts.today, jobGroupId: '', customerName: '', note: '', services: [] };
+
+  function newService(cat) {
+    const flat = isFlatCat(cat);
+    return { key: uuid(), category: cat, activity: null, hairLength: flat ? '-' : '', quantity: 1, flat: flat,
+      workers: [{ userId: opts.me.userId, nickname: opts.me.nickname, split: 100 }] };
+  }
+
+  /* ---- STEP 1: date only ---- */
+  const s1 = h('div', { class: 'card' });
+  s1.innerHTML = '<div class="form-step"><span class="step-no">1</span><b>วันที่ทำงาน</b></div>';
+  const dateI = h('input', { type: 'date', value: state.workDate });
+  dateI.addEventListener('change', function () { state.workDate = dateI.value; });
+  s1.appendChild(dateI);
+  root.appendChild(s1);
+
+  /* ---- STEP 2: services by category ---- */
+  const hdr = h('div', { class: 'form-step', style: 'margin:4px 2px 10px' });
+  hdr.innerHTML = '<span class="step-no">2</span><b>เลือกบริการ</b> <span class="muted">(เปิดสวิตช์บริการที่ทำ)</span>';
+  root.appendChild(hdr);
+  const catWrap = h('div'); root.appendChild(catWrap);
+
+  const cats = Object.keys(opts.categories)
+    .filter(function (c) { return !isHiddenCat(c); })
+    .sort(function (a, b) { return (catRank(a) - catRank(b)) || a.localeCompare(b); });
+  if (!cats.length) {
+    catWrap.innerHTML = '<div class="card">' + emptyState('⚙️', 'ยังไม่มีประเภทงานในระบบ กรุณาให้ผู้จัดการเพิ่มที่เมนู “ตั้งค่า → งานและค่าแรง”') + '</div>';
+  }
+
+  function servicesOf(cat) { return state.services.filter(function (s) { return s.category === cat; }); }
+
+  function renderCats() {
+    catWrap.innerHTML = '';
+    cats.forEach(function (cat) {
+      const on = servicesOf(cat).length > 0;
+      const card = h('div', { class: 'svc-card' });
+      const head = h('div', { class: 'svc-head' });
+      head.appendChild(h('div', { class: 'svc-title' }, '<span class="em">' + catEmoji(cat) + '</span>' + esc(cat)));
+      const sw = h('label', { class: 'switch' });
+      const cb = h('input', { type: 'checkbox' });
+      if (on) cb.setAttribute('checked', 'checked');
+      sw.appendChild(cb); sw.appendChild(h('span', { class: 'track' }));
+      head.appendChild(sw);
+      card.appendChild(head);
+      cb.addEventListener('change', function () {
+        if (cb.checked) { if (!servicesOf(cat).length) state.services.push(newService(cat)); }
+        else { state.services = state.services.filter(function (s) { return s.category !== cat; }); }
+        renderCats(); updateSummary();
+      });
+
+      if (on) {
+        const bodyEl = h('div', { class: 'svc-body' });
+        servicesOf(cat).forEach(function (svc) { bodyEl.appendChild(renderLine(svc, cat)); });
+        const addMore = h('button', { class: 'btn btn-ghost btn-sm mt-8' }, '➕ เพิ่มอีกรายการในหมวดนี้');
+        addMore.addEventListener('click', function () { state.services.push(newService(cat)); renderCats(); updateSummary(); });
+        bodyEl.appendChild(addMore);
+        card.appendChild(bodyEl);
+      }
+      catWrap.appendChild(card);
+    });
+  }
+
+  function renderLine(svc, cat) {
+    const line = h('div', { class: 'svc-line' });
+    const lh = h('div', { class: 'svc-line-head' });
+    lh.appendChild(h('div', { class: 'muted', style: 'font-weight:700' }, svc.activity ? esc(svc.activity.workType) : 'เลือกรายละเอียด'));
+    if (servicesOf(cat).length > 1) {
+      const rm = h('button', { class: 'ghost-btn danger-text' }, '✕ ลบ');
+      rm.addEventListener('click', function () { state.services = state.services.filter(function (x) { return x.key !== svc.key; }); renderCats(); updateSummary(); });
+      lh.appendChild(rm);
+    }
+    line.appendChild(lh);
+
+    // work type chips
+    line.appendChild(h('div', { class: 'svc-sub' }, 'รายละเอียดงาน'));
+    const wt = h('div', { class: 'pick-grid' });
+    opts.categories[cat].forEach(function (a) {
+      const b = h('button', { class: 'pick' + (svc.activity && svc.activity.id === a.id ? ' active' : '') },
+        esc(a.workType) + '<small>' + fmtMoney(a.rate) + '/' + esc(a.unit) + '</small>');
+      b.addEventListener('click', function () { svc.activity = a; renderCats(); updateSummary(); });
+      wt.appendChild(b);
+    });
+    line.appendChild(wt);
+
+    if (!svc.flat) {
+      // hair length
+      line.appendChild(h('div', { class: 'svc-sub' }, 'ขนาดผม (นิ้ว)'));
+      const hl = h('div', { class: 'pick-grid cols-3' });
+      opts.hairLengths.forEach(function (x) {
+        const b = h('button', { class: 'pick' + (svc.hairLength === x ? ' active' : '') }, esc(x));
+        b.addEventListener('click', function () { svc.hairLength = x; renderCats(); updateSummary(); });
+        hl.appendChild(b);
+      });
+      line.appendChild(hl);
+
+      // quantity
+      line.appendChild(h('div', { class: 'svc-sub' }, 'จำนวนมัด'));
+      const qrow = h('div', { class: 'qty-row' });
+      const minus = h('button', { class: 'qty-btn' }, '−');
+      const qi = h('input', { type: 'number', step: '0.5', min: '0.5', value: String(svc.quantity), inputmode: 'decimal' });
+      const plus = h('button', { class: 'qty-btn' }, '＋');
+      qrow.appendChild(minus); qrow.appendChild(qi); qrow.appendChild(plus);
+      line.appendChild(qrow);
+      const setQty = function (v) { svc.quantity = Math.max(0, v); qi.value = svc.quantity; updateSummary(); };
+      minus.addEventListener('click', function () { setQty((Number(qi.value) || 0) - 0.5); });
+      plus.addEventListener('click', function () { setQty((Number(qi.value) || 0) + 0.5); });
+      qi.addEventListener('input', function () { svc.quantity = Math.max(0, Number(qi.value) || 0); updateSummary(); });
+    } else {
+      // Flat-price service (e.g. ถอดผม): no size, no bundle count.
+      svc.hairLength = '-'; svc.quantity = 1;
+      line.appendChild(h('div', { class: 'inline-note mt-8' }, '💰 ราคาเหมา — ไม่ต้องเลือกขนาดผม/จำนวนมัด'));
+    }
+
+    // workers / split
+    line.appendChild(h('div', { class: 'svc-sub' }, 'ช่างที่ทำ & สัดส่วน'));
+    svc.workers.forEach(function (w) {
+      const row = h('div', { class: 'split-row' });
+      row.appendChild(h('div', { class: 'w-name' }, esc(w.nickname) + (w.userId === opts.me.userId ? ' (ฉัน)' : '')));
+      const si = h('input', { type: 'number', step: '1', min: '0', max: '100', value: String(w.split), inputmode: 'numeric' });
+      si.addEventListener('input', function () { w.split = Number(si.value) || 0; updateSummary(); });
+      row.appendChild(si); row.appendChild(h('span', { class: 'muted' }, '%'));
+      if (svc.workers.length > 1) {
+        const rm = h('button', { class: 'ghost-btn danger-text' }, '✕');
+        rm.addEventListener('click', function () { svc.workers = svc.workers.filter(function (x) { return x.userId !== w.userId; }); evenSplit(svc); renderCats(); updateSummary(); });
+        row.appendChild(rm);
+      }
+      line.appendChild(row);
+    });
+    const wrow = h('div', { class: 'row mt-8' });
+    const addW = h('button', { class: 'btn btn-ghost btn-sm' }, '＋ เพิ่มช่าง');
+    const evenW = h('button', { class: 'btn btn-ghost btn-sm' }, '⚖ แบ่งเท่ากัน');
+    addW.addEventListener('click', function () {
+      const taken = {}; svc.workers.forEach(function (w) { taken[w.userId] = true; });
+      const avail = opts.workers.filter(function (w) { return !taken[w.userId]; });
+      if (!avail.length) { toast('เพิ่มครบทุกคนแล้ว', 'error'); return; }
+      const bodyEl = h('div', { class: 'list' });
+      avail.forEach(function (w) {
+        const b = h('button', { class: 'btn btn-ghost btn-block', style: 'text-align:left' }, esc(w.nickname));
+        b.addEventListener('click', function () { svc.workers.push({ userId: w.userId, nickname: w.nickname, split: 0 }); dlg.close(); evenSplit(svc); renderCats(); updateSummary(); });
+        bodyEl.appendChild(b);
+      });
+      const dlg = openSheet('เลือกช่างร่วมงาน', bodyEl);
+    });
+    evenW.addEventListener('click', function () { evenSplit(svc); renderCats(); updateSummary(); });
+    wrow.appendChild(addW); wrow.appendChild(evenW);
+    line.appendChild(wrow);
+
+    return line;
+  }
+
+  function evenSplit(svc) {
+    const n = svc.workers.length; const base = Math.floor(100 / n);
+    svc.workers.forEach(function (w, i) { w.split = base + (i === 0 ? (100 - base * n) : 0); });
+  }
+
+  renderCats();
+
+  /* ---- Note ---- */
+  const sNote = h('div', { class: 'card' });
+  sNote.innerHTML = '<div class="form-step"><span class="step-no">3</span><b>หมายเหตุ (ไม่บังคับ)</b></div>';
+  const noteI = h('textarea', { rows: '2', placeholder: 'เช่น ลูกค้าประจำ, งานเร่ง' });
+  noteI.addEventListener('input', function () { state.note = noteI.value; });
+  sNote.appendChild(noteI);
+  root.appendChild(sNote);
+
+  /* ---- Summary + Save ---- */
+  const sum = h('div', { class: 'summary' }); root.appendChild(sum);
+  const saveBtn = h('button', { class: 'btn btn-primary btn-block', style: 'margin-bottom:24px' }, 'บันทึกงาน');
+  root.appendChild(saveBtn);
+
+  function splitSum(svc) { return svc.workers.reduce(function (s, w) { return s + (Number(w.split) || 0); }, 0); }
+  function updateSummary() {
+    let grand = 0; let html = ''; let anyComplete = false; let badSplit = false;
+    state.services.forEach(function (svc) {
+      if (!svc.activity) return;
+      const gross = Math.round(svc.quantity * svc.activity.rate * 100) / 100;
+      if (svc.hairLength && svc.quantity > 0) anyComplete = true;
+      grand += gross;
+      const desc = svc.flat
+        ? esc(svc.activity.workType) + ' (เหมา)'
+        : esc(svc.activity.workType) + ' ' + fmtNum(svc.quantity) + '×' + fmtMoney(svc.activity.rate) +
+          (svc.hairLength && svc.hairLength !== '-' ? ' (' + esc(svc.hairLength) + ')' : '');
+      html += '<div class="summary-line"><span>' + desc + '</span><span>' + fmtMoney(gross) + '</span></div>';
+      if (svc.workers.length > 1) {
+        svc.workers.forEach(function (w) {
+          html += '<div class="summary-line muted" style="padding-left:10px"><span>• ' + esc(w.nickname) + ' ' + (Number(w.split) || 0) + '%</span><span>' + fmtMoney(gross * (Number(w.split) || 0) / 100) + '</span></div>';
+        });
+      }
+      if (Math.abs(splitSum(svc) - 100) > 0.01) badSplit = true;
+    });
+    if (!html) html = '<div class="muted center">ยังไม่ได้เลือกบริการ</div>';
+    else {
+      html += '<hr class="sep" style="margin:10px 0"><div class="summary-line"><b>รวมทั้งหมด</b><span class="summary-total">' + fmtMoney(grand) + '</span></div>';
+      if (badSplit) html += '<div class="summary-line danger-text"><span>⚠ มีรายการที่สัดส่วนรวมไม่เท่ากับ 100%</span></div>';
+    }
+    sum.innerHTML = html;
+    saveBtn.disabled = !anyComplete || badSplit;
+  }
+  updateSummary();
+
+  saveBtn.addEventListener('click', function () {
+    const complete = state.services.filter(function (s) { return s.activity && s.hairLength && s.quantity > 0; });
+    if (!complete.length) { toast('กรุณาเลือกบริการให้ครบอย่างน้อย 1 รายการ', 'error'); return; }
+    for (let i = 0; i < complete.length; i++) {
+      if (Math.abs(splitSum(complete[i]) - 100) > 0.01) { toast('สัดส่วนช่างของ "' + complete[i].activity.workType + '" ต้องรวมเป็น 100%', 'error'); return; }
+    }
+    saveBtn.disabled = true; saveBtn.textContent = 'กำลังบันทึก...';
+    apiLoad('createJobBatch', {
+      clientToken: uuid(), workDate: state.workDate, jobGroupId: state.jobGroupId,
+      customerName: state.customerName, note: state.note,
+      items: complete.map(function (s) {
+        return { activityId: s.activity.id, hairLength: s.hairLength, quantity: s.quantity,
+          workers: s.workers.map(function (w) { return { userId: w.userId, split: w.split }; }) };
+      })
+    }, { toast: true }).then(function () { navigate('my-jobs'); })
+      .catch(function () { saveBtn.disabled = false; saveBtn.textContent = 'บันทึกงาน'; });
+  });
+}
+
+/* ----------------------------- My Jobs --------------------------------- */
+App.screens['my-jobs'] = function (main) {
+  main.appendChild(h('div', { class: 'section-title' }, 'งานของฉัน'));
+  const filterBox = h('div', { class: 'chips' });
+  const body = h('div');
+  const statuses = [['', 'ทั้งหมด'], ['Pending', 'รอตรวจ'], ['Confirmed', 'ยืนยันแล้ว'], ['Rejected', 'ปฏิเสธ']];
+  let current = '';
+  statuses.forEach(function (s) {
+    const c = h('button', { class: 'chip' + (s[0] === current ? ' active' : '') }, s[1]);
+    c.addEventListener('click', function () { current = s[0]; filterBox.querySelectorAll('.chip').forEach(function (x) { x.classList.remove('active'); }); c.classList.add('active'); load(); });
+    filterBox.appendChild(c);
+  });
+  main.appendChild(filterBox); main.appendChild(body);
+  function load() { body.innerHTML = ''; apiLoad('getMyJobs', { status: current }).then(function (res) { renderMyJobs(body, res.data, load); }).catch(function () {}); }
+  load();
+};
+
+function renderMyJobs(body, steps, reload) {
+  if (!steps.length) { body.innerHTML = emptyState('📋', 'ยังไม่มีงาน'); return; }
+  const list = h('div', { class: 'list' });
+  steps.forEach(function (s) {
+    const it = h('div', { class: 'item' });
+    let html = '<div class="item-head"><div><div class="item-title">' + esc(s.workType) + '</div>' +
+      '<div class="item-sub">' + fmtDate(s.workDate) + ' · ' + esc(s.hairLength) + ' · ' + fmtNum(s.quantity) + ' มัด' +
+      (s.coWorkers > 0 ? ' · ร่วม ' + s.coWorkers + ' คน' : '') + '</div></div>' +
+      '<div style="text-align:right"><div class="item-amt">' + fmtMoney(s.workerAmount) + '</div>' + statusBadge(s.status) + '</div></div>';
+    if (s.status === 'Rejected' && s.rejectReason) html += '<div class="item-meta danger-text">เหตุผล: ' + esc(s.rejectReason) + '</div>';
+    it.innerHTML = html;
+    if (s.canEdit) {
+      const actions = h('div', { class: 'item-actions' });
+      const edit = h('button', { class: 'btn btn-ghost btn-sm' }, '✏️ แก้ไข');
+      edit.addEventListener('click', function () { openEditJob(s, reload); });
+      const del = h('button', { class: 'btn btn-ghost btn-sm danger-text' }, '🗑 ลบ');
+      del.addEventListener('click', function () {
+        confirmDialog('ลบงานนี้ใช่หรือไม่?', { danger: true, okText: 'ลบ' }).then(function (yes) {
+          if (!yes) return; apiLoad('deleteJob', { workId: s.workId }, { toast: true }).then(reload).catch(function () {});
+        });
+      });
+      actions.appendChild(edit); actions.appendChild(del); it.appendChild(actions);
+    }
+    list.appendChild(it);
+  });
+  body.appendChild(list);
+}
+
+function openEditJob(s, reload) {
+  const body = h('div');
+  const qtyI = h('input', { type: 'number', step: '0.5', min: '0.5', value: String(s.quantity), inputmode: 'decimal' });
+  body.appendChild(labelWrap('จำนวนมัด', qtyI));
+  const noteI = h('input', { type: 'text', value: s.note || '' });
+  body.appendChild(labelWrap('หมายเหตุ', noteI));
+  body.appendChild(h('div', { class: 'inline-note' }, 'หากต้องการเปลี่ยนประเภทงาน/ช่าง ให้ลบแล้วเพิ่มใหม่'));
+  const saveBtn = h('button', { class: 'btn btn-primary btn-block mt-16' }, 'บันทึกการแก้ไข');
+  body.appendChild(saveBtn);
+  const dlg = openSheet('แก้ไขงาน', body);
+  saveBtn.addEventListener('click', function () {
+    const q = Number(qtyI.value) || 0;
+    if (q <= 0) { toast('จำนวนมัดต้องมากกว่า 0', 'error'); return; }
+    apiLoad('updateJob', { workId: s.workId, quantity: q, note: noteI.value }, { toast: true })
+      .then(function () { dlg.close(); reload(); }).catch(function () {});
+  });
+}
+
+/* ------------------------------ Income --------------------------------- */
+App.screens['income'] = function (main) {
+  main.appendChild(h('div', { class: 'section-title' }, 'รายได้ของฉัน'));
+  const rangeBox = h('div'); main.appendChild(rangeBox);
+  const body = h('div'); main.appendChild(body);
+  rangeControl(rangeBox, 'thisMonth', function (range) {
+    body.innerHTML = '';
+    apiLoad('getWorkerDashboard', range).then(function (res) {
+      const d = res.data;
+      const g = h('div', { class: 'stat-grid' });
+      g.appendChild(h('div', { class: 'stat accent' }, '<div class="stat-label">ยืนยันแล้ว</div><div class="stat-value">' + fmtMoney(d.income.confirmed) + '</div>'));
+      g.appendChild(h('div', { class: 'stat tint-amber' }, '<div class="stat-label">รอยืนยัน</div><div class="stat-value">' + fmtMoney(d.income.pending) + '</div>'));
+      body.appendChild(g);
+      const g2 = h('div', { class: 'stat-grid' });
+      g2.appendChild(h('div', { class: 'stat tint-green' }, '<div class="stat-label">รวมถ้าผ่านทั้งหมด</div><div class="stat-value sm">' + fmtMoney(d.income.potentialTotal) + '</div>'));
+      g2.appendChild(h('div', { class: 'stat' }, '<div class="stat-label">งาน / มัด</div><div class="stat-value sm">' + fmtNum(d.counts.jobs) + ' / ' + fmtNum(d.counts.bundles) + '</div>'));
+      body.appendChild(g2);
+      body.appendChild(h('div', { class: 'inline-note' }, 'รายได้นับเฉพาะงานที่ผู้จัดการยืนยันแล้ว (Confirmed)'));
+    }).catch(function () {});
+  });
+};
+
+/* ------------------------------ Profile -------------------------------- */
+App.screens['profile'] = function (main) {
+  main.appendChild(h('div', { class: 'section-title' }, 'โปรไฟล์'));
+  const card = h('div', { class: 'card' });
+  card.innerHTML = '<div class="item-title">' + esc(App.user.name) + '</div>' +
+    '<div class="item-sub">ชื่อเล่น: ' + esc(App.user.nickname || '-') + '</div>' +
+    '<div class="item-sub">Username: ' + esc(App.user.userId) + '</div>' +
+    '<div class="item-sub">สิทธิ์: ' + esc(roleLabel(App.user.role)) + '</div>';
+  main.appendChild(card);
+  const pwCard = h('div', { class: 'card' });
+  pwCard.appendChild(h('div', { class: 'card-title' }, 'เปลี่ยนรหัสผ่าน'));
+  const oldI = h('input', { type: 'password', placeholder: 'รหัสผ่านเดิม' });
+  const newI = h('input', { type: 'password', placeholder: 'รหัสผ่านใหม่ (อย่างน้อย 4 ตัว)' });
+  pwCard.appendChild(labelWrap('รหัสผ่านเดิม', oldI));
+  pwCard.appendChild(labelWrap('รหัสผ่านใหม่', newI));
+  const pwBtn = h('button', { class: 'btn btn-primary btn-block' }, 'เปลี่ยนรหัสผ่าน');
+  pwBtn.addEventListener('click', function () {
+    apiLoad('changePassword', { oldPassword: oldI.value, newPassword: newI.value }, { toast: true })
+      .then(function () { oldI.value = ''; newI.value = ''; }).catch(function () {});
+  });
+  pwCard.appendChild(pwBtn); main.appendChild(pwCard);
+  const out = h('button', { class: 'btn btn-ghost btn-block danger-text' }, 'ออกจากระบบ');
+  out.addEventListener('click', function () { document.getElementById('logout-btn').click(); });
+  main.appendChild(out);
+};
+
+/* ===== ScreensManager ===== */
+/* =========================================================================
+ * MANAGER SCREENS
+ * ========================================================================= */
+
+/* ------------------------ Manager Home (all-in-one) -------------------- */
+App.screens['mgr-dashboard'] = function (main) {
+  main.appendChild(h('div', { class: 'section-title' }, 'ภาพรวมร้าน'));
+  const rangeBox = h('div'); main.appendChild(rangeBox);
+
+  // Controls: include-pending toggle + export
+  const ctrl = h('div', { class: 'card' });
+  const row = h('label', { class: 'toggle-row' });
+  row.appendChild(h('span', { class: 'toggle-text' }, 'รวมงานรอยืนยัน (Pending)'));
+  const sw = h('span', { class: 'switch' });
+  const pendCb = h('input', { type: 'checkbox' });
+  sw.appendChild(pendCb); sw.appendChild(h('span', { class: 'track' }));
+  row.appendChild(sw);
+  ctrl.appendChild(row);
+  const exportBtn = h('button', { class: 'btn btn-ghost btn-block mt-8' }, '⬇️ Export CSV');
+  ctrl.appendChild(exportBtn);
+  main.appendChild(ctrl);
+
+  const body = h('div'); main.appendChild(body);
+  let cur = { preset: 'today', start: '', end: '' };
+
+  function run() {
+    showLoading(true); body.innerHTML = '';
+    Promise.all([
+      api('getManagerDashboard', cur),
+      api('getReport', { preset: cur.preset, start: cur.start, end: cur.end, includePending: pendCb.checked })
+    ]).then(function (r) { renderMgrHome(body, r[0].data, r[1].data); })
+      .catch(function (e) { body.innerHTML = emptyState('⚠️', 'โหลดไม่สำเร็จ'); toast((e && e.message) || 'ผิดพลาด', 'error'); })
+      .finally(function () { showLoading(false); });
+  }
+  pendCb.addEventListener('change', run);
+  exportBtn.addEventListener('click', function () {
+    apiLoad('exportCsv', { preset: cur.preset, start: cur.start, end: cur.end, includePending: pendCb.checked })
+      .then(function (res) {
+        const okDl = downloadText(res.data.filename, res.data.csv, 'text/csv');
+        if (okDl) toast('ดาวน์โหลด ' + res.data.count + ' รายการ', 'success');
+        else { const ta = h('textarea', { rows: '10', style: 'width:100%' }); ta.value = res.data.csv; openSheet('คัดลอก CSV', ta); }
+      }).catch(function () {});
+  });
+
+  rangeControl(rangeBox, 'today', function (range) { cur = range; run(); });
+};
+
+function renderMgrHome(body, dash, rep) {
+  // Shop income
+  const g = h('div', { class: 'stat-grid' });
+  g.appendChild(h('div', { class: 'stat accent' }, '<div class="stat-label">รายได้ร้าน (ยืนยันแล้ว)</div><div class="stat-value">' + fmtMoney(dash.shop.confirmedIncome) + '</div>'));
+  g.appendChild(h('div', { class: 'stat tint-amber' }, '<div class="stat-label">รอยืนยัน</div><div class="stat-value">' + fmtMoney(dash.shop.pendingIncome) + '</div>'));
+  body.appendChild(g);
+
+  // Counts
+  const g2 = h('div', { class: 'stat-grid cols-3' });
+  const pend = h('div', { class: 'stat tint-amber', style: 'cursor:pointer' }, '<div class="stat-label">รอตรวจ</div><div class="stat-value sm">' + dash.counts.pendingJobs + '</div>');
+  pend.addEventListener('click', function () { navigate('pending'); });
+  g2.appendChild(pend);
+  g2.appendChild(h('div', { class: 'stat tint-green' }, '<div class="stat-label">ยืนยันแล้ว</div><div class="stat-value sm">' + dash.counts.confirmedJobs + '</div>'));
+  g2.appendChild(h('div', { class: 'stat tint-red' }, '<div class="stat-label">ปฏิเสธ</div><div class="stat-value sm">' + dash.counts.rejectedJobs + '</div>'));
+  body.appendChild(g2);
+
+  // Totals (jobs / bundles) from the report
+  const g3 = h('div', { class: 'stat-grid' });
+  g3.appendChild(h('div', { class: 'stat' }, '<div class="stat-label">จำนวนงาน</div><div class="stat-value sm">' + fmtNum(rep.totals.jobs) + '</div>'));
+  g3.appendChild(h('div', { class: 'stat' }, '<div class="stat-label">จำนวนมัด</div><div class="stat-value sm">' + fmtNum(rep.totals.bundles) + '</div>'));
+  body.appendChild(g3);
+
+  // Per-worker table
+  body.appendChild(h('div', { class: 'card-title mt-16' }, 'รายได้แต่ละช่าง'));
+  if (!dash.workers.length) { body.appendChild(h('div', {}, emptyState('👥', 'ไม่มีข้อมูลช่วงนี้'))); }
+  else {
+    const wrap = h('div', { class: 'table-wrap' });
+    let t = '<table class="data"><thead><tr><th>ช่าง</th><th class="num">ยืนยันแล้ว</th><th class="num">รอยืนยัน</th><th class="num">งาน</th><th class="num">มัด</th></tr></thead><tbody>';
+    dash.workers.forEach(function (w) {
+      t += '<tr><td>' + esc(w.name) + '</td><td class="num">' + fmtMoney(w.confirmed) + '</td><td class="num">' + fmtMoney(w.pending) +
+        '</td><td class="num">' + fmtNum(w.jobs) + '</td><td class="num">' + fmtNum(w.bundles) + '</td></tr>';
+    });
+    t += '</tbody></table>';
+    wrap.innerHTML = t; body.appendChild(wrap);
+  }
+
+  // Daily chart
+  body.appendChild(h('div', { class: 'card-title mt-16' }, 'รายได้รายวัน'));
+  const spark = h('div', { class: 'card' }); sparkChart(spark, rep.daily); body.appendChild(spark);
+
+  // Breakdowns
+  reportBlock(body, 'รายได้ตามประเภทงาน', rep.byWorkType, 'workType', true);
+  reportBlock(body, 'รายได้ตามหมวดงาน', rep.byCategory, 'category');
+  reportBlock(body, 'รายได้ตามขนาดผม', rep.byHair, 'hairLength', true);
+
+  const btn = h('button', { class: 'btn btn-ghost btn-block mt-8', style: 'margin-bottom:24px' }, '🔍 เรียกดู/กรองงานทั้งหมด');
+  btn.addEventListener('click', function () { navigate('jobs'); });
+  body.appendChild(btn);
+}
+
+/* ------------------------- Pending Review ------------------------------ */
+App.screens['pending'] = function (main) {
+  main.appendChild(h('div', { class: 'section-title' }, 'งานรอตรวจสอบ'));
+  const body = h('div'); main.appendChild(body);
+  loadPending(body);
+};
+
+function loadPending(body) {
+  body.innerHTML = '<div class="muted center" style="padding:30px">กำลังโหลด...</div>';
+  apiLoad('getPendingJobs', {}, { loading: false }).then(function (res) {
+    const d = res.data; body.innerHTML = '';
+    if (!d.steps.length) { body.innerHTML = emptyState('✅', 'ไม่มีงานรอตรวจสอบ'); return; }
+
+    const selected = {};
+    // Sticky action bar
+    const bar = h('div', { class: 'selectbar' });
+    const selAll = h('label', { class: 'pill-check' });
+    const selAllCb = h('input', { type: 'checkbox' });
+    selAll.appendChild(selAllCb); selAll.appendChild(h('span', {}, 'เลือกทั้งหมด'));
+    const count = h('span', { class: 'count-badge' }, '0');
+    bar.appendChild(selAll); bar.appendChild(h('span', { class: 'spacer', style: 'flex:1' }));
+    bar.appendChild(h('span', { class: 'muted' }, 'เลือก ')); bar.appendChild(count);
+    body.appendChild(bar);
+
+    const list = h('div', { class: 'list' }); body.appendChild(list);
+
+    function refreshCount() {
+      const n = Object.keys(selected).filter(function (k) { return selected[k]; }).length;
+      count.textContent = n;
+      actRow.style.display = n > 0 ? 'flex' : 'none';
+    }
+
+    d.steps.forEach(function (s) {
+      const it = h('div', { class: 'item' });
+      let shares = s.shares.map(function (sh) {
+        return esc(sh.workerName) + ' ' + sh.split + '% = ' + fmtMoney(sh.workerAmount);
+      }).join('<br>');
+      const cb = h('input', { type: 'checkbox' });
+      cb.addEventListener('change', function () { selected[s.workId] = cb.checked; refreshCount(); });
+      const head = h('div', { class: 'item-head' });
+      const left = h('div', {});
+      left.innerHTML = '<div class="item-title">' + esc(s.workType) + ' · ' + fmtNum(s.quantity) + ' มัด</div>' +
+        '<div class="item-sub">' + fmtDate(s.workDate) + ' · ' + esc(s.hairLength) +
+        (s.customerName ? ' · ' + esc(s.customerName) : '') + '</div>';
+      const right = h('div', { style: 'text-align:right' });
+      right.innerHTML = '<div class="item-amt">' + fmtMoney(s.grossAmount) + '</div>';
+      const cbWrap = h('label', { class: 'pill-check' }); cbWrap.appendChild(cb);
+      head.appendChild(cbWrap); head.appendChild(left); head.appendChild(h('span', { style: 'flex:1' }));
+      head.appendChild(right);
+      it.appendChild(head);
+      it.appendChild(h('div', { class: 'item-meta' }, shares + (s.note ? '<br><i>หมายเหตุ: ' + esc(s.note) + '</i>' : '')));
+
+      // per-step quick actions
+      const actions = h('div', { class: 'item-actions' });
+      const okB = h('button', { class: 'btn btn-success btn-sm' }, '✓ ยืนยัน');
+      okB.addEventListener('click', function () { doConfirm([s.workId]); });
+      const noB = h('button', { class: 'btn btn-ghost btn-sm danger-text' }, '✕ ปฏิเสธ');
+      noB.addEventListener('click', function () { doReject([s.workId]); });
+      actions.appendChild(okB); actions.appendChild(noB);
+      it.appendChild(actions);
+      list.appendChild(it);
+    });
+
+    selAllCb.addEventListener('change', function () {
+      list.querySelectorAll('input[type=checkbox]').forEach(function (cb) {
+        cb.checked = selAllCb.checked; cb.dispatchEvent(new Event('change'));
+      });
+    });
+
+    // Bulk action row
+    const actRow = h('div', { class: 'row mt-16', style: 'display:none;position:sticky;bottom:8px' });
+    const bulkOk = h('button', { class: 'btn btn-success', style: 'flex:1' }, '✓ ยืนยันที่เลือก');
+    const bulkNo = h('button', { class: 'btn btn-danger', style: 'flex:1' }, '✕ ปฏิเสธที่เลือก');
+    bulkOk.addEventListener('click', function () { doConfirm(selectedIds()); });
+    bulkNo.addEventListener('click', function () { doReject(selectedIds()); });
+    actRow.appendChild(bulkOk); actRow.appendChild(bulkNo);
+    body.appendChild(actRow);
+
+    function selectedIds() { return Object.keys(selected).filter(function (k) { return selected[k]; }); }
+    function doConfirm(ids) {
+      if (!ids.length) return;
+      confirmDialog('ยืนยันงาน ' + ids.length + ' รายการ? งานจะถูกนับเป็นรายได้ 100%', { okText: 'ยืนยัน' }).then(function (yes) {
+        if (!yes) return;
+        apiLoad('confirmJobs', { workIds: ids }, { toast: true }).then(function () { loadPending(body); }).catch(function () {});
+      });
+    }
+    function doReject(ids) {
+      if (!ids.length) return;
+      const body2 = h('div');
+      const r = h('textarea', { rows: '2', placeholder: 'เช่น จำนวนมัดไม่ถูกต้อง / เลือกประเภทงานผิด' });
+      body2.appendChild(labelWrap('เหตุผลที่ปฏิเสธ ' + ids.length + ' รายการ', r));
+      const b = h('button', { class: 'btn btn-danger btn-block mt-8' }, 'ปฏิเสธงาน');
+      body2.appendChild(b);
+      const dlg = openSheet('ปฏิเสธงาน', body2);
+      b.addEventListener('click', function () {
+        if (!r.value.trim()) { toast('กรุณาระบุเหตุผล', 'error'); return; }
+        apiLoad('rejectJobs', { workIds: ids, reason: r.value.trim() }, { toast: true })
+          .then(function () { dlg.close(); loadPending(body); }).catch(function () {});
+      });
+    }
+  }).catch(function () { body.innerHTML = emptyState('⚠️', 'โหลดไม่สำเร็จ'); });
+}
+
+/* --------------------- All Jobs (filter browser) ----------------------- */
+App.screens['jobs'] = function (main) {
+  main.appendChild(h('div', { class: 'section-title' }, 'รายการงานทั้งหมด'));
+  const rangeBox = h('div'); main.appendChild(rangeBox);
+  const filterCard = h('div', { class: 'card' }); main.appendChild(filterCard);
+  const body = h('div'); main.appendChild(body);
+
+  const filters = { preset: 'thisMonth', start: '', end: '', worker: '', category: '', status: '', search: '' };
+
+  // worker + category selects (from form options)
+  const workerSel = h('select'); workerSel.innerHTML = '<option value="">ช่างทุกคน</option>';
+  const catSel = h('select'); catSel.innerHTML = '<option value="">ทุกประเภทงาน</option>';
+  const statusSel = h('select');
+  statusSel.innerHTML = '<option value="">ทุกสถานะ</option><option value="Pending">รอตรวจ</option><option value="Confirmed">ยืนยันแล้ว</option><option value="Rejected">ปฏิเสธ</option>';
+  const searchI = h('input', { type: 'text', placeholder: '🔍 ค้นหา (ลูกค้า/ช่าง/งาน/Job Group)' });
+
+  loadFormOptions().then(function (opts) {
+    opts.workers.forEach(function (w) { workerSel.appendChild(h('option', { value: w.userId }, esc(w.nickname))); });
+    Object.keys(opts.categories).forEach(function (c) { catSel.appendChild(h('option', { value: c }, esc(c))); });
+  });
+
+  filterCard.appendChild(labelWrap('ช่าง', workerSel));
+  filterCard.appendChild(labelWrap('ประเภทงาน', catSel));
+  filterCard.appendChild(labelWrap('สถานะ', statusSel));
+  filterCard.appendChild(labelWrap('ค้นหา', searchI));
+
+  function run() {
+    body.innerHTML = '';
+    apiLoad('getJobs', {
+      preset: filters.preset, start: filters.start, end: filters.end,
+      worker: workerSel.value, category: catSel.value, status: statusSel.value, search: searchI.value
+    }).then(function (res) { renderJobsTable(body, res.data); }).catch(function () {});
+  }
+  [workerSel, catSel, statusSel].forEach(function (el) { el.addEventListener('change', run); });
+  let tmr; searchI.addEventListener('input', function () { clearTimeout(tmr); tmr = setTimeout(run, 400); });
+
+  rangeControl(rangeBox, 'thisMonth', function (range) { filters.preset = range.preset; filters.start = range.start; filters.end = range.end; run(); });
+};
+
+function renderJobsTable(body, d) {
+  body.appendChild(h('div', { class: 'muted', style: 'margin-bottom:8px' }, 'พบ ' + d.count + ' งาน'));
+  if (!d.steps.length) { body.appendChild(h('div', {}, emptyState('🔍', 'ไม่พบงานตามเงื่อนไข'))); return; }
+  const wrap = h('div', { class: 'table-wrap' });
+  let t = '<table class="data"><thead><tr><th>วันที่</th><th>งาน</th><th>ขนาด</th><th class="num">มัด</th><th>ช่าง</th><th class="num">ค่าแรง</th><th>สถานะ</th></tr></thead><tbody>';
+  d.steps.forEach(function (s) {
+    const workers = s.shares.map(function (sh) { return esc(sh.workerName) + ' (' + sh.split + '%)'; }).join(', ');
+    t += '<tr><td>' + fmtDate(s.workDate) + '</td><td>' + esc(s.workType) + '</td><td>' + esc(s.hairLength) +
+      '</td><td class="num">' + fmtNum(s.quantity) + '</td><td>' + workers + '</td><td class="num">' + fmtMoney(s.grossAmount) +
+      '</td><td>' + statusBadge(s.status) + '</td></tr>';
+  });
+  t += '</tbody></table>';
+  wrap.innerHTML = t; body.appendChild(wrap);
+}
+
+/* ===== ScreensSetup ===== */
+/* =========================================================================
+ * SETUP SCREENS (manager/admin): rates, hair lengths, workers
+ * ========================================================================= */
+
+/* ------------------------------ Setup ---------------------------------- */
+App.screens['setup'] = function (main) {
+  main.appendChild(h('div', { class: 'section-title' }, 'ตั้งค่าระบบ'));
+  const tabs = h('div', { class: 'chips' });
+  const body = h('div');
+  const tabDefs = [['rates', 'งานและค่าแรง'], ['hair', 'ขนาดผม']];
+  let cur = 'rates';
+  tabDefs.forEach(function (t) {
+    const c = h('button', { class: 'chip' + (t[0] === cur ? ' active' : '') }, t[1]);
+    c.addEventListener('click', function () {
+      cur = t[0]; tabs.querySelectorAll('.chip').forEach(function (x) { x.classList.remove('active'); });
+      c.classList.add('active'); render();
+    });
+    tabs.appendChild(c);
+  });
+  main.appendChild(tabs); main.appendChild(body);
+
+  function render() {
+    body.innerHTML = '';
+    if (cur === 'rates') renderRates(body);
+    else renderHair(body);
+  }
+  render();
+};
+
+function renderRates(body) {
+  const addBtn = h('button', { class: 'btn btn-primary btn-block' }, '＋ เพิ่มประเภทงาน');
+  addBtn.addEventListener('click', function () { openRateEditor(null, function () { renderRates(body); }); });
+  body.appendChild(addBtn);
+  const listBox = h('div', { class: 'mt-16' }); body.appendChild(listBox);
+  listBox.innerHTML = '<div class="muted center" style="padding:20px">กำลังโหลด...</div>';
+
+  apiLoad('listRates', {}, { loading: false }).then(function (res) {
+    listBox.innerHTML = '';
+    const byCat = {};
+    res.data.forEach(function (a) { (byCat[a.category] = byCat[a.category] || []).push(a); });
+    Object.keys(byCat).forEach(function (cat) {
+      listBox.appendChild(h('div', { class: 'card-title mt-16' }, cat));
+      const list = h('div', { class: 'list' });
+      byCat[cat].forEach(function (a) {
+        const it = h('div', { class: 'item' });
+        it.innerHTML = '<div class="item-head"><div><div class="item-title">' + esc(a.workType) +
+          (a.active ? '' : ' <span class="badge badge-rejected">ปิด</span>') + '</div>' +
+          '<div class="item-sub">' + fmtMoney(a.rate) + ' / ' + esc(a.unit) + ' · ' + esc(a.id) + '</div></div></div>';
+        const act = h('div', { class: 'item-actions' });
+        const ed = h('button', { class: 'btn btn-ghost btn-sm' }, '✏️ แก้ไข');
+        ed.addEventListener('click', function () { openRateEditor(a, function () { renderRates(body); }); });
+        const tg = h('button', { class: 'btn btn-ghost btn-sm' }, a.active ? '🚫 ปิด' : '✅ เปิด');
+        tg.addEventListener('click', function () {
+          apiLoad('rateAction', { id: a.id, action: 'toggle' }, { toast: true }).then(function () { renderRates(body); }).catch(function () {});
+        });
+        const dl = h('button', { class: 'btn btn-ghost btn-sm danger-text' }, '🗑');
+        dl.addEventListener('click', function () {
+          confirmDialog('ลบ "' + a.workType + '"? งานเก่ายังคงใช้ค่าแรงเดิมที่บันทึกไว้', { danger: true, okText: 'ลบ' }).then(function (y) {
+            if (!y) return;
+            apiLoad('rateAction', { id: a.id, action: 'delete' }, { toast: true }).then(function () { renderRates(body); }).catch(function () {});
+          });
+        });
+        act.appendChild(ed); act.appendChild(tg); act.appendChild(dl);
+        it.appendChild(act); list.appendChild(it);
+      });
+      listBox.appendChild(list);
+    });
+  }).catch(function () { listBox.innerHTML = emptyState('⚠️', 'โหลดไม่สำเร็จ'); });
+}
+
+function openRateEditor(a, reload) {
+  const body = h('div');
+  const catI = h('input', { type: 'text', value: a ? a.category : '', placeholder: 'เช่น งานต่อผม' });
+  const wtI = h('input', { type: 'text', value: a ? a.workType : '', placeholder: 'เช่น ต่อขนนก' });
+  const rateI = h('input', { type: 'number', step: '1', min: '0', value: a ? a.rate : '', inputmode: 'decimal' });
+  const unitI = h('input', { type: 'text', value: a ? a.unit : 'มัด' });
+  body.appendChild(labelWrap('หมวดงาน', catI));
+  body.appendChild(labelWrap('ประเภทงาน', wtI));
+  body.appendChild(labelWrap('ค่าแรงต่อหน่วย (บาท)', rateI));
+  body.appendChild(labelWrap('หน่วย', unitI));
+  if (a) body.appendChild(h('div', { class: 'inline-note' }, 'การเปลี่ยนค่าแรงมีผลกับงานใหม่เท่านั้น งานเก่าใช้ค่าเดิมที่บันทึกไว้'));
+  const save = h('button', { class: 'btn btn-primary btn-block mt-16' }, 'บันทึก');
+  body.appendChild(save);
+  const dlg = openSheet(a ? 'แก้ไขประเภทงาน' : 'เพิ่มประเภทงาน', body);
+  save.addEventListener('click', function () {
+    apiLoad('saveRate', {
+      id: a ? a.id : '', category: catI.value, workType: wtI.value, rate: rateI.value, unit: unitI.value
+    }, { toast: true }).then(function () { dlg.close(); reload(); }).catch(function () {});
+  });
+}
+
+function renderHair(body) {
+  body.innerHTML = '<div class="muted center" style="padding:20px">กำลังโหลด...</div>';
+  apiLoad('getHairLengths', {}, { loading: false }).then(function (res) {
+    body.innerHTML = '';
+    let lengths = res.data.slice();
+    const card = h('div', { class: 'card' });
+    card.appendChild(h('div', { class: 'card-title' }, 'ขนาดผมที่เลือกได้'));
+    const chipsBox = h('div', { class: 'chips', style: 'flex-wrap:wrap' });
+    function renderChips() {
+      chipsBox.innerHTML = '';
+      lengths.forEach(function (hl, i) {
+        const c = h('span', { class: 'chip active', style: 'cursor:default' }, esc(hl) + ' ');
+        const x = h('button', { class: 'ghost-btn', style: 'padding:0 0 0 6px;color:#fff' }, '✕');
+        x.addEventListener('click', function () { lengths.splice(i, 1); renderChips(); });
+        c.appendChild(x); chipsBox.appendChild(c);
+      });
+    }
+    renderChips();
+    card.appendChild(chipsBox);
+    const addRow = h('div', { class: 'row mt-8' });
+    const inp = h('input', { type: 'text', placeholder: 'เช่น 50 นิ้ว' });
+    const addB = h('button', { class: 'btn btn-ghost btn-sm' }, 'เพิ่ม');
+    addB.addEventListener('click', function () {
+      const v = inp.value.trim(); if (!v) return;
+      lengths.push(v); inp.value = ''; renderChips();
+    });
+    addRow.appendChild(inp); addRow.appendChild(addB);
+    card.appendChild(addRow);
+    const save = h('button', { class: 'btn btn-primary btn-block mt-16' }, 'บันทึกขนาดผม');
+    save.addEventListener('click', function () {
+      apiLoad('saveHairLengths', { lengths: lengths }, { toast: true }).then(function () { App.formOptions = null; }).catch(function () {});
+    });
+    card.appendChild(save);
+    body.appendChild(card);
+  }).catch(function () { body.innerHTML = emptyState('⚠️', 'โหลดไม่สำเร็จ'); });
+}
+
+/* ---------------------------- Workers ---------------------------------- */
+App.screens['workers'] = function (main) {
+  main.appendChild(h('div', { class: 'section-title' }, 'จัดการช่าง'));
+  const body = h('div'); main.appendChild(body);
+  renderWorkers(body);
+};
+
+function renderWorkers(body) {
+  const addBtn = h('button', { class: 'btn btn-primary btn-block' }, '＋ เพิ่มช่างใหม่');
+  addBtn.addEventListener('click', function () { openWorkerEditor(null, function () { renderWorkers(body); }); });
+  body.innerHTML = ''; body.appendChild(addBtn);
+  const listBox = h('div', { class: 'list mt-16' }); body.appendChild(listBox);
+  listBox.innerHTML = '<div class="muted center" style="padding:20px">กำลังโหลด...</div>';
+
+  apiLoad('listWorkers', {}, { loading: false }).then(function (res) {
+    listBox.innerHTML = '';
+    res.data.forEach(function (u) {
+      const it = h('div', { class: 'item' });
+      it.innerHTML = '<div class="item-head"><div><div class="item-title">' + esc(u.nickname || u.name) +
+        (u.active ? '' : ' <span class="badge badge-rejected">ปิด</span>') + '</div>' +
+        '<div class="item-sub">' + esc(u.name) + ' · ' + esc(u.userId) + ' · ' + esc(roleLabel(u.role)) + '</div></div></div>';
+      const act = h('div', { class: 'item-actions' });
+      const ed = h('button', { class: 'btn btn-ghost btn-sm' }, '✏️ แก้ไข');
+      ed.addEventListener('click', function () { openWorkerEditor(u, function () { renderWorkers(body); }); });
+      const tg = h('button', { class: 'btn btn-ghost btn-sm' }, u.active ? '🚫 ปิดใช้งาน' : '✅ เปิดใช้งาน');
+      tg.addEventListener('click', function () {
+        apiLoad('setWorkerActive', { userId: u.userId, active: !u.active }, { toast: true }).then(function () { renderWorkers(body); }).catch(function () {});
+      });
+      act.appendChild(ed); act.appendChild(tg);
+      it.appendChild(act); listBox.appendChild(it);
+    });
+  }).catch(function () { listBox.innerHTML = emptyState('⚠️', 'โหลดไม่สำเร็จ'); });
+}
+
+function openWorkerEditor(u, reload) {
+  const isNew = !u;
+  const body = h('div');
+  const userI = h('input', { type: 'text', value: u ? u.userId : '', placeholder: 'สำหรับ Login' });
+  if (!isNew) userI.setAttribute('disabled', 'disabled');
+  const nameI = h('input', { type: 'text', value: u ? u.name : '' });
+  const nickI = h('input', { type: 'text', value: u ? u.nickname : '' });
+  const levelSel = h('select');
+  [['ช่าง', 'ช่าง (worker)'], ['ผู้จัดการ', 'ผู้จัดการ (manager)'], ['เจ้าของ', 'เจ้าของ (admin)']].forEach(function (o) {
+    const opt = h('option', { value: o[0] }, o[1]);
+    if (u && (u.level === o[0] || roleLabel(u.role) === roleLabel(normalizeClientRole(o[0])))) opt.selected = true;
+    levelSel.appendChild(opt);
+  });
+  const passI = h('input', { type: 'text', placeholder: isNew ? 'กำหนดรหัสผ่าน' : 'เว้นว่างถ้าไม่เปลี่ยน' });
+
+  body.appendChild(labelWrap('Username', userI));
+  body.appendChild(labelWrap('ชื่อช่าง', nameI));
+  body.appendChild(labelWrap('ชื่อเล่น', nickI));
+  body.appendChild(labelWrap('ระดับสิทธิ์', levelSel));
+  body.appendChild(labelWrap(isNew ? 'รหัสผ่าน' : 'เปลี่ยนรหัสผ่าน', passI));
+
+  const save = h('button', { class: 'btn btn-primary btn-block mt-16' }, 'บันทึก');
+  body.appendChild(save);
+  const dlg = openSheet(isNew ? 'เพิ่มช่างใหม่' : 'แก้ไขช่าง', body);
+  save.addEventListener('click', function () {
+    apiLoad('saveWorker', {
+      userId: userI.value, name: nameI.value, nickname: nickI.value,
+      level: levelSel.value, newPassword: passI.value,
+      active: u ? u.active : true
+    }, { toast: true }).then(function () { dlg.close(); reload(); }).catch(function () {});
+  });
+}
+
+/* Map a Thai level to its canonical role label (client-side helper for the
+ * select preselect). Keep in sync with server CONFIG.ROLE_ALIASES. */
+function normalizeClientRole(level) {
+  const m = { 'ช่าง': 'worker', 'ผู้จัดการ': 'manager', 'เจ้าของ': 'admin' };
+  return m[level] || 'worker';
+}
+
+/* ===== ScreensReports ===== */
+/* =========================================================================
+ * REPORTS SCREEN (manager/admin)
+ * ========================================================================= */
+
+App.screens['reports'] = function (main) {
+  main.appendChild(h('div', { class: 'section-title' }, 'รายงาน'));
+  const rangeBox = h('div'); main.appendChild(rangeBox);
+
+  // include-pending toggle + export
+  const ctrl = h('div', { class: 'card' });
+  const pendLabel = h('label', { class: 'pill-check' });
+  const pendCb = h('input', { type: 'checkbox' });
+  pendLabel.appendChild(pendCb); pendLabel.appendChild(h('span', {}, 'รวมงานที่รอยืนยัน (Pending) ในรายงาน'));
+  ctrl.appendChild(pendLabel);
+  const exportBtn = h('button', { class: 'btn btn-ghost btn-block mt-8' }, '⬇️ Export CSV (เปิดใน Excel ได้)');
+  ctrl.appendChild(exportBtn);
+  main.appendChild(ctrl);
+
+  const body = h('div'); main.appendChild(body);
+  let curRange = { preset: 'thisMonth', start: '', end: '' };
+
+  function run() {
+    body.innerHTML = '';
+    apiLoad('getReport', { preset: curRange.preset, start: curRange.start, end: curRange.end, includePending: pendCb.checked })
+      .then(function (res) { renderReport(body, res.data); }).catch(function () {});
+  }
+  pendCb.addEventListener('change', run);
+  exportBtn.addEventListener('click', function () {
+    apiLoad('exportCsv', { preset: curRange.preset, start: curRange.start, end: curRange.end, includePending: pendCb.checked }, { loading: true })
+      .then(function (res) {
+        const okDl = downloadText(res.data.filename, res.data.csv, 'text/csv');
+        if (okDl) toast('ดาวน์โหลด ' + res.data.count + ' รายการ', 'success');
+        else { // fallback: show in a sheet to copy
+          const ta = h('textarea', { rows: '10', style: 'width:100%' }); ta.value = res.data.csv;
+          openSheet('คัดลอกข้อมูล CSV', ta);
+        }
+      }).catch(function () {});
+  });
+
+  rangeControl(rangeBox, 'thisMonth', function (range) { curRange = range; run(); });
+};
+
+function renderReport(body, d) {
+  const g = h('div', { class: 'stat-grid cols-3' });
+  g.appendChild(h('div', { class: 'stat accent' }, '<div class="stat-label">รายได้รวม</div><div class="stat-value sm">' + fmtMoney(d.totals.income) + '</div>'));
+  g.appendChild(h('div', { class: 'stat' }, '<div class="stat-label">จำนวนงาน</div><div class="stat-value sm">' + fmtNum(d.totals.jobs) + '</div>'));
+  g.appendChild(h('div', { class: 'stat' }, '<div class="stat-label">จำนวนมัด</div><div class="stat-value sm">' + fmtNum(d.totals.bundles) + '</div>'));
+  body.appendChild(g);
+  body.appendChild(h('div', { class: 'inline-note' }, d.includePending ? 'รวมงาน Confirmed + Pending' : 'นับเฉพาะงาน Confirmed'));
+
+  // Daily chart
+  body.appendChild(h('div', { class: 'card-title mt-16' }, 'รายได้รายวัน'));
+  const spark = h('div', { class: 'card' }); sparkChart(spark, d.daily); body.appendChild(spark);
+
+  reportBlock(body, 'รายได้แต่ละช่าง', d.byWorker, 'name');
+  reportBlock(body, 'รายได้ตามประเภทงาน', d.byWorkType, 'workType', true);
+  reportBlock(body, 'รายได้ตามหมวดงาน', d.byCategory, 'category');
+  reportBlock(body, 'รายได้ตามขนาดผม', d.byHair, 'hairLength', true);
+}
+
+function reportBlock(body, title, items, labelKey, alt) {
+  body.appendChild(h('div', { class: 'card-title mt-16' }, title));
+  const c = h('div', { class: 'card' });
+  barChart(c, items, labelKey, 'amount', alt);
+  body.appendChild(c);
+}
+
+</script>
+
+</body>
+</html>
