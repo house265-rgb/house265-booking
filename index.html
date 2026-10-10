@@ -429,9 +429,8 @@ function initLiff(){
   }catch(e){}
 }
 function applyLineProfile(p){
-  var nm = document.getElementById('cName'), ln = document.getElementById('cLine');
-  if (nm && !nm.value) nm.value = p.displayName || '';
-  if (ln && !ln.value) ln.value = p.displayName || '';   // ให้แอดมินเห็นชื่อ LINE ในคอลัมน์ไลน์
+  var ln = document.getElementById('cLine');
+  if (ln && !ln.value) ln.value = p.displayName || '';   // เติมเฉพาะช่อง LINE · ช่องชื่อลูกค้าให้กรอกชื่อจริงเอง
   var hi = document.getElementById('liffHi');
   if (hi){
     if (p.pictureUrl){ var av=document.getElementById('liffAv'); av.style.backgroundImage='url("'+p.pictureUrl+'")'; }
