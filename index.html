@@ -590,7 +590,8 @@ function buildColors(){
     var q=colorStock(c.id), enough=(!CAT.stockConfigured)||(q>=need&&need>0);
     var w=document.createElement('div'); w.className='sw'+(STATE.colorId===c.id?' sel':'')+(enough?'':' dis');
     var qtxt = CAT.stockConfigured ? ('<br><span style="color:'+(enough?'var(--faint)':'var(--crit)')+';font-size:10px">เหลือ '+fmtNum(q)+(enough?'':' · ไม่พอ')+'</span>') : '';
-    w.innerHTML='<div class="dot" style="background:'+c.hex+'"></div><div class="nm">'+c.name+qtxt+'</div>';
+    var sur=Number(c.surcharge)||0; var surtxt = sur>0 ? ('<br><span style="color:var(--gold-soft);font-size:10px">+'+fmt(sur)+'/มัด</span>') : '';
+    w.innerHTML='<div class="dot" style="background:'+c.hex+'"></div><div class="nm">'+c.name+surtxt+qtxt+'</div>';
     if(enough) w.onclick=function(){ STATE.colorId=c.id;
       [].forEach.call(box.children,function(x){x.classList.remove('sel');}); w.classList.add('sel'); refreshNav(); };
     box.appendChild(w);
@@ -684,20 +685,25 @@ function computeQuote(){
   function remDur(r,b){ var k=String(b); if(r&&r.dur[k]!=null&&r.dur[k]!=='') return Number(r.dur[k]); return r?Math.round(Number(r.dur['2'])*(b/2)):0; }
   var rm=isMove()?null:byId(CAT.removals,STATE.removalId);   // ขยับปมไม่คิดค่าถอด
   var rmP=(rm&&rm.id!=='NONE')?rm.price:0;
+  // ค่าสีเพิ่มต่อมัด (ใช้ผมร้าน/เพิ่มผม) · นำผมมาเองไม่คิด
+  var colObj=(!isByob() && STATE.colorId)?byId(CAT.colors,STATE.colorId):null;
+  var colorSur=colObj?Math.round((Number(colObj.surcharge)||0)*(STATE.bundle||0)):0;
+  var colorLabel=(colObj&&colorSur>0)?('สี'+colObj.name):'';
   if(isMove()){
     var baseM=tech.movePrice, hasAdd=STATE.size && STATE.bundle, add=hasAdd?priceOf(STATE.size)*STATE.bundle:0;
+    var csM=hasAdd?colorSur:0;
     var durM=tech.moveBaseMin + (hasAdd?Math.round(tech.perHalfBundleMin*(STATE.bundle/0.5)):0);
-    QUOTE=mkQuote(Math.round(baseM+add), durM, {base:baseM,removalPrice:0,removalName:'',addPrice:add,addLabel:hasAdd?('เพิ่มผม '+STATE.size+' '+STATE.bundle+' มัด'):''});
+    QUOTE=mkQuote(Math.round(baseM+add+csM), durM, {base:baseM,removalPrice:0,removalName:'',addPrice:add,addLabel:hasAdd?('เพิ่มผม '+STATE.size+' '+STATE.bundle+' มัด'):'',colorPrice:csM,colorLabel:csM?colorLabel:''});
   } else if(isByob()){
     if(!STATE.size||!STATE.bundle){ QUOTE=null; return; }
     var baseB=Number(tech.byobBase||0)+Number(tech.byobPerBundle||0)*STATE.bundle;
     var durB=Math.round(tech.perHalfBundleMin*(STATE.bundle/0.5)) + (rm?remDur(rm,STATE.bundle):0);
-    QUOTE=mkQuote(Math.round(baseB+rmP), durB, {base:baseB,removalPrice:rmP,removalName:rm?rm.name:'',addPrice:0,addLabel:''});
+    QUOTE=mkQuote(Math.round(baseB+rmP), durB, {base:baseB,removalPrice:rmP,removalName:rm?rm.name:'',addPrice:0,addLabel:'',colorPrice:0,colorLabel:''});
   } else {
     if(!STATE.size||!STATE.bundle){ QUOTE=null; return; }
     var baseN=priceOf(STATE.size)*STATE.bundle;
     var durN=Math.round(tech.perHalfBundleMin*(STATE.bundle/0.5)) + (rm?remDur(rm,STATE.bundle):0);
-    QUOTE=mkQuote(Math.round(baseN+rmP), durN, {base:baseN,removalPrice:rmP,removalName:rm?rm.name:'',addPrice:0,addLabel:''});
+    QUOTE=mkQuote(Math.round(baseN+rmP+colorSur), durN, {base:baseN,removalPrice:rmP,removalName:rm?rm.name:'',addPrice:0,addLabel:'',colorPrice:colorSur,colorLabel:colorLabel});
   }
 }
 function mkQuote(total,dur,extra){
@@ -706,7 +712,7 @@ function mkQuote(total,dur,extra){
   var deposit=isFixed?Math.round(dVal):Math.round(total*dVal/100);
   var q={ total:total, durationMin:dur, deposit:deposit, remain:Math.max(0,total-deposit),
     depositLabel: isFixed?'มัดจำคงที่':('มัดจำ '+dVal+'%') };
-  if(extra){ q.base=extra.base; q.removalPrice=extra.removalPrice||0; q.removalName=extra.removalName||''; q.addPrice=extra.addPrice||0; q.addLabel=extra.addLabel||''; }
+  if(extra){ q.base=extra.base; q.removalPrice=extra.removalPrice||0; q.removalName=extra.removalName||''; q.addPrice=extra.addPrice||0; q.addLabel=extra.addLabel||''; q.colorPrice=extra.colorPrice||0; q.colorLabel=extra.colorLabel||''; }
   return q;
 }
 
@@ -773,6 +779,7 @@ function buildSummary(){
   var ph='<div class="pr"><span>ค่าบริการ</span><b>'+fmt(QUOTE.base||0)+' ฿</b></div>';
   if(QUOTE.removalPrice>0) ph+='<div class="pr"><span>งานถอด ('+QUOTE.removalName+')</span><b>+'+fmt(QUOTE.removalPrice)+' ฿</b></div>';
   if(QUOTE.addPrice>0) ph+='<div class="pr"><span>'+(QUOTE.addLabel||'เพิ่มผม')+'</span><b>+'+fmt(QUOTE.addPrice)+' ฿</b></div>';
+  if(QUOTE.colorPrice>0) ph+='<div class="pr"><span>'+(QUOTE.colorLabel||'ค่าสีเพิ่ม')+'</span><b>+'+fmt(QUOTE.colorPrice)+' ฿</b></div>';
   ph+='<div class="pr" style="border-top:1px solid var(--line-soft);margin-top:4px;padding-top:8px"><span>มูลค่างานบริการรวม</span><b>'+fmt(QUOTE.total)+' ฿</b></div>'+
     '<div class="pr dep"><span>'+QUOTE.depositLabel+' (จ่ายตอนนี้)</span><b style="color:var(--gold-soft)">'+fmt(QUOTE.deposit)+' ฿</b></div>'+
     '<div class="pr total"><span>ยอดคงเหลือจ่ายหน้าร้าน</span><b>'+fmt(QUOTE.remain)+' ฿</b></div>';
