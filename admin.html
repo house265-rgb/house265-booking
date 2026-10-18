@@ -16,14 +16,18 @@
   h1{font-family:var(--fd);font-weight:700;letter-spacing:.1em;font-size:24px;margin:0;
     background:linear-gradient(180deg,var(--gold-soft),var(--gold-dim));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
   .eyebrow{font-family:var(--fm);font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
-  input,button{font-family:var(--f);font-size:15px;border-radius:10px}
-  input{width:100%;padding:14px;border:1px solid var(--line-soft);background:var(--panel);color:var(--fg);outline:none;margin-bottom:10px}
-  input:focus{border-color:var(--gold)} button{cursor:pointer;border:none}
+  input,button,select,textarea{font-family:var(--f);font-size:15px;border-radius:10px}
+  button{cursor:pointer;border:none}
   .btn{background:linear-gradient(100deg,var(--gold-dim),var(--gold-soft));color:#1a1a1a;padding:14px 18px;font-weight:500;width:100%}
-  .gate{max-width:360px;margin:60px auto;text-align:center}
   .card{background:var(--panel);border:1px solid var(--line-soft);border-radius:14px;padding:16px;margin-bottom:12px}
   .ch{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.ch b{font-weight:500}
-  .refresh{background:none;border:1px solid var(--line);color:var(--muted);padding:9px 14px;font-size:13px}
+  .refresh{background:none;border:1px solid var(--line);color:var(--muted);padding:9px 14px;font-size:13px;border-radius:10px}
+  /* top page nav */
+  .topnav{position:sticky;top:0;z-index:30;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:5px;padding:5px;
+    background:rgba(27,26,22,.92);backdrop-filter:blur(10px);border:1px solid var(--line-soft);border-radius:15px;margin:14px 0 16px}
+  .topnav button{background:transparent;color:var(--muted);padding:11px 0;border-radius:11px;font-weight:500;font-size:14px;display:flex;align-items:center;justify-content:center;gap:7px}
+  .topnav button.on{background:linear-gradient(135deg,var(--gold-dim),var(--gold-soft));color:#1a1a1a}
+  .topnav button .ic{font-size:16px}
   /* segmented */
   .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;padding:4px;background:var(--panel-2);border-radius:14px;margin-bottom:12px}
   .seg button{background:transparent;color:var(--muted);padding:9px 0;border-radius:10px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:6px}
@@ -35,12 +39,19 @@
   .stat .n{font-family:var(--fm);font-size:26px;font-weight:600;color:var(--gold-soft);line-height:1;letter-spacing:-.01em}
   .stat .l{font-size:11px;color:var(--faint);margin-top:7px}
   .stat.accent{border-color:var(--gold-dim);background:linear-gradient(180deg,rgba(200,167,90,.07),transparent)}
-  /* tech toggles */
-  .techbar{display:flex;flex-wrap:wrap;gap:8px}
-  .techtog{display:flex;align-items:center;gap:8px;border:1px solid var(--line-soft);background:var(--panel-2);border-radius:999px;padding:7px 13px;font-size:13px;cursor:pointer}
-  .techtog .led{width:8px;height:8px;border-radius:50%;background:var(--faint)}.techtog.on .led{background:var(--ok)}
-  .techtog.on{border-color:var(--gold-dim);color:var(--gold-soft)}
-  /* tabs */
+  /* iOS-style switch */
+  .switch{position:relative;width:48px;height:28px;flex:0 0 auto}
+  .switch input{opacity:0;width:0;height:0;position:absolute}
+  .switch .tk{position:absolute;inset:0;background:var(--line);border-radius:999px;transition:.22s;cursor:pointer}
+  .switch .tk::before{content:'';position:absolute;width:22px;height:22px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.22s;box-shadow:0 1px 3px rgba(0,0,0,.5)}
+  .switch input:checked + .tk{background:linear-gradient(100deg,var(--gold-dim),var(--gold-soft))}
+  .switch input:checked + .tk::before{transform:translateX(20px)}
+  /* tech status rows */
+  .trow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 2px;border-top:1px solid var(--line-soft)}
+  .trow:first-child{border-top:none}
+  .trow .tn{font-size:15px;font-weight:400}.trow .tnote{font-size:11px;color:var(--faint);margin-top:1px}
+  .trow .st{font-size:11px;margin-top:2px}.trow .st.on{color:var(--ok)}.trow .st.off{color:var(--faint)}
+  /* tabs (sub) */
   .tabs{display:flex;gap:8px;margin-bottom:6px}
   .tabs button{flex:1;padding:11px 0;border-radius:12px;border:1px solid var(--line-soft);background:var(--panel);color:var(--muted);font-weight:500}
   .tabs button.on{background:var(--elev);color:var(--gold-soft);border-color:var(--gold-dim)}
@@ -54,7 +65,6 @@
   .daychip .cnt{margin-top:3px;font-size:10.5px;padding:1px 7px;border-radius:999px;background:var(--elev);color:var(--muted);display:inline-block}
   .daychip.on .cnt{background:rgba(0,0,0,.2);color:#1a1a1a}
   .daychip .tag{font-size:9px;color:var(--gold-soft);display:block;margin-top:2px}.daychip.on .tag{color:#3a2d10}
-  /* day detail */
   .dayhead{font-family:var(--fd);color:var(--gold-soft);font-size:17px;margin:14px 0 10px}
   .dayhead .d{font-family:var(--fm);font-weight:500;font-size:.9em}
   .prepcard{background:var(--panel);border:1px solid var(--line-soft);border-radius:14px;padding:14px 16px;margin-bottom:12px}
@@ -69,10 +79,11 @@
   .bk .info b{font-weight:500}.bk .info .d{font-size:12.5px;color:var(--muted);margin-top:2px}
   .badge{font-size:10px;padding:2px 8px;border-radius:999px;border:1px solid;margin-left:4px}
   .badge.k{color:var(--gold-soft);border-color:var(--gold-dim)}.badge.f{color:var(--blue);border-color:rgba(122,166,201,.4)}.badge.o{color:var(--muted);border-color:var(--line)}
-  .cancel{background:none;border:1px solid var(--line);color:var(--crit);padding:8px 12px;font-size:12px}
+  .badge.rm{color:var(--blue);border-color:rgba(122,166,201,.4);margin-left:0}
+  .badge.tech{color:var(--muted);border-color:var(--line)}
+  .cancel{background:none;border:1px solid var(--line);color:var(--crit);padding:8px 12px;font-size:12px;border-radius:10px}
   .cancelled{opacity:.45}.cancelled .info b{text-decoration:line-through}
   .pill{font-family:var(--fm);font-size:10px;padding:2px 8px;border-radius:999px;border:1px solid var(--line)}
-  /* prep tab */
   .group{border:1px solid var(--line-soft);border-radius:14px;overflow:hidden;margin-bottom:12px}
   .ghead{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--panel-2);font-weight:500}
   .ghead .l{display:flex;align-items:center;gap:8px}
@@ -84,16 +95,6 @@
   .tfilter{display:flex;flex-wrap:wrap;gap:7px;margin:2px 0 12px}
   .tf{border:1px solid var(--line-soft);background:var(--panel);border-radius:999px;padding:7px 13px;font-size:13px;cursor:pointer;color:var(--muted)}
   .tf.on{border-color:var(--gold);color:var(--gold-soft);background:rgba(200,167,90,.08)}
-  .badge.tech{color:var(--muted);border-color:var(--line)}
-  .settings-note{font-size:12.5px;color:var(--muted);line-height:1.9}
-  .settings-note code{font-family:var(--fm);font-size:11.5px;color:var(--gold-soft);background:var(--elev);border:1px solid var(--line-soft);padding:1px 6px;border-radius:5px}
-  details summary{cursor:pointer;color:var(--gold-soft);font-size:14px;list-style:none}details summary::-webkit-details-marker{display:none}
-  details summary::before{content:"▸ ";color:var(--faint)}details[open] summary::before{content:"▾ "}
-  .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;align-items:center;justify-content:center;padding:18px}
-  .mbox{background:var(--panel);max-width:340px;width:100%;border:1px solid var(--gold-dim);border-radius:14px;overflow:hidden}
-  .mbox .mh{background:linear-gradient(100deg,var(--gold-dim),var(--gold-soft));color:#1a1a1a;padding:13px;text-align:center;font-weight:500}
-  .mbox input{width:100%;padding:13px;border:1px solid var(--line-soft);background:var(--panel-2);color:var(--fg);border-radius:10px;outline:none;margin-bottom:8px;font-family:var(--f);font-size:15px}
-  .mbox input:focus{border-color:var(--gold)}
   /* ช่างลา/หยุด */
   #offForm select,#offForm input[type=text]{width:100%;padding:12px;border:1px solid var(--line-soft);background:var(--panel-2);color:var(--fg);border-radius:10px;font-size:15px;font-family:var(--f);outline:none}
   .offlbl{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--faint);flex:1;min-width:130px}
@@ -101,78 +102,96 @@
   .offseg{display:flex;gap:8px}
   .offseg button{flex:1;background:var(--panel-2);border:1px solid var(--line-soft);color:var(--muted);padding:10px;border-radius:9px;font-size:14px}
   .offseg button.on{border-color:var(--gold-dim);color:var(--gold-soft);background:rgba(200,167,90,.08)}
-  .offitem{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid var(--line-soft);border-radius:9px;margin-bottom:7px;background:var(--panel-2)}
-  .offitem .od{font-size:13px}.offitem .meta{font-size:11px;color:var(--faint);margin-top:2px}
-  .offitem .x{background:none;border:1px solid var(--line);color:var(--crit);border-radius:8px;padding:6px 11px;font-size:12px;cursor:pointer;width:auto;flex:none}
+  .offitem{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 13px;border:1px solid var(--line-soft);border-radius:11px;margin-bottom:8px;background:var(--panel-2)}
+  .offitem .od{font-size:14px}.offitem .od b{font-weight:500}.offitem .meta{font-size:11.5px;color:var(--faint);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap}
+  .offitem .tagd{font-size:10px;padding:1px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+  .offitem .tagd.half{color:var(--gold-soft);border-color:var(--gold-dim)}
+  .offitem .x{background:none;border:1px solid var(--line);color:var(--crit);border-radius:9px;padding:7px 12px;font-size:12px;cursor:pointer;width:auto;flex:none}
+  /* settings form */
+  .ssec{font-size:12px;letter-spacing:.08em;color:var(--gold);font-family:var(--fm);text-transform:uppercase;margin:18px 2px 8px}
+  .sfield{margin-bottom:11px}
+  .sfield label{display:block;font-size:12px;color:var(--faint);margin-bottom:5px}
+  .sfield input,.sfield select,.sfield textarea{width:100%;padding:12px;border:1px solid var(--line-soft);background:var(--panel-2);color:var(--fg);border-radius:10px;font-size:15px;font-family:var(--f);outline:none}
+  .sfield input:focus,.sfield select:focus,.sfield textarea:focus{border-color:var(--gold)}
+  .sfield textarea{min-height:76px;resize:vertical;line-height:1.6}
+  /* modal */
+  .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;align-items:center;justify-content:center;padding:18px}
+  .mbox{background:var(--panel);max-width:340px;width:100%;border:1px solid var(--gold-dim);border-radius:14px;overflow:hidden}
+  .mbox .mh{background:linear-gradient(100deg,var(--gold-dim),var(--gold-soft));color:#1a1a1a;padding:13px;text-align:center;font-weight:500}
+  .mbox input{width:100%;padding:13px;border:1px solid var(--line-soft);background:var(--panel-2);color:var(--fg);border-radius:10px;outline:none;margin-bottom:8px;font-family:var(--f);font-size:15px}
+  .mbox input:focus{border-color:var(--gold)}
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="eyebrow">House265 · Console</div>
-  <h1>แผงจัดการคิว</h1>
+  <h1>แผงจัดการร้าน</h1>
 
   <div id="loadingBox" class="muted" style="text-align:center;padding:50px 0">กำลังโหลด…</div>
 
   <div id="panel" style="display:none">
-    <div class="ch"><b style="font-weight:500">ภาพรวมคิว</b><button class="refresh" onclick="load()">รีเฟรช</button></div>
-    <div class="seg" id="catSeg"></div>
-    <div class="muted" style="font-size:11px;margin:2px 0 5px">กรองตามช่าง</div>
-    <div class="tfilter" id="techSeg"></div>
-    <div class="stats" id="stats"></div>
-
-    <div class="card">
-      <div class="ch"><b>สถานะช่าง</b></div>
-      <div class="techbar" id="techBar"></div>
-      <div class="muted" style="font-size:12px;margin-top:8px">แตะเพื่อเปิด/ปิดรับคิวช่าง (ปิด = ไม่ถูกจัดคิวใหม่ ทุกวันจนกว่าจะเปิด)</div>
+    <div class="topnav">
+      <button id="navQueue" class="on" onclick="setPage('queue')"><span class="ic">📅</span>คิวงาน</button>
+      <button id="navStaff" onclick="setPage('staff')"><span class="ic">✂️</span>ช่าง</button>
+      <button id="navSettings" onclick="setPage('settings')"><span class="ic">⚙️</span>ตั้งค่า</button>
     </div>
 
-    <div class="card">
-      <div class="ch"><b>ช่างลา / หยุด (เฉพาะวัน)</b></div>
-      <div class="muted" style="font-size:12px;margin-bottom:11px">ช่างป่วย/ลาด่วน — มีผลเฉพาะช่างคนนั้น เฉพาะวันที่เลือก (ทั้งวันหรือครึ่งวัน) ไม่กระทบตารางปกติ · ช่างคนอื่นยังรับคิวตามเดิม</div>
-      <div id="offForm" style="display:grid;gap:9px">
-        <select id="offTech"></select>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <label class="offlbl">ตั้งแต่วันที่<input type="date" id="offStart"></label>
-          <label class="offlbl">ถึงวันที่ (ไม่บังคับ)<input type="date" id="offEnd"></label>
-        </div>
-        <div class="offseg">
-          <button type="button" id="offAll" class="on" onclick="setOffMode(true)">หยุดทั้งวัน</button>
-          <button type="button" id="offPart" onclick="setOffMode(false)">ระบุช่วงเวลา (ครึ่งวัน)</button>
-        </div>
-        <div id="offTimes" style="display:none;gap:8px;flex-wrap:wrap">
-          <label class="offlbl">หยุดตั้งแต่<input type="time" id="offFrom" value="11:00"></label>
-          <label class="offlbl">ถึง<input type="time" id="offTo" value="15:00"></label>
-        </div>
-        <input type="text" id="offNote" placeholder="หมายเหตุ เช่น ป่วย, ลากิจ (ไม่บังคับ)">
-        <button class="btn" onclick="addTechOff()">บันทึกวันหยุด</button>
+    <!-- ============ PAGE: คิวงาน ============ -->
+    <div id="pageQueue">
+      <div class="ch"><b style="font-weight:500">ภาพรวมคิว</b><button class="refresh" onclick="load()">รีเฟรช</button></div>
+      <div class="seg" id="catSeg"></div>
+      <div class="muted" style="font-size:11px;margin:2px 0 5px">กรองตามช่าง</div>
+      <div class="tfilter" id="techSeg"></div>
+      <div class="stats" id="stats"></div>
+      <div class="tabs">
+        <button id="tabSchedule" class="on" onclick="setTab('schedule')">📅 ตารางคิวรายวัน</button>
+        <button id="tabPrep" onclick="setTab('prep')">📦 สรุปเตรียมผม</button>
       </div>
-      <div id="offList" style="margin-top:14px"></div>
+      <label class="chkrow" id="cancelChkRow"><input type="checkbox" id="showCancel" style="width:auto;margin:0" onchange="render()"> แสดงคิวที่ยกเลิกด้วย</label>
+      <div id="view"></div>
     </div>
 
-    <div class="tabs">
-      <button id="tabSchedule" class="on" onclick="setTab('schedule')">📅 ตารางคิวรายวัน</button>
-      <button id="tabPrep" onclick="setTab('prep')">📦 สรุปเตรียมผม</button>
-    </div>
-    <label class="chkrow" id="cancelChkRow"><input type="checkbox" id="showCancel" style="width:auto;margin:0" onchange="render()"> แสดงคิวที่ยกเลิกด้วย</label>
-    <div id="view"></div>
-
-    <div class="card" style="margin-top:20px">
-      <details>
-        <summary>ตั้งค่าร้าน (ราคา · บริการ · สต็อก · เวลา) — แก้ที่ไหน?</summary>
-        <div class="settings-note" style="margin-top:12px">
-          แก้ในชีต Google Sheet ได้เลย ไม่ต้องแตะโค้ด:<br>
-          • <code>Settings</code> — เวลาร้าน, ช่องว่างขั้นต่ำ, มัดจำ %, รหัสแอดมิน (มีคอลัมน์คำอธิบายทุกช่อง)<br>
-          • <code>Techniques</code> / <code>Prices</code> — เทคนิค &amp; ราคาต่อขนาด<br>
-          • <code>Removals</code> — งานถอด (ราคา + ระยะเวลา)<br>
-          • <code>Colors</code> + <code>Stock</code> — สี &amp; สต็อก (ลูกค้าเห็นเฉพาะสีที่มีของ)<br>
-          • <code>Technicians</code> / <code>TechnicianHours</code> — ช่าง &amp; เวลาทำงาน
+    <!-- ============ PAGE: ช่าง ============ -->
+    <div id="pageStaff" style="display:none">
+      <div class="card">
+        <div class="ch"><b>สถานะช่าง</b></div>
+        <div id="techBar"></div>
+        <div class="muted" style="font-size:12px;margin-top:10px">เปิด = รับคิว · ปิด = พักถาวร ไม่ถูกจัดคิวใหม่ทุกวันจนกว่าจะเปิด (สำหรับลาเฉพาะวัน ใช้ด้านล่าง)</div>
+      </div>
+      <div class="card">
+        <div class="ch"><b>ช่างลา / หยุด (เฉพาะวัน)</b></div>
+        <div class="muted" style="font-size:12px;margin-bottom:11px">ช่างป่วย/ลาด่วน — มีผลเฉพาะช่างคนนั้น เฉพาะวันที่เลือก (ทั้งวันหรือครึ่งวัน) · ช่างคนอื่นยังรับคิวตามเดิม</div>
+        <div id="offForm" style="display:grid;gap:9px">
+          <select id="offTech"></select>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <label class="offlbl">ตั้งแต่วันที่<input type="date" id="offStart"></label>
+            <label class="offlbl">ถึงวันที่ (ไม่บังคับ)<input type="date" id="offEnd"></label>
+          </div>
+          <div class="offseg">
+            <button type="button" id="offAll" class="on" onclick="setOffMode(true)">หยุดทั้งวัน</button>
+            <button type="button" id="offPart" onclick="setOffMode(false)">ระบุช่วงเวลา (ครึ่งวัน)</button>
+          </div>
+          <div id="offTimes" style="display:none;gap:8px;flex-wrap:wrap">
+            <label class="offlbl">หยุดตั้งแต่<input type="time" id="offFrom" value="11:00"></label>
+            <label class="offlbl">ถึง<input type="time" id="offTo" value="15:00"></label>
+          </div>
+          <input type="text" id="offNote" placeholder="หมายเหตุ เช่น ป่วย, ลากิจ (ไม่บังคับ)">
+          <button class="btn" onclick="addTechOff()">บันทึกวันหยุด</button>
         </div>
-      </details>
+        <div style="height:1px;background:var(--line-soft);margin:16px 0 14px"></div>
+        <div class="muted" style="font-size:11px;margin-bottom:8px">รายการที่กำลังจะถึง</div>
+        <div id="offList"></div>
+      </div>
+    </div>
+
+    <!-- ============ PAGE: ตั้งค่า ============ -->
+    <div id="pageSettings" style="display:none">
+      <div id="setBody"></div>
     </div>
   </div>
 </div>
 
-<!-- PIN modal สำหรับการแก้ไข -->
+<!-- PIN modal -->
 <div class="modal" id="pinModal">
   <div class="mbox">
     <div class="mh">ยืนยันรหัสแอดมิน</div>
@@ -182,14 +201,14 @@
       <div id="pinErr" style="color:var(--crit);font-size:12px;min-height:16px"></div>
     </div>
     <div style="padding:0 20px 20px;display:flex;gap:10px">
-      <button onclick="pinCancel()" style="flex:1;background:none;border:1px solid var(--line);color:var(--muted);padding:12px">ยกเลิก</button>
+      <button onclick="pinCancel()" style="flex:1;background:none;border:1px solid var(--line);color:var(--muted);padding:12px;border-radius:10px">ยกเลิก</button>
       <button class="btn" style="flex:1;width:auto" onclick="pinOk()">ยืนยัน</button>
     </div>
   </div>
 </div>
 
 <script>
-/* ===== API ===== เรียก Apps Script เป็นเซิร์ฟเวอร์ (host หน้านี้ที่ไหนก็ได้) · URL ต้องเป็น /exec ของ Web app */
+/* ===== API ===== · URL ต้องเป็น /exec ของ Web app */
 var API_URL = 'https://script.google.com/macros/s/AKfycbwsElkbUA3UYuSWZWrQx59nITnbVVuDGZdK1uMkLaQ2iEwGJ8_OY-j2RVsqbM86aaTx/exec';
 function callApi(action, data){
   return fetch(API_URL, {
@@ -199,7 +218,7 @@ function callApi(action, data){
   }).then(function(r){ return r.json(); });
 }
 
-var DATA=null, CAT='all', FTECH='all', TAB='schedule', SELDAY=null, ADMIN_PIN=null, _pinCb=null;
+var DATA=null, CAT='all', FTECH='all', TAB='schedule', SELDAY=null, PAGE='queue', ADMIN_PIN=null, _pinCb=null, SET=null;
 var TMAP={}, DEFTMAP={KOREAN:{name:'เปียเกาหลี',cls:'k'},FEATHER:{name:'ขนนก',cls:'f'}};
 var DOW=['อา','จ','อ','พ','พฤ','ศ','ส'], MON=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 
@@ -214,7 +233,18 @@ function load(){
 }
 function buildTechMap(){ TMAP={}; var cls=['k','f','o']; (DATA.techniqueNames||[]).forEach(function(t,i){ if(t.id) TMAP[t.id]={name:t.name,cls:cls[i%cls.length]}; }); }
 
-/* ---- PIN gate เฉพาะตอนแก้ไข ---- */
+/* ---- page nav ---- */
+function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+function setPage(p){ PAGE=p;
+  ['queue','staff','settings'].forEach(function(x){
+    document.getElementById('page'+cap(x)).style.display = x===p?'block':'none';
+    document.getElementById('nav'+cap(x)).classList.toggle('on',x===p);
+  });
+  window.scrollTo(0,0);
+  if(p==='settings' && !SET) loadSettings();
+}
+
+/* ---- PIN gate ---- */
 function needPin(msg, runWithPin){
   function go(){ runWithPin(ADMIN_PIN, function(r){
     if(r&&r.ok) return;
@@ -230,6 +260,7 @@ function pinOk(){ var v=document.getElementById('pinInput').value.trim(); if(!v)
   document.getElementById('pinModal').style.display='none'; var cb=_pinCb; _pinCb=null; if(cb) cb(); }
 function pinCancel(){ document.getElementById('pinModal').style.display='none'; _pinCb=null; }
 
+/* ---- helpers ---- */
 function catName(id){ return (TMAP[id]&&TMAP[id].name)||(DEFTMAP[id]&&DEFTMAP[id].name)||id||'อื่นๆ'; }
 function catCls(id){ return (TMAP[id]&&TMAP[id].cls)||(DEFTMAP[id]&&DEFTMAP[id].cls)||'o'; }
 function active(){ return DATA.bookings.filter(function(b){ return b.status!=='ยกเลิก'; }); }
@@ -237,6 +268,8 @@ function byCat(list){ return list.filter(function(b){
   if(CAT!=='all' && b.techniqueId!==CAT) return false;
   if(FTECH!=='all' && b.techName!==FTECH) return false;
   return true; }); }
+function fmtPhone(p){ var s=String(p==null?'':p).replace(/\D/g,''); if(s.length===9) s='0'+s; return s||'-'; }
+function parseRemoval(detail){ var m=String(detail||'').match(/ถอด:\s*([^|]+)/); if(!m) return ''; var v=m[1].trim(); if(!v||/^ไม่/.test(v)) return ''; return v; }
 
 function buildCatSeg(){
   var ids={}; DATA.bookings.forEach(function(b){ if(b.techniqueId) ids[b.techniqueId]=1; });
@@ -258,24 +291,59 @@ function setFTech(n){ FTECH=n; SELDAY=null; buildTechSeg(); render(); }
 function setTab(t){ TAB=t; document.getElementById('tabSchedule').classList.toggle('on',t==='schedule');
   document.getElementById('tabPrep').classList.toggle('on',t==='prep'); render(); }
 
+/* ---- สถานะช่าง (iOS toggle) ---- */
 function renderTechs(){
-  var bar=document.getElementById('techBar'); bar.innerHTML='';
-  DATA.technicians.forEach(function(t){
-    var el=document.createElement('div'); el.className='techtog'+(t.active?' on':'');
-    el.innerHTML='<span class="led"></span>'+t.name+(t.note?' · '+t.note:'');
-    el.onclick=function(){ needPin('เปิด/ปิดสถานะช่าง ต้องใช้รหัสแอดมิน', function(pin,done){
-      callApi('adminSetTech',{pin:pin, techId:t.id, active:!t.active}).then(function(r){ done(r); if(r&&r.ok){ t.active=!t.active; el.classList.toggle('on',t.active); } })
-        .catch(function(){ done({ok:false}); }); }); };
-    bar.appendChild(el);
+  var box=document.getElementById('techBar');
+  box.innerHTML=DATA.technicians.map(function(t){
+    return '<div class="trow"><div><div class="tn">'+esc(t.name)+'</div>'+
+      (t.note?'<div class="tnote">'+esc(t.note)+'</div>':'')+
+      '<div class="st '+(t.active?'on':'off')+'">'+(t.active?'● เปิดรับคิว':'○ ปิดรับ')+'</div></div>'+
+      '<label class="switch"><input type="checkbox" data-id="'+esc(t.id)+'" '+(t.active?'checked':'')+'><span class="tk"></span></label></div>';
+  }).join('');
+  [].forEach.call(box.querySelectorAll('input[type=checkbox]'),function(cb){
+    cb.onchange=function(){
+      var id=cb.getAttribute('data-id'), want=cb.checked;
+      var t=DATA.technicians.filter(function(x){return x.id===id;})[0];
+      cb.checked=t.active;   // revert visual จนกว่าจะยืนยันสำเร็จ
+      needPin('เปิด/ปิดสถานะช่าง ต้องใช้รหัสแอดมิน', function(pin,done){
+        callApi('adminSetTech',{pin:pin, techId:id, active:want}).then(function(r){ done(r);
+          if(r&&r.ok){ t.active=want; renderTechs(); } })
+          .catch(function(){ done({ok:false}); });
+      });
+    };
   });
 }
 
-/* ---- ช่างลา / หยุด (เฉพาะวัน) ---- */
+/* ---- ช่างลา / หยุด ---- */
 var OFF_ALLDAY=true;
 function setOffMode(all){ OFF_ALLDAY=all;
   document.getElementById('offAll').classList.toggle('on',all);
   document.getElementById('offPart').classList.toggle('on',!all);
   document.getElementById('offTimes').style.display=all?'none':'flex';
+}
+function dRange(d1,d2){ var a=keyDate(d1), b=keyDate(d2);
+  if(d1===d2) return a.getDate()+' '+MON[a.getMonth()];
+  if(a.getMonth()===b.getMonth()) return a.getDate()+'–'+b.getDate()+' '+MON[b.getMonth()];
+  return a.getDate()+' '+MON[a.getMonth()]+' – '+b.getDate()+' '+MON[b.getMonth()];
+}
+function groupOff(offs){
+  var byKey={};
+  offs.forEach(function(o){ var k=o.techId+'|'+(o.allDay?'A':(o.startTime+'-'+o.endTime))+'|'+(o.note||'');
+    (byKey[k]=byKey[k]||[]).push(o); });
+  var groups=[];
+  function mk(run){ return { techName:run[0].techName, allDay:run[0].allDay, startTime:run[0].startTime, endTime:run[0].endTime,
+    note:run[0].note, d1:run[0].date, d2:run[run.length-1].date, days:run.length, rows:run.map(function(x){return x.rowNum;}) }; }
+  Object.keys(byKey).forEach(function(k){
+    var arr=byKey[k].slice().sort(function(a,b){return a.date<b.date?-1:1;});
+    var run=[arr[0]];
+    for(var i=1;i<arr.length;i++){
+      if(arr[i].date===addDays(run[run.length-1].date,1)) run.push(arr[i]);
+      else { groups.push(mk(run)); run=[arr[i]]; }
+    }
+    groups.push(mk(run));
+  });
+  groups.sort(function(a,b){return a.d1<b.d1?-1:1;});
+  return groups;
 }
 function renderTechOff(){
   var sel=document.getElementById('offTech');
@@ -283,11 +351,12 @@ function renderTechOff(){
   if(!document.getElementById('offStart').value) document.getElementById('offStart').value=DATA.today;
   var offs=DATA.techOff||[], box=document.getElementById('offList');
   if(!offs.length){ box.innerHTML='<div class="muted" style="font-size:12px">— ยังไม่มีรายการลา/หยุด —</div>'; return; }
-  box.innerHTML='<div class="muted" style="font-size:11px;margin-bottom:6px">รายการที่กำลังจะถึง</div>'+offs.map(function(o){
-    var when=o.allDay?'ทั้งวัน':(esc(o.startTime)+'–'+esc(o.endTime));
-    return '<div class="offitem"><div><div class="od"><b>'+esc(o.techName)+'</b> · '+esc(o.date)+' · '+when+'</div>'+
-      (o.note?'<div class="meta">'+esc(o.note)+'</div>':'')+'</div>'+
-      '<button class="x" onclick="removeTechOff('+o.rowNum+')">ยกเลิก</button></div>';
+  box.innerHTML=groupOff(offs).map(function(g){
+    var when=g.allDay?'<span class="tagd">ทั้งวัน</span>':('<span class="tagd half">'+esc(g.startTime)+'–'+esc(g.endTime)+'</span>');
+    var dd=g.days>1?(' <span style="color:var(--faint)">('+g.days+' วัน)</span>'):'';
+    return '<div class="offitem"><div><div class="od"><b>'+esc(g.techName)+'</b> · '+dRange(g.d1,g.d2)+dd+'</div>'+
+      '<div class="meta">'+when+(g.note?'<span>'+esc(g.note)+'</span>':'')+'</div></div>'+
+      '<button class="x" onclick=\'removeOffGroup('+JSON.stringify(g.rows)+')\'>ยกเลิก</button></div>';
   }).join('');
 }
 function addTechOff(){
@@ -305,15 +374,16 @@ function addTechOff(){
     }).catch(function(){ done({ok:false}); });
   });
 }
-function removeTechOff(row){
+function removeOffGroup(rows){
   needPin('ยกเลิกวันหยุด ต้องใช้รหัสแอดมิน', function(pin,done){
-    callApi('adminRemoveTechOff',{pin:pin, rowNum:row}).then(function(r){ done(r); if(r&&r.ok) load(); })
+    callApi('adminRemoveTechOffBulk',{pin:pin, rowNums:rows}).then(function(r){ done(r); if(r&&r.ok) load(); })
       .catch(function(){ done({ok:false}); });
   });
 }
 
+/* ---- queue page render ---- */
 function render(){
-  // stats (filtered by category, active only)
+  if(!DATA) return;
   var act=byCat(active()), today=DATA.today;
   var tCount=act.filter(function(b){return b.date===today;}).length;
   var upCount=act.length;
@@ -327,7 +397,6 @@ function render(){
   if(TAB==='schedule') bindCancel();
 }
 
-function dmy(k){ var p=k.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
 function keyDate(k){ var p=k.split('-'); return new Date(+p[0],+p[1]-1,+p[2]); }
 function addDays(k,n){ var p=k.split('-'); var d=new Date(+p[0],+p[1]-1,+p[2]+n); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
 
@@ -345,28 +414,25 @@ function renderSchedule(){
       '<span class="cnt">'+map[k].length+' คิว</span>'+(tag?'<span class="tag">'+tag+'</span>':'')+'</div>';
   }).join('')+'</div>';
 
-  // selected day
   var showCancel=document.getElementById('showCancel').checked;
   var list=(map[SELDAY]||[]).slice();
   if(showCancel){ DATA.bookings.filter(function(b){return b.date===SELDAY&&b.status==='ยกเลิก'&&(CAT==='all'||b.techniqueId===CAT);}).forEach(function(b){list.push(b);}); }
   list.sort(function(a,b){return (a.start||'').localeCompare(b.start||'');});
   var dt=keyDate(SELDAY);
   var html=strip+'<div class="dayhead">'+DOW[dt.getDay()]+' <span class="d">'+dt.getDate()+'</span> '+MON[dt.getMonth()]+' <span class="d">'+(dt.getFullYear()+543)+'</span></div>';
-
-  // prep for the day
   html+=prepBlock(map[SELDAY]||[], 'ผมที่ต้องเตรียมวันนี้');
 
-  // queue list
   html+='<div class="card">';
   list.forEach(function(b){
     var cancelled=b.status==='ยกเลิก', cc=catCls(b.techniqueId);
     var spec=b.size?('<b>'+b.size+' · '+b.bundle+' มัด</b>'):'<span style="color:var(--faint)">งานบริการ/ขยับปม</span>';
+    var rm=parseRemoval(b.detail);
     html+='<div class="bk'+(cancelled?' cancelled':'')+'">'+
       '<div class="tm">'+b.start+'<small>'+(b.end||'')+'</small></div>'+
       '<div class="info"><b>'+esc(b.name)+'</b><span class="badge '+cc+'">'+esc(catName(b.techniqueId)||b.technique)+'</span>'+
       '<span class="badge tech">✂ '+esc(b.techName||'—')+'</span>'+
-      '<div class="d">'+spec+(b.colorName?(' · '+esc(b.colorName)):'')+'</div>'+
-      '<div class="d">📞 '+esc(b.phone||'-')+' · มัดจำ '+Number(b.deposit||0).toLocaleString('en-US')+' ฿</div></div>'+
+      '<div class="d">'+spec+(b.colorName?(' · '+esc(b.colorName)):'')+(rm?(' <span class="badge rm">✀ ถอด: '+esc(rm)+'</span>'):'')+'</div>'+
+      '<div class="d">📞 '+esc(fmtPhone(b.phone))+' · มัดจำ '+Number(b.deposit||0).toLocaleString('en-US')+' ฿</div></div>'+
       '<div>'+(cancelled?'<span class="pill" style="color:var(--crit)">ยกเลิกแล้ว</span>':'<button class="cancel" data-row="'+b.row+'">ยกเลิก</button>')+'</div></div>';
   });
   html+='</div>';
@@ -427,6 +493,84 @@ function bindCancel(){
   });
 }
 function selDay(k){ SELDAY=k; render(); }
+
+/* ---- ตั้งค่า ---- */
+var SET_SCHEMA=[
+  {sec:'ข้อมูลร้าน', items:[
+    {k:'shopName', l:'ชื่อร้าน'},
+    {k:'subtitle', l:'คำโปรยใต้ชื่อร้าน'},
+    {k:'phone', l:'เบอร์โทรร้าน'},
+    {k:'promptPayId', l:'พร้อมเพย์ (รับมัดจำ) — เบอร์/เลขบัตร ปชช.'}
+  ]},
+  {sec:'เวลาทำการ', items:[
+    {k:'openTime', l:'เปิดร้าน (HH:mm)', ph:'11:00'},
+    {k:'closeTime', l:'ปิดร้าน (HH:mm)', ph:'23:00'},
+    {k:'slotGranularityMin', l:'ให้เลือกเวลาทีละ (นาที)', t:'number'},
+    {k:'minGapMin', l:'ช่องว่างขั้นต่ำ (นาที)', t:'number'},
+    {k:'bufferMin', l:'พักหลังจบคิว (นาที)', t:'number'},
+    {k:'maxAdvanceDays', l:'จองล่วงหน้าได้ไกลสุด (วัน)', t:'number'}
+  ]},
+  {sec:'มัดจำ', items:[
+    {k:'depositType', l:'ชนิดมัดจำ', sel:[['percentage','เปอร์เซ็นต์ (%)'],['fixed','จำนวนเงินคงที่ (บาท)']]},
+    {k:'depositValue', l:'ค่ามัดจำ (% หรือ บาท ตามชนิด)', t:'number'}
+  ]},
+  {sec:'วันหยุดร้าน', items:[
+    {k:'weeklyOff', l:'หยุดประจำสัปดาห์ · 0=อา 1=จ 2=อ 3=พ 4=พฤ 5=ศ 6=ส (คั่นด้วย ,)', ph:'เช่น 3,4'},
+    {k:'holidayDates', l:'วันหยุดเฉพาะวัน · YYYY-MM-DD (คั่นด้วย ,)', ph:'เช่น 2026-12-31,2027-01-01'}
+  ]},
+  {sec:'ระบบ', items:[
+    {k:'adminPin', l:'รหัสแอดมิน (ใช้เข้าแก้ไข)'},
+    {k:'byobNote', l:'ข้อความเตือนลูกค้า "นำผมมาเอง"', area:true}
+  ]}
+];
+function loadSettings(){
+  document.getElementById('setBody').innerHTML='<div class="muted" style="text-align:center;padding:40px 0">🔒 ต้องใส่รหัสแอดมินเพื่อดู/แก้การตั้งค่า…</div>';
+  needPin('ดู/แก้การตั้งค่า ต้องใช้รหัสแอดมิน', function(pin,done){
+    callApi('adminGetSettings',{pin:pin}).then(function(r){ done(r);
+      if(r&&r.ok){ SET=r.settings; renderSettings(); }
+    }).catch(function(){ done({ok:false}); document.getElementById('setBody').innerHTML='<div class="empty">โหลดไม่สำเร็จ</div>'; });
+  });
+}
+function renderSettings(){
+  var html='<div class="muted" style="margin:2px 2px 6px">แก้ค่าต่างๆ ได้ที่นี่เลย ไม่ต้องเข้า Google Sheet · การเปลี่ยนแปลงมีผลกับการจองใหม่</div>';
+  SET_SCHEMA.forEach(function(sec){
+    html+='<div class="card">';
+    html+='<div class="ssec" style="margin-top:2px">'+sec.sec+'</div>';
+    sec.items.forEach(function(it){
+      var v=(SET[it.k]!=null?SET[it.k]:'');
+      html+='<div class="sfield"><label>'+esc(it.l)+'</label>';
+      if(it.sel){
+        html+='<select id="set_'+it.k+'">'+it.sel.map(function(o){ return '<option value="'+o[0]+'"'+(String(v)===o[0]?' selected':'')+'>'+esc(o[1])+'</option>'; }).join('')+'</select>';
+      } else if(it.area){
+        html+='<textarea id="set_'+it.k+'">'+esc(v)+'</textarea>';
+      } else {
+        html+='<input id="set_'+it.k+'" type="'+(it.t||'text')+'" value="'+esc(v)+'"'+(it.ph?(' placeholder="'+esc(it.ph)+'"'):'')+'>';
+      }
+      html+='</div>';
+    });
+    html+='</div>';
+  });
+  html+='<button class="btn" style="margin:2px 0 20px" onclick="saveSettings()">💾 บันทึกการตั้งค่า</button>';
+  document.getElementById('setBody').innerHTML=html;
+}
+function collectSettings(){
+  var obj={};
+  SET_SCHEMA.forEach(function(sec){ sec.items.forEach(function(it){
+    var el=document.getElementById('set_'+it.k); if(el) obj[it.k]=el.value;
+  }); });
+  return obj;
+}
+function saveSettings(){
+  var obj=collectSettings();
+  if(!String(obj.adminPin||'').trim()){ alert('รหัสแอดมินห้ามว่าง'); return; }
+  needPin('บันทึกการตั้งค่า ต้องใช้รหัสแอดมิน', function(pin,done){
+    callApi('adminSaveSettings',{pin:pin, settings:obj}).then(function(r){ done(r);
+      if(r&&r.ok){ SET=obj; ADMIN_PIN=obj.adminPin; alert('บันทึกการตั้งค่าแล้ว ✓'); }
+      else if(r&&r.message&&r.message.indexOf('รหัส')<0){ alert(r.message); }
+    }).catch(function(){ done({ok:false}); alert('บันทึกไม่สำเร็จ'); });
+  });
+}
+
 function numSize(s){ var m=String(s).match(/\d+/); return m?+m[0]:0; }
 function fmtN(n){ return (n%1===0)?String(n):String(Math.round(n*100)/100); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(m){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m];}); }
