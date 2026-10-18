@@ -72,7 +72,10 @@
 <div class="wrap">
   <div class="eyebrow">House265 · POS</div>
   <h1>ขายหน้าร้าน</h1>
-  <div id="loadingBox" class="muted" style="text-align:center;padding:50px 0">กำลังโหลด…</div>
+  <div id="userBar" style="display:none;align-items:center;justify-content:space-between;margin-top:8px;font-size:13px;color:var(--muted)">
+    <span id="uInfo"></span><button onclick="doLogout()" style="background:none;border:1px solid var(--line);color:var(--muted);padding:6px 12px;border-radius:9px;font-size:12px;width:auto">ออกจากระบบ</button>
+  </div>
+  <div id="loadingBox" class="muted" style="text-align:center;padding:50px 0;display:none">กำลังโหลด…</div>
 
   <div id="panel" style="display:none">
     <div class="topnav">
@@ -150,12 +153,12 @@
   </div>
 </div>
 
-<!-- PIN modal -->
-<div class="modal" id="pinModal"><div class="mbox"><div class="mh">ยืนยันรหัสแอดมิน</div><div class="mc">
-  <div class="muted" style="margin-bottom:10px">เข้าระบบ POS ต้องใช้รหัสแอดมิน</div>
-  <input type="password" id="pinInput" placeholder="รหัสผ่าน" onkeydown="if(event.key==='Enter')pinOk()">
-  <div id="pinErr" style="color:var(--crit);font-size:12px;min-height:16px"></div>
-  <button class="btn" style="margin-top:8px" onclick="pinOk()">เข้าสู่ระบบ</button>
+<!-- Login modal -->
+<div class="modal" id="loginModal"><div class="mbox"><div class="mh">เข้าสู่ระบบ House265 POS</div><div class="mc">
+  <label class="fld">ชื่อผู้ใช้</label><input id="luser" class="in" placeholder="เช่น admin" autocapitalize="none" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
+  <label class="fld" style="margin-top:9px">รหัสผ่าน</label><input id="lpass" type="password" class="in" placeholder="รหัสผ่าน" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+  <div id="loginErr" style="color:var(--crit);font-size:12px;min-height:16px;margin-top:4px"></div>
+  <button class="btn" onclick="doLogin()">เข้าสู่ระบบ</button>
 </div></div></div>
 
 <!-- Receipt modal -->
@@ -167,24 +170,46 @@
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbwsElkbUA3UYuSWZWrQx59nITnbVVuDGZdK1uMkLaQ2iEwGJ8_OY-j2RVsqbM86aaTx/exec';
 function api(action,data){ return fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:action,data:data||{}})}).then(function(r){return r.json();}); }
-var PIN=null, DATA=null, LINES=[], CUST='walk', PAY='เงินสด', SELBOOK=null, EXPTYPE='อุปกรณ์', _pinCb=null;
+var TOKEN=null, ROLE='', FULL=false, DATA=null, LINES=[], CUST='walk', PAY='เงินสด', SELBOOK=null, EXPTYPE='อุปกรณ์';
+function getTok(){ try{ return sessionStorage.getItem('h265tok')||''; }catch(e){ return ''; } }
+function setTok(t){ try{ if(t) sessionStorage.setItem('h265tok',t); else sessionStorage.removeItem('h265tok'); }catch(e){} }
 
-/* ---- PIN / load ---- */
-window.onload=function(){ openPin(); };
-function openPin(err){ document.getElementById('pinErr').innerText=err||''; document.getElementById('pinInput').value=''; document.getElementById('pinModal').style.display='flex'; setTimeout(function(){document.getElementById('pinInput').focus();},50); }
-function pinOk(){ var v=document.getElementById('pinInput').value.trim(); if(!v) return; PIN=v; load(); }
-function load(){
-  api('posGetData',{pin:PIN}).then(function(r){
-    if(!r||!r.ok){ if(r&&r.message&&r.message.indexOf('รหัส')>=0){ openPin('รหัสไม่ถูกต้อง'); return; }
-      document.getElementById('loadingBox').innerHTML=(r&&r.message)||'โหลดไม่สำเร็จ'; document.getElementById('pinModal').style.display='none'; return; }
-    DATA=r; document.getElementById('pinModal').style.display='none';
+/* ---- Login / load ---- */
+window.onload=function(){ TOKEN=getTok(); if(TOKEN){ load(true); } else openLogin(); };
+function openLogin(err){ document.getElementById('loginErr').innerText=err||''; document.getElementById('lpass').value=''; document.getElementById('loginModal').style.display='flex'; setTimeout(function(){document.getElementById('luser').focus();},50); }
+function doLogin(){ var u=document.getElementById('luser').value.trim(), p=document.getElementById('lpass').value;
+  if(!u||!p){ document.getElementById('loginErr').innerText='กรอกชื่อผู้ใช้และรหัสผ่าน'; return; }
+  document.getElementById('loginErr').innerText='กำลังเข้าสู่ระบบ…';
+  api('posLogin',{username:u,password:p}).then(function(r){
+    if(!r||!r.ok){ document.getElementById('loginErr').innerText=(r&&r.message)||'เข้าสู่ระบบไม่สำเร็จ'; return; }
+    TOKEN=r.token; setTok(TOKEN); document.getElementById('loginModal').style.display='none'; load();
+  }).catch(function(){ document.getElementById('loginErr').innerText='เชื่อมต่อไม่สำเร็จ'; });
+}
+function doLogout(){ api('posLogout',{token:TOKEN}); TOKEN=null; setTok(''); DATA=null; document.getElementById('panel').style.display='none'; document.getElementById('userBar').style.display='none'; openLogin(); }
+function load(fromCache){
+  document.getElementById('loadingBox').style.display='block';
+  api('posGetData',{token:TOKEN}).then(function(r){
+    if(!r||!r.ok){ document.getElementById('loadingBox').style.display='none';
+      if(r&&(r.code==='AUTH'||(r.message&&r.message.indexOf('เข้าสู่ระบบ')>=0))){ TOKEN=null; setTok(''); openLogin(fromCache?'เซสชันหมดอายุ เข้าสู่ระบบใหม่':''); return; }
+      alert((r&&r.message)||'โหลดไม่สำเร็จ'); return; }
+    DATA=r; ROLE=r.role||'staff'; FULL=!!r.full;
     document.getElementById('loadingBox').style.display='none'; document.getElementById('panel').style.display='block';
     document.getElementById('ppId').innerText=r.promptPayId||'';
+    applyRole();
     if(!LINES.length) addLine();
     fillSkuList(); renderBookings(); renderLines(); renderToday(); recalc();
   }).catch(function(e){ document.getElementById('loadingBox').innerText='เชื่อมต่อไม่สำเร็จ'; });
 }
-function reload(){ api('posGetData',{pin:PIN}).then(function(r){ if(r&&r.ok){ DATA=r; renderBookings(); renderToday(); } }); }
+function applyRole(){
+  var rl=(ROLE==='owner'?'เจ้าของ':(ROLE==='manager'?'ผู้จัดการ':'ช่าง'));
+  document.getElementById('uInfo').innerText='👤 '+(DATA.userName||'')+' · '+rl;
+  document.getElementById('userBar').style.display='flex';
+  // ช่าง: ซ่อนแท็บสรุปวันนี้ + บัญชี
+  document.getElementById('navToday').style.display=FULL?'flex':'none';
+  document.getElementById('navAcct').style.display=FULL?'flex':'none';
+  if(!FULL) setPage('sale');
+}
+function reload(){ api('posGetData',{token:TOKEN}).then(function(r){ if(r&&r.ok){ DATA=r; renderBookings(); renderToday(); } }); }
 
 /* ---- nav ---- */
 function setPage(p){ ['Sale','Today','Acct'].forEach(function(x){ document.getElementById('page'+x).style.display=(x.toLowerCase()===p)?'block':'none'; document.getElementById('nav'+x).classList.toggle('on',x.toLowerCase()===p); }); window.scrollTo(0,0); if(p==='today') renderToday(); }
@@ -207,15 +232,15 @@ function pickBooking(i){ var b=DATA.bookings[i]; SELBOOK=b;
 
 /* ---- lines ---- */
 function addLine(){ LINES.push({type:'บริการ',item:(DATA&&DATA.services[0]?DATA.services[0].acctName:''),size:'',qty:1,price:0,hairCost:0,tech:'',lotId:''}); renderLines(); }
-function updQty(i,v){ LINES[i].qty=v; if(LINES[i].lotId){ var lot=lotById(LINES[i].lotId); if(lot) LINES[i].hairCost=Math.round(lot.cost*v); } renderLines(); recalc(); }
+function updQty(i,v){ LINES[i].qty=v; if(LINES[i].lotId){ var lot=lotById(LINES[i].lotId); if(lot&&typeof lot.cost==='number') LINES[i].hairCost=Math.round(lot.cost*v); } renderLines(); recalc(); }
 function delLine(i){ LINES.splice(i,1); if(!LINES.length) addLine(); renderLines(); recalc(); }
 function svcOptions(sel){ var svc=(DATA.services||[]); var r=(DATA.rates||{});
   var names={}; svc.forEach(function(s){names[s.acctName]=1;}); Object.keys(r).forEach(function(k){names[k]=1;});
   return Object.keys(names).map(function(nm){ return '<option'+(nm===sel?' selected':'')+'>'+esc(nm)+'</option>'; }).join(''); }
 function techOptions(sel){ return '<option value="">— ช่าง —</option>'+(DATA.technicians||[]).map(function(t){ return '<option'+(t.name===sel?' selected':'')+'>'+esc(t.name)+'</option>'; }).join(''); }
-function lotOptions(sel){ return '<option value="">— ใส่ต้นทุนเอง —</option>'+(DATA.lots||[]).map(function(x){ return '<option value="'+esc(x.id)+'"'+(x.id===sel?' selected':'')+'>'+esc(x.name)+(x.spec?(' · '+esc(x.spec)):'')+' · '+n(x.cost)+'/มัด · เหลือ '+n(x.remain)+'</option>'; }).join(''); }
+function lotOptions(sel){ return '<option value="">'+(FULL?'— ใส่ต้นทุนเอง —':'— ไม่ระบุล็อต —')+'</option>'+(DATA.lots||[]).map(function(x){ return '<option value="'+esc(x.id)+'"'+(x.id===sel?' selected':'')+'>'+esc(x.name)+(x.spec?(' · '+esc(x.spec)):'')+(FULL?(' · '+n(x.cost)+'/มัด'):'')+' · เหลือ '+n(x.remain)+'</option>'; }).join(''); }
 function lotById(id){ return (DATA.lots||[]).filter(function(x){return x.id===id;})[0]; }
-function setLot(i,id){ LINES[i].lotId=id; var lot=lotById(id); if(lot){ LINES[i].hairCost=Math.round(lot.cost*(LINES[i].qty||0)); } renderLines(); }
+function setLot(i,id){ LINES[i].lotId=id; var lot=lotById(id); if(lot&&typeof lot.cost==='number'){ LINES[i].hairCost=Math.round(lot.cost*(LINES[i].qty||0)); } renderLines(); }
 function renderLines(){
   var box=document.getElementById('lines');
   box.innerHTML=LINES.map(function(l,i){
@@ -228,9 +253,9 @@ function renderLines(){
       '<div class="row2" style="margin-top:8px"><div><label class="fld">ขนาด(นิ้ว)</label><input class="in" value="'+esc(l.size)+'" onchange="updSize('+i+',this.value)"></div>'+
       '<div><label class="fld">จำนวน(มัด)</label><input class="in" type="number" step="0.5" value="'+l.qty+'" onchange="updQty('+i+',parseFloat(this.value)||0)"></div></div>'+
       '<div class="row2" style="margin-top:8px"><div><label class="fld">ราคาขาย(฿)</label><input class="in" type="number" value="'+l.price+'" onchange="upd('+i+',\'price\',parseFloat(this.value)||0);recalc()"></div>'+
-      '<div><label class="fld">ต้นทุนผม(฿)</label><input class="in" type="number" value="'+l.hairCost+'" onchange="upd('+i+',\'hairCost\',parseFloat(this.value)||0)" placeholder="0"></div></div>'+
-      '<div style="margin-top:8px"><label class="fld">ล็อตผม (เลือกเพื่อดึงต้นทุนอัตโนมัติ)</label><select class="in" onchange="setLot('+i+',this.value)">'+lotOptions(l.lotId)+'</select></div>'+
-      '<div class="mini"><b>ค่าอุปกรณ์:</b> '+n(equip)+' &nbsp;<b>ค่าช่าง:</b> '+n(comm)+' &nbsp;<b>กำไร:</b> <span style="color:'+(profit>=0?'var(--ok)':'var(--crit)')+'">'+n(profit)+'</span></div></div>';
+      (FULL?('<div><label class="fld">ต้นทุนผม(฿)</label><input class="in" type="number" value="'+l.hairCost+'" onchange="upd('+i+',\'hairCost\',parseFloat(this.value)||0)" placeholder="0"></div>'):'<div></div>')+'</div>'+
+      '<div style="margin-top:8px"><label class="fld">ล็อตผม'+(FULL?' (เลือกเพื่อดึงต้นทุนอัตโนมัติ)':' (ที่หยิบมาใช้)')+'</label><select class="in" onchange="setLot('+i+',this.value)">'+lotOptions(l.lotId)+'</select></div>'+
+      (FULL?('<div class="mini"><b>ค่าอุปกรณ์:</b> '+n(equip)+' &nbsp;<b>ค่าช่าง:</b> '+n(comm)+' &nbsp;<b>กำไร:</b> <span style="color:'+(profit>=0?'var(--ok)':'var(--crit)')+'">'+n(profit)+'</span></div>'):'')+'</div>';
   }).join('');
 }
 function setLT(i,t){ LINES[i].type=t; renderLines(); }
@@ -277,7 +302,7 @@ function saveSale(){
   for(var i=0;i<LINES.length;i++){ if(!LINES[i].item){ alert('เลือกรายการให้ครบ'); return; } if(!(Number(LINES[i].price)>0)){ alert('ใส่ราคาขายให้ครบ'); return; } }
   var sub=LINES.reduce(function(a,l){return a+(Number(l.price)||0);},0);
   var disc=Number(document.getElementById('disc').value)||0, dep=(SELBOOK?Number(SELBOOK.deposit)||0:0);
-  var sale={ pin:PIN, sale:{ customer:document.getElementById('cName').value||'ลูกค้า', payMethod:PAY,
+  var sale={ token:TOKEN, sale:{ customer:document.getElementById('cName').value||'ลูกค้า', payMethod:PAY,
     discount:disc, depositApplied:dep, received:Number(document.getElementById('recv').value)||0,
     bookingRow:(SELBOOK?SELBOOK.row:''), lines:LINES.map(function(l){return {type:l.type,item:l.item,size:l.size,qty:l.qty,price:l.price,hairCost:l.hairCost,tech:l.tech,lotId:l.lotId||'',note:''};}) } };
   var btns=document.querySelectorAll('.btn');
@@ -320,22 +345,22 @@ function lotPrev(){ var q=Number(document.getElementById('lQty').value)||0, t=Nu
   document.getElementById('lPreview').innerHTML=(q>0&&t>0)?('<b>ต้นทุน/มัด:</b> <span style="color:var(--gold-soft)">'+n(Math.round(t/q*100)/100)+'</span> ฿'):''; }
 function saveLot(){ var name=document.getElementById('lName').value.trim(), q=Number(document.getElementById('lQty').value)||0, t=Number(document.getElementById('lTotal').value)||0;
   if(!name){ alert('ตั้งชื่อเรียกล็อต'); return; } if(!(q>0)||!(t>0)){ alert('กรอกจำนวนมัดและราคารวม'); return; }
-  api('posAddLot',{pin:PIN, lot:{name:name, spec:document.getElementById('lSpec').value, vendor:document.getElementById('lVendor').value, qty:q, total:t, note:''}}).then(function(r){
+  api('posAddLot',{token:TOKEN, lot:{name:name, spec:document.getElementById('lSpec').value, vendor:document.getElementById('lVendor').value, qty:q, total:t, note:''}}).then(function(r){
     if(r&&r.ok){ alert('บันทึกล็อต "'+name+'" แล้ว ✓ ต้นทุน/มัด '+n(r.costPerMad)); ['lName','lSpec','lVendor','lQty','lTotal'].forEach(function(id){document.getElementById(id).value='';}); lotPrev(); reloadFull(); }
     else alert((r&&r.message)||'ไม่สำเร็จ'); }).catch(function(){ alert('เชื่อมต่อไม่สำเร็จ'); });
 }
-function reloadFull(){ api('posGetData',{pin:PIN}).then(function(r){ if(r&&r.ok){ DATA=r; renderBookings(); renderLines(); renderToday(); } }); }
+function reloadFull(){ api('posGetData',{token:TOKEN}).then(function(r){ if(r&&r.ok){ DATA=r; renderBookings(); renderLines(); renderToday(); } }); }
 
 /* ---- expense ---- */
 function setExp(t){ EXPTYPE=t; [].forEach.call(document.querySelectorAll('#expSeg button'),function(b){b.classList.toggle('on',b.dataset.t===t);}); }
 function saveExpense(){ var item=document.getElementById('eItem').value.trim(), total=Number(document.getElementById('eTotal').value)||0;
   if(!item||!total){ alert('กรอกรายการและราคารวม'); return; }
-  api('posAddExpense',{pin:PIN, expense:{type:EXPTYPE,item:item,size:document.getElementById('eSize').value,qty:Number(document.getElementById('eQty').value)||1,total:total,note:document.getElementById('eNote').value}}).then(function(r){
+  api('posAddExpense',{token:TOKEN, expense:{type:EXPTYPE,item:item,size:document.getElementById('eSize').value,qty:Number(document.getElementById('eQty').value)||1,total:total,note:document.getElementById('eNote').value}}).then(function(r){
     if(r&&r.ok){ alert('บันทึกรายจ่ายแล้ว ✓'); document.getElementById('eItem').value=''; document.getElementById('eSize').value=''; document.getElementById('eTotal').value=''; document.getElementById('eNote').value=''; }
     else alert((r&&r.message)||'ไม่สำเร็จ'); }).catch(function(){ alert('เชื่อมต่อไม่สำเร็จ'); });
 }
 function loadSummary(){ document.getElementById('sumBox').innerText='กำลังโหลด…';
-  api('posSummary',{pin:PIN,year:new Date().getFullYear()}).then(function(r){
+  api('posSummary',{token:TOKEN,year:new Date().getFullYear()}).then(function(r){
     if(!r||!r.ok){ document.getElementById('sumBox').innerText=(r&&r.message)||'โหลดไม่สำเร็จ'; return; }
     var rows=(r.rows||[]).filter(function(x){ return Number(x['รายได้บริการ']||0)||Number(x['รายได้ขายผม']||0)||Number(x['กำไรสุทธิ']||0); });
     if(!rows.length){ document.getElementById('sumBox').innerText='ยังไม่มีข้อมูลเดือนนี้'; return; }
