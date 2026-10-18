@@ -241,15 +241,17 @@ function setPage(p){ PAGE=p;
     document.getElementById('nav'+cap(x)).classList.toggle('on',x===p);
   });
   window.scrollTo(0,0);
-  if(p==='settings' && !SET) loadSettings();
+  if(p==='settings') loadSettings();   // ล็อกทุกครั้ง · ต้องใส่รหัสก่อนเข้า
 }
 
 /* ---- PIN gate ---- */
-function needPin(msg, runWithPin){
+var _setGate=false;
+function needPin(msg, runWithPin, force){
   function go(){ runWithPin(ADMIN_PIN, function(r){
     if(r&&r.ok) return;
     if(r&&r.message&&r.message.indexOf('รหัส')>=0){ ADMIN_PIN=null; openPin(msg,'รหัสไม่ถูกต้อง',go); }
   }); }
+  if(force) ADMIN_PIN=null;            // บังคับถามรหัสใหม่ทุกครั้ง (หน้าตั้งค่า)
   if(ADMIN_PIN) go(); else openPin(msg,'',go);
 }
 function openPin(msg,err,cb){ _pinCb=cb;
@@ -258,7 +260,9 @@ function openPin(msg,err,cb){ _pinCb=cb;
   setTimeout(function(){ document.getElementById('pinInput').focus(); },50); }
 function pinOk(){ var v=document.getElementById('pinInput').value.trim(); if(!v) return; ADMIN_PIN=v;
   document.getElementById('pinModal').style.display='none'; var cb=_pinCb; _pinCb=null; if(cb) cb(); }
-function pinCancel(){ document.getElementById('pinModal').style.display='none'; _pinCb=null; }
+function pinCancel(){ document.getElementById('pinModal').style.display='none'; _pinCb=null;
+  if(_setGate){ _setGate=false; setPage('queue'); }   // ยกเลิกตอนเข้าหน้าตั้งค่า → เด้งกลับหน้าคิว
+}
 
 /* ---- helpers ---- */
 function catName(id){ return (TMAP[id]&&TMAP[id].name)||(DEFTMAP[id]&&DEFTMAP[id].name)||id||'อื่นๆ'; }
@@ -524,12 +528,13 @@ var SET_SCHEMA=[
   ]}
 ];
 function loadSettings(){
-  document.getElementById('setBody').innerHTML='<div class="muted" style="text-align:center;padding:40px 0">🔒 ต้องใส่รหัสแอดมินเพื่อดู/แก้การตั้งค่า…</div>';
-  needPin('ดู/แก้การตั้งค่า ต้องใช้รหัสแอดมิน', function(pin,done){
+  SET=null; _setGate=true;
+  document.getElementById('setBody').innerHTML='<div class="muted" style="text-align:center;padding:40px 0">🔒 ต้องใส่รหัสแอดมินเพื่อเข้าหน้าตั้งค่า…</div>';
+  needPin('เข้าหน้าตั้งค่า ต้องใช้รหัสแอดมิน', function(pin,done){
     callApi('adminGetSettings',{pin:pin}).then(function(r){ done(r);
-      if(r&&r.ok){ SET=r.settings; renderSettings(); }
-    }).catch(function(){ done({ok:false}); document.getElementById('setBody').innerHTML='<div class="empty">โหลดไม่สำเร็จ</div>'; });
-  });
+      if(r&&r.ok){ _setGate=false; SET=r.settings; renderSettings(); }
+    }).catch(function(){ done({ok:false}); document.getElementById('setBody').innerHTML='<div class="empty">โหลดไม่สำเร็จ · ลองใหม่อีกครั้ง</div>'; });
+  }, true);
 }
 function renderSettings(){
   var html='<div class="muted" style="margin:2px 2px 6px">แก้ค่าต่างๆ ได้ที่นี่เลย ไม่ต้องเข้า Google Sheet · การเปลี่ยนแปลงมีผลกับการจองใหม่</div>';

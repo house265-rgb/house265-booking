@@ -509,7 +509,11 @@ function buildSizes(){
     var sm=isByob()?'นำผมมาเอง':(out?'สต็อกหมด':(fmt(s.price)+' ฿/มัด'));
     var c=document.createElement('div'); c.className='chip'+(STATE.size===s.size?' sel':'')+(out?' dis':'');
     c.innerHTML=s.size+'<span class="sm">'+sm+'</span>';
-    if(!out) c.onclick=function(){ STATE.size=s.size; STATE.colorId=''; markSelChip(box,c); syncBundleUI(); refreshNav(); };
+    if(!out) c.onclick=function(){
+      if(STATE.size===s.size){ STATE.size=''; STATE.bundle=0; STATE.colorId=''; }  // กดซ้ำ = ยกเลิกขนาด
+      else { STATE.size=s.size; STATE.colorId=''; }
+      buildSizes(); syncBundleUI(); refreshNav();
+    };
     box.appendChild(c);
   });
 }
@@ -518,7 +522,11 @@ function buildBundles(){
   CAT.bundles.forEach(function(b){
     var c=document.createElement('div'); c.className='chip'; c.dataset.v=b.value;
     c.innerText=b.label;
-    c.onclick=function(){ STATE.bundle=b.value; syncBundleUI(); refreshNav(); };
+    c.onclick=function(){
+      if(STATE.bundle===b.value && !isByob()){ STATE.bundle=0; STATE.size=''; STATE.colorId=''; buildSizes(); }  // กดซ้ำ = ยกเลิก
+      else STATE.bundle=b.value;
+      syncBundleUI(); refreshNav();
+    };
     box.appendChild(c);
   });
   syncBundleUI();
@@ -537,7 +545,13 @@ function syncBundleUI(){
     else if(gated && mx<20){ h.style.display='block'; h.style.color='var(--warn)'; h.innerText=(mx>0?('สต็อกขนาดนี้รับได้สูงสุด '+fmtNum(mx)+' มัด (รวมทุกสี)'):'ขนาดนี้สต็อกหมด'); }
     else h.style.display='none'; }
 }
-function bundleStep(d){ var mx=bundleMax(), mn=isByob()?1:0.5, v=(STATE.bundle||0)+d; if(v<mn)v=mn; if(v>mx)v=mx; if(v>20)v=20; STATE.bundle=Math.round(v*2)/2; syncBundleUI(); refreshNav(); }
+function bundleStep(d){
+  var mx=bundleMax(), floor=isByob()?1:0, v=(STATE.bundle||0)+d;   // ไม่ใช่ BYOB ลดได้ถึง 0
+  if(v<floor)v=floor; if(v>mx)v=mx; if(v>20)v=20;
+  STATE.bundle=Math.round(v*2)/2;
+  if(STATE.bundle===0 && !isByob()){ STATE.size=''; STATE.colorId=''; buildSizes(); }  // 0 มัด = ไม่เพิ่มผม → เคลียร์ขนาด/สี
+  syncBundleUI(); refreshNav();
+}
 function fmtNum(n){ return String(Math.round(n*100)/100); }
 function buildRemovals(){
   var s=document.getElementById('removalSel'); s.innerHTML='';
