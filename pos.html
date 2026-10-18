@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>House265 POS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@200;300;400;500;600&family=Playfair+Display:wght@600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" onerror="var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs@master/qrcode.min.js';document.head.appendChild(s);"></script>
+<style>
+  :root{--bg:#131210;--panel:#1b1a16;--panel-2:#211f19;--elev:#262318;--line:#332f24;--line-soft:#272419;
+    --fg:#ece7db;--muted:#a69e8f;--faint:#756e60;--gold:#c8a75a;--gold-soft:#e6cc7e;--gold-dim:#8a7636;
+    --ok:#73c08c;--crit:#d6705c;--blue:#7aa6c9;--f:'Kanit',system-ui,sans-serif;--fd:'Playfair Display',serif;--fm:'IBM Plex Mono',monospace;color-scheme:dark;}
+  *{box-sizing:border-box}html,body{margin:0}
+  body{background:var(--bg);color:var(--fg);font-family:var(--f);font-weight:300;padding:env(safe-area-inset-top,0) 0 60px;font-variant-numeric:tabular-nums;
+    background-image:radial-gradient(800px 460px at 50% -6%,rgba(200,167,90,.06),transparent 70%)}
+  .wrap{max-width:720px;margin:0 auto;padding:20px 15px}
+  h1{font-family:var(--fd);font-weight:700;letter-spacing:.08em;font-size:23px;margin:0;
+    background:linear-gradient(180deg,var(--gold-soft),var(--gold-dim));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .eyebrow{font-family:var(--fm);font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
+  input,button,select,textarea{font-family:var(--f);font-size:15px;border-radius:10px}
+  button{cursor:pointer;border:none}
+  .btn{background:linear-gradient(100deg,var(--gold-dim),var(--gold-soft));color:#1a1a1a;padding:14px 18px;font-weight:500;width:100%}
+  .btn.sec{background:none;border:1px solid var(--line);color:var(--muted)}
+  .card{background:var(--panel);border:1px solid var(--line-soft);border-radius:14px;padding:15px;margin-bottom:12px}
+  .muted{color:var(--muted);font-size:13px}.faint{color:var(--faint)}.empty{text-align:center;color:var(--faint);padding:40px 0}
+  .topnav{position:sticky;top:0;z-index:30;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:5px;padding:5px;
+    background:rgba(27,26,22,.92);backdrop-filter:blur(10px);border:1px solid var(--line-soft);border-radius:15px;margin:14px 0 16px}
+  .topnav button{background:transparent;color:var(--muted);padding:11px 0;border-radius:11px;font-weight:500;font-size:14px;display:flex;align-items:center;justify-content:center;gap:6px}
+  .topnav button.on{background:linear-gradient(135deg,var(--gold-dim),var(--gold-soft));color:#1a1a1a}
+  label.fld{display:block;font-size:12px;color:var(--faint);margin:0 0 5px}
+  .in{width:100%;padding:12px;border:1px solid var(--line-soft);background:var(--panel-2);color:var(--fg);border-radius:10px;font-size:15px;outline:none}
+  .in:focus{border-color:var(--gold)}
+  .row2{display:flex;gap:9px}.row2>*{flex:1}
+  .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;padding:4px;background:var(--panel-2);border-radius:12px;margin-bottom:10px}
+  .seg button{background:transparent;color:var(--muted);padding:9px 0;border-radius:9px;font-weight:500}
+  .seg button.on{background:var(--panel);color:var(--gold-soft);box-shadow:0 1px 2px rgba(0,0,0,.3)}
+  .bchip{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 13px;border:1px solid var(--line-soft);border-radius:11px;margin-bottom:8px;background:var(--panel-2);cursor:pointer}
+  .bchip:active{background:var(--elev)}.bchip .tm{font-family:var(--fm);color:var(--gold-soft);font-size:13px}
+  .bchip b{font-weight:500}.bchip .d{font-size:12px;color:var(--faint)}
+  .line{border:1px solid var(--line-soft);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--panel-2)}
+  .line .lh{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .line .lh b{font-weight:500;color:var(--gold-soft)}
+  .xbtn{background:none;border:1px solid var(--line);color:var(--crit);border-radius:8px;padding:5px 10px;font-size:12px;width:auto}
+  .mini{font-size:11px;color:var(--faint);margin-top:6px;display:flex;gap:10px;flex-wrap:wrap}
+  .mini b{color:var(--muted);font-weight:400}
+  .tot{display:flex;justify-content:space-between;padding:6px 0;font-size:14px}.tot.big{font-size:19px;font-weight:600;color:var(--gold-soft);border-top:1px solid var(--line-soft);margin-top:6px;padding-top:12px}
+  .pm{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 12px}
+  .pm button{padding:12px 0;border:1px solid var(--line-soft);background:var(--panel-2);color:var(--muted);border-radius:11px;font-weight:500}
+  .pm button.on{border-color:var(--gold);color:var(--gold-soft);background:rgba(200,167,90,.08)}
+  .srow{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-top:1px solid var(--line-soft);font-size:14px}.srow:first-child{border-top:none}
+  .srow .d{font-size:12px;color:var(--faint);margin-top:2px}
+  .stat{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+  .stat>div{background:var(--panel);border:1px solid var(--line-soft);border-radius:13px;padding:14px 10px;text-align:center}
+  .stat .n{font-family:var(--fm);font-size:22px;font-weight:500;color:var(--gold-soft)}.stat .l{font-size:11px;color:var(--faint);margin-top:6px}
+  /* modal */
+  .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;align-items:center;justify-content:center;padding:16px}
+  .mbox{background:var(--panel);max-width:360px;width:100%;border:1px solid var(--gold-dim);border-radius:14px;overflow:hidden;max-height:92vh;overflow-y:auto}
+  .mbox .mh{background:linear-gradient(100deg,var(--gold-dim),var(--gold-soft));color:#1a1a1a;padding:12px;text-align:center;font-weight:500}
+  .mbox .mc{padding:18px}
+  .mbox input{width:100%;padding:13px;border:1px solid var(--line-soft);background:var(--panel-2);color:var(--fg);border-radius:10px;outline:none;font-family:var(--f);font-size:15px}
+  /* receipt (58mm) */
+  #rcpt{background:#fff;color:#111;font-family:var(--fm);font-size:12px;line-height:1.5;padding:12px;border-radius:8px;width:100%}
+  #rcpt h3{text-align:center;margin:0 0 2px;font-family:var(--f);font-size:16px}
+  #rcpt .c{text-align:center}#rcpt .rr{display:flex;justify-content:space-between;gap:8px}
+  #rcpt .hr{border-top:1px dashed #999;margin:7px 0}
+  #rcpt .big{font-size:15px;font-weight:600}
+  #qr{display:flex;justify-content:center;padding:10px;background:#fff;border-radius:10px;margin:8px 0;min-height:40px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">House265 · POS</div>
+  <h1>ขายหน้าร้าน</h1>
+  <div id="loadingBox" class="muted" style="text-align:center;padding:50px 0">กำลังโหลด…</div>
+
+  <div id="panel" style="display:none">
+    <div class="topnav">
+      <button id="navSale" class="on" onclick="setPage('sale')"><span>🛒</span>ขาย</button>
+      <button id="navToday" onclick="setPage('today')"><span>📊</span>สรุปวันนี้</button>
+      <button id="navAcct" onclick="setPage('acct')"><span>📒</span>บัญชี</button>
+    </div>
+
+    <!-- ===== SALE ===== -->
+    <div id="pageSale">
+      <div class="card">
+        <div class="seg"><button id="mWalk" class="on" onclick="setCust('walk')">👤 ลูกค้าทั่วไป</button><button id="mBook" onclick="setCust('book')">📅 เลือกจากคิววันนี้</button></div>
+        <div id="walkBox">
+          <div class="row2"><div><label class="fld">ชื่อลูกค้า</label><input id="cName" class="in" placeholder="ไม่ระบุก็ได้"></div></div>
+        </div>
+        <div id="bookBox" style="display:none"><div id="bookList"></div></div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <b style="font-weight:500">รายการขาย</b>
+          <button class="btn sec" style="width:auto;padding:8px 14px;font-size:13px" onclick="addLine()">+ เพิ่มรายการ</button>
+        </div>
+        <div id="lines"></div>
+      </div>
+
+      <div class="card">
+        <div class="tot"><span class="muted">รวมย่อย</span><span id="tSub">0</span></div>
+        <div class="tot"><span class="muted">ส่วนลด</span><input id="disc" class="in" type="number" value="0" style="width:120px;text-align:right;padding:7px 10px" oninput="recalc()"></div>
+        <div class="tot" id="depRow" style="display:none"><span class="muted">หักมัดจำที่จ่ายแล้ว</span><span id="tDep">0</span></div>
+        <div class="tot big"><span>ยอดชำระ</span><span id="tDue">0</span></div>
+        <label class="fld" style="margin-top:10px">ช่องทางรับเงิน</label>
+        <div class="pm"><button class="on" data-m="เงินสด" onclick="setPay('เงินสด')">💵 เงินสด</button><button data-m="พร้อมเพย์" onclick="setPay('พร้อมเพย์')">📱 พร้อมเพย์</button><button data-m="โอน" onclick="setPay('โอน')">🏦 โอน</button></div>
+        <div id="cashBox"><div class="row2"><div><label class="fld">รับเงินมา</label><input id="recv" class="in" type="number" placeholder="0" oninput="recalc()"></div><div><label class="fld">เงินทอน</label><input id="chg" class="in" readonly value="0"></div></div></div>
+        <div id="qrBox" style="display:none"><div class="muted" style="text-align:center;margin:6px 0">สแกนจ่าย <b id="qrAmt" style="color:var(--gold-soft)"></b> บาท</div><div id="qr"></div><div class="faint" style="text-align:center;font-size:11px">พร้อมเพย์ · <span id="ppId"></span></div></div>
+        <button class="btn" style="margin-top:14px" onclick="saveSale()">💾 บันทึกการขาย + ใบเสร็จ</button>
+      </div>
+    </div>
+
+    <!-- ===== TODAY ===== -->
+    <div id="pageToday" style="display:none">
+      <div class="stat">
+        <div><div class="n" id="stRev">0</div><div class="l">ยอดขายวันนี้ (฿)</div></div>
+        <div><div class="n" id="stCnt">0</div><div class="l">จำนวนบิล</div></div>
+        <div><div class="n" id="stComm">0</div><div class="l">ค่าช่างวันนี้ (฿)</div></div>
+      </div>
+      <div class="card"><div id="byMethod" class="muted"></div></div>
+      <div class="card"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><b style="font-weight:500">บิลวันนี้</b><button class="btn sec" style="width:auto;padding:7px 12px;font-size:13px" onclick="reload()">รีเฟรช</button></div><div id="salesList"></div></div>
+    </div>
+
+    <!-- ===== ACCT (รายจ่าย) ===== -->
+    <div id="pageAcct" style="display:none">
+      <div class="card">
+        <b style="font-weight:500">บันทึกรายจ่าย / ซื้อเข้า</b>
+        <div style="margin-top:10px">
+          <label class="fld">ประเภท</label>
+          <div class="seg" id="expSeg"><button class="on" data-t="ผม" onclick="setExp('ผม')">ซื้อผม</button><button data-t="อุปกรณ์" onclick="setExp('อุปกรณ์')">อุปกรณ์</button><button data-t="อื่นๆ" onclick="setExp('อื่นๆ')">อื่นๆ</button></div>
+          <label class="fld">รายการ</label><input id="eItem" class="in" placeholder="เช่น Multi Donor 30นิ้ว / ค่าเช่า">
+          <div class="row2" style="margin-top:9px"><div><label class="fld">ขนาด (ถ้ามี)</label><input id="eSize" class="in" placeholder="30"></div><div><label class="fld">จำนวน</label><input id="eQty" class="in" type="number" value="1"></div></div>
+          <div class="row2" style="margin-top:9px"><div><label class="fld">ราคารวม (฿)</label><input id="eTotal" class="in" type="number" placeholder="0"></div><div><label class="fld">หมายเหตุ</label><input id="eNote" class="in" placeholder=""></div></div>
+          <button class="btn" style="margin-top:12px" onclick="saveExpense()">บันทึกรายจ่าย</button>
+        </div>
+      </div>
+      <div class="card"><b style="font-weight:500">สรุปรายเดือน (ปีนี้)</b><div id="sumBox" class="muted" style="margin-top:8px">—</div><button class="btn sec" style="margin-top:10px" onclick="loadSummary()">ดูสรุปรายเดือน</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- PIN modal -->
+<div class="modal" id="pinModal"><div class="mbox"><div class="mh">ยืนยันรหัสแอดมิน</div><div class="mc">
+  <div class="muted" style="margin-bottom:10px">เข้าระบบ POS ต้องใช้รหัสแอดมิน</div>
+  <input type="password" id="pinInput" placeholder="รหัสผ่าน" onkeydown="if(event.key==='Enter')pinOk()">
+  <div id="pinErr" style="color:var(--crit);font-size:12px;min-height:16px"></div>
+  <button class="btn" style="margin-top:8px" onclick="pinOk()">เข้าสู่ระบบ</button>
+</div></div></div>
+
+<!-- Receipt modal -->
+<div class="modal" id="rcptModal"><div class="mbox"><div class="mh">บันทึกการขายแล้ว ✓</div><div class="mc">
+  <div id="rcpt"></div>
+  <div class="row2" style="margin-top:12px"><button class="btn sec" onclick="closeRcpt()">ปิด</button><button class="btn" onclick="printRcpt()">🖨️ ปริ้นใบเสร็จ</button></div>
+</div></div></div>
+
+<script>
+var API_URL='https://script.google.com/macros/s/AKfycbwsElkbUA3UYuSWZWrQx59nITnbVVuDGZdK1uMkLaQ2iEwGJ8_OY-j2RVsqbM86aaTx/exec';
+function api(action,data){ return fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:action,data:data||{}})}).then(function(r){return r.json();}); }
+var PIN=null, DATA=null, LINES=[], CUST='walk', PAY='เงินสด', SELBOOK=null, EXPTYPE='ผม', _pinCb=null;
+
+/* ---- PIN / load ---- */
+window.onload=function(){ openPin(); };
+function openPin(err){ document.getElementById('pinErr').innerText=err||''; document.getElementById('pinInput').value=''; document.getElementById('pinModal').style.display='flex'; setTimeout(function(){document.getElementById('pinInput').focus();},50); }
+function pinOk(){ var v=document.getElementById('pinInput').value.trim(); if(!v) return; PIN=v; load(); }
+function load(){
+  api('posGetData',{pin:PIN}).then(function(r){
+    if(!r||!r.ok){ if(r&&r.message&&r.message.indexOf('รหัส')>=0){ openPin('รหัสไม่ถูกต้อง'); return; }
+      document.getElementById('loadingBox').innerHTML=(r&&r.message)||'โหลดไม่สำเร็จ'; document.getElementById('pinModal').style.display='none'; return; }
+    DATA=r; document.getElementById('pinModal').style.display='none';
+    document.getElementById('loadingBox').style.display='none'; document.getElementById('panel').style.display='block';
+    document.getElementById('ppId').innerText=r.promptPayId||'';
+    if(!LINES.length) addLine();
+    renderBookings(); renderLines(); renderToday(); recalc();
+  }).catch(function(e){ document.getElementById('loadingBox').innerText='เชื่อมต่อไม่สำเร็จ'; });
+}
+function reload(){ api('posGetData',{pin:PIN}).then(function(r){ if(r&&r.ok){ DATA=r; renderBookings(); renderToday(); } }); }
+
+/* ---- nav ---- */
+function setPage(p){ ['Sale','Today','Acct'].forEach(function(x){ document.getElementById('page'+x).style.display=(x.toLowerCase()===p)?'block':'none'; document.getElementById('nav'+x).classList.toggle('on',x.toLowerCase()===p); }); window.scrollTo(0,0); if(p==='today') renderToday(); }
+
+/* ---- customer ---- */
+function setCust(m){ CUST=m; document.getElementById('mWalk').classList.toggle('on',m==='walk'); document.getElementById('mBook').classList.toggle('on',m==='book');
+  document.getElementById('walkBox').style.display=m==='walk'?'block':'none'; document.getElementById('bookBox').style.display=m==='book'?'block':'none'; }
+function renderBookings(){
+  var box=document.getElementById('bookList'); var bs=DATA.bookings||[];
+  if(!bs.length){ box.innerHTML='<div class="faint" style="padding:10px 0">— ไม่มีคิวที่ยังไม่เช็คเอาต์วันนี้ —</div>'; return; }
+  box.innerHTML=bs.map(function(b,i){ return '<div class="bchip" onclick="pickBooking('+i+')"><div><div><span class="tm">'+esc(b.start)+'</span> <b>'+esc(b.name)+'</b></div>'+
+    '<div class="d">'+esc(b.acctName)+' '+esc(b.size)+' '+b.bundle+'มัด · ช่าง '+esc(b.techName||'-')+' · มัดจำ '+n(b.deposit)+'</div></div>'+
+    '<span class="tm">'+n(b.suggestTotal)+'</span></div>'; }).join('');
+}
+function pickBooking(i){ var b=DATA.bookings[i]; SELBOOK=b;
+  document.getElementById('cName').value=b.name||'';
+  LINES=[{type:'บริการ', item:b.acctName, size:b.size, qty:b.bundle, price:b.suggestTotal, hairCost:0, tech:b.techName||''}];
+  setCust('walk'); renderLines(); recalc();
+}
+
+/* ---- lines ---- */
+function addLine(){ LINES.push({type:'บริการ',item:(DATA&&DATA.services[0]?DATA.services[0].acctName:''),size:'',qty:1,price:0,hairCost:0,tech:''}); renderLines(); }
+function delLine(i){ LINES.splice(i,1); if(!LINES.length) addLine(); renderLines(); recalc(); }
+function svcOptions(sel){ var svc=(DATA.services||[]); var r=(DATA.rates||{});
+  var names={}; svc.forEach(function(s){names[s.acctName]=1;}); Object.keys(r).forEach(function(k){names[k]=1;});
+  return Object.keys(names).map(function(nm){ return '<option'+(nm===sel?' selected':'')+'>'+esc(nm)+'</option>'; }).join(''); }
+function techOptions(sel){ return '<option value="">— ช่าง —</option>'+(DATA.technicians||[]).map(function(t){ return '<option'+(t.name===sel?' selected':'')+'>'+esc(t.name)+'</option>'; }).join(''); }
+function renderLines(){
+  var box=document.getElementById('lines');
+  box.innerHTML=LINES.map(function(l,i){
+    var rt=(DATA.rates||{})[l.item]||{equip:0,comm:0}; var comm=Math.round(rt.comm*(l.qty||0)), equip=Math.round(rt.equip*(l.qty||0));
+    var profit=(l.price||0)-((l.hairCost||0)+equip+comm);
+    return '<div class="line"><div class="lh"><b>รายการ '+(i+1)+'</b><button class="xbtn" onclick="delLine('+i+')">ลบ</button></div>'+
+      '<div class="seg" style="margin-bottom:8px"><button class="'+(l.type==='บริการ'?'on':'')+'" onclick="setLT('+i+',\'บริการ\')">บริการต่อผม</button><button class="'+(l.type==='ขายผม'?'on':'')+'" onclick="setLT('+i+',\'ขายผม\')">ขายผม</button></div>'+
+      '<div class="row2"><div><label class="fld">รายการ</label><select class="in" onchange="upd('+i+',\'item\',this.value)">'+svcOptions(l.item)+'</select></div>'+
+      '<div><label class="fld">ช่าง</label><select class="in" onchange="upd('+i+',\'tech\',this.value)">'+techOptions(l.tech)+'</select></div></div>'+
+      '<div class="row2" style="margin-top:8px"><div><label class="fld">ขนาด(นิ้ว)</label><input class="in" value="'+esc(l.size)+'" onchange="updSize('+i+',this.value)"></div>'+
+      '<div><label class="fld">จำนวน(มัด)</label><input class="in" type="number" step="0.5" value="'+l.qty+'" onchange="upd('+i+',\'qty\',parseFloat(this.value)||0);recalc()"></div></div>'+
+      '<div class="row2" style="margin-top:8px"><div><label class="fld">ราคาขาย(฿)</label><input class="in" type="number" value="'+l.price+'" onchange="upd('+i+',\'price\',parseFloat(this.value)||0);recalc()"></div>'+
+      '<div><label class="fld">ต้นทุนผม(฿)</label><input class="in" type="number" value="'+l.hairCost+'" onchange="upd('+i+',\'hairCost\',parseFloat(this.value)||0)" placeholder="0"></div></div>'+
+      '<div class="mini"><b>ค่าอุปกรณ์:</b> '+n(equip)+' &nbsp;<b>ค่าช่าง:</b> '+n(comm)+' &nbsp;<b>กำไร:</b> <span style="color:'+(profit>=0?'var(--ok)':'var(--crit)')+'">'+n(profit)+'</span></div></div>';
+  }).join('');
+}
+function setLT(i,t){ LINES[i].type=t; renderLines(); }
+function upd(i,k,v){ LINES[i][k]=v; if(k==='item'){ autoPrice(i); } renderLines(); }
+function updSize(i,v){ LINES[i].size=v; autoPrice(i); renderLines(); recalc(); }
+function autoPrice(i){ var l=LINES[i]; var svc=(DATA.services||[]).filter(function(s){return s.acctName===l.item;})[0];
+  if(svc&&l.size){ var f=svc.sizes.filter(function(s){return String(s.size).replace(/[^0-9]/g,'')===String(l.size).replace(/[^0-9]/g,'');})[0]; if(f){ l.price=Math.round(f.price*(l.qty||1)); } } }
+
+/* ---- totals ---- */
+function setPay(m){ PAY=m; [].forEach.call(document.querySelectorAll('.pm button'),function(b){ b.classList.toggle('on',b.dataset.m===m); });
+  document.getElementById('cashBox').style.display=m==='เงินสด'?'block':'none';
+  document.getElementById('qrBox').style.display=m==='พร้อมเพย์'?'block':'none'; recalc(); }
+function recalc(){
+  var sub=LINES.reduce(function(a,l){return a+(Number(l.price)||0);},0);
+  var disc=Number(document.getElementById('disc').value)||0;
+  var dep=(SELBOOK?Number(SELBOOK.deposit)||0:0);
+  var total=Math.max(0,sub-disc), due=Math.max(0,total-dep);
+  document.getElementById('tSub').innerText=n(sub);
+  document.getElementById('depRow').style.display=dep>0?'flex':'none'; document.getElementById('tDep').innerText='-'+n(dep);
+  document.getElementById('tDue').innerText=n(due);
+  var recv=Number(document.getElementById('recv').value)||0; document.getElementById('chg').value=n(Math.max(0,recv-due));
+  if(PAY==='พร้อมเพย์'){ drawQR(due); }
+}
+function drawQR(amt,tries){ tries=tries||0; var el=document.getElementById('qr'); document.getElementById('qrAmt').innerText=n(amt);
+  var id=(DATA&&DATA.promptPayId)||''; if(!id){ el.innerHTML='<div class="faint">ยังไม่ตั้งค่าพร้อมเพย์</div>'; return; }
+  if(typeof QRCode==='undefined'){ // ตัวสร้าง QR ยังโหลดไม่เสร็จ → ลองใหม่สั้นๆ
+    if(tries<6){ el.innerHTML='<div class="faint">กำลังเตรียม QR…</div>'; setTimeout(function(){ if(PAY==='พร้อมเพย์') drawQR(amt,tries+1); },400); return; }
+    el.innerHTML='<div class="faint" style="text-align:center;line-height:1.7">สร้าง QR อัตโนมัติไม่ได้ (เน็ตช้า)<br>เปิดแอปพร้อมเพย์ โอนเข้า<br><b style="color:var(--gold-soft)">'+esc(id)+'</b><br>ยอด '+n(amt)+' บาท</div>'; return; }
+  el.innerHTML=''; try{ new QRCode(el,{text:ppPayload(id,amt),width:190,height:190,correctLevel:QRCode.CorrectLevel.M}); }
+  catch(e){ el.innerHTML='<div class="faint">สร้าง QR ไม่ได้</div>'; }
+}
+/* PromptPay EMVCo */
+function ppF(id,v){ return id+('0'+v.length).slice(-2)+v; }
+function ppPayload(id,amount){ id=String(id).replace(/[^0-9]/g,''); var tag,target;
+  if(id.length>=15){tag='03';target=id;} else if(id.length===13){tag='02';target=id;} else {tag='01';target='0066'+id.replace(/^0/,'');}
+  var merc=ppF('00','A000000677010111')+ppF(tag,target);
+  var p=ppF('00','01')+ppF('01',amount>0?'12':'11')+ppF('29',merc)+ppF('53','764')+(amount>0?ppF('54',Number(amount).toFixed(2)):'')+ppF('58','TH')+'6304';
+  return p+crc16(p); }
+function crc16(s){ var c=0xFFFF; for(var i=0;i<s.length;i++){ c^=s.charCodeAt(i)<<8; for(var j=0;j<8;j++){ c=(c&0x8000)?((c<<1)^0x1021):(c<<1); c&=0xFFFF; } } return ('000'+c.toString(16).toUpperCase()).slice(-4); }
+
+/* ---- save sale ---- */
+function saveSale(){
+  if(!LINES.length){ alert('ยังไม่มีรายการ'); return; }
+  for(var i=0;i<LINES.length;i++){ if(!LINES[i].item){ alert('เลือกรายการให้ครบ'); return; } if(!(Number(LINES[i].price)>0)){ alert('ใส่ราคาขายให้ครบ'); return; } }
+  var sub=LINES.reduce(function(a,l){return a+(Number(l.price)||0);},0);
+  var disc=Number(document.getElementById('disc').value)||0, dep=(SELBOOK?Number(SELBOOK.deposit)||0:0);
+  var sale={ pin:PIN, sale:{ customer:document.getElementById('cName').value||'ลูกค้า', payMethod:PAY,
+    discount:disc, depositApplied:dep, received:Number(document.getElementById('recv').value)||0,
+    bookingRow:(SELBOOK?SELBOOK.row:''), lines:LINES.map(function(l){return {type:l.type,item:l.item,size:l.size,qty:l.qty,price:l.price,hairCost:l.hairCost,tech:l.tech,note:''};}) } };
+  var btns=document.querySelectorAll('.btn');
+  api('posCreateSale',sale).then(function(r){
+    if(!r||!r.ok){ alert((r&&r.message)||'บันทึกไม่สำเร็จ'); return; }
+    showReceipt(r.receipt); resetSale(); reload();
+  }).catch(function(){ alert('เชื่อมต่อไม่สำเร็จ'); });
+}
+function resetSale(){ LINES=[]; SELBOOK=null; document.getElementById('cName').value=''; document.getElementById('disc').value='0'; document.getElementById('recv').value=''; addLine(); setPay('เงินสด'); recalc(); }
+
+/* ---- receipt ---- */
+function showReceipt(rc){
+  var h='<h3>'+esc(rc.shopName)+'</h3><div class="c">ใบเสร็จรับเงิน</div><div class="c">'+esc(rc.bill)+' · '+esc(rc.datetime)+'</div>'+
+    '<div class="c">ลูกค้า: '+esc(rc.customer)+'</div><div class="hr"></div>';
+  rc.lines.forEach(function(l){ h+='<div class="rr"><span>'+esc(l.item)+' '+esc(l.size)+' '+l.qty+'มัด'+(l.tech?(' ('+esc(l.tech)+')'):'')+'</span><span>'+n(l.price)+'</span></div>'; });
+  h+='<div class="hr"></div><div class="rr"><span>รวมย่อย</span><span>'+n(rc.subtotal)+'</span></div>';
+  if(rc.discount>0) h+='<div class="rr"><span>ส่วนลด</span><span>-'+n(rc.discount)+'</span></div>';
+  if(rc.depositApplied>0) h+='<div class="rr"><span>หักมัดจำ</span><span>-'+n(rc.depositApplied)+'</span></div>';
+  h+='<div class="rr big"><span>ยอดชำระ</span><span>'+n(rc.due)+'</span></div>';
+  h+='<div class="rr"><span>ชำระโดย</span><span>'+esc(rc.method)+'</span></div>';
+  if(rc.method==='เงินสด'&&rc.received>0){ h+='<div class="rr"><span>รับเงิน</span><span>'+n(rc.received)+'</span></div><div class="rr"><span>เงินทอน</span><span>'+n(rc.change)+'</span></div>'; }
+  h+='<div class="hr"></div><div class="c">ขอบคุณค่ะ 🤍 House265</div>';
+  document.getElementById('rcpt').innerHTML=h; document.getElementById('rcptModal').style.display='flex';
+}
+function closeRcpt(){ document.getElementById('rcptModal').style.display='none'; }
+function printRcpt(){ var w=window.open('','_blank'); w.document.write('<html><head><title>ใบเสร็จ</title><style>body{font-family:monospace;font-size:12px;width:58mm;margin:0;padding:6px}h3{text-align:center;margin:0}.c{text-align:center}.rr{display:flex;justify-content:space-between}.hr{border-top:1px dashed #999;margin:6px 0}.big{font-size:15px;font-weight:bold}</style></head><body>'+document.getElementById('rcpt').innerHTML+'</body></html>'); w.document.close(); w.focus(); setTimeout(function(){w.print();},300); }
+
+/* ---- today ---- */
+function renderToday(){ if(!DATA) return; var s=DATA.summary||{count:0,revenue:0,commission:0,byMethod:{}};
+  document.getElementById('stRev').innerText=n(s.revenue); document.getElementById('stCnt').innerText=s.count; document.getElementById('stComm').innerText=n(s.commission);
+  var bm=s.byMethod||{}; document.getElementById('byMethod').innerHTML='แยกช่องทาง: '+(Object.keys(bm).length?Object.keys(bm).map(function(k){return esc(k)+' '+n(bm[k]);}).join(' · '):'—');
+  var box=document.getElementById('salesList'); var sl=DATA.sales||[];
+  box.innerHTML=sl.length?sl.map(function(x){ return '<div class="srow"><div><b>'+esc(x.customer)+'</b> <span class="faint">'+esc(x.bill)+'</span><div class="d">'+esc(x.item)+' '+esc(x.size)+' '+x.qty+'มัด · '+esc(x.tech||'-')+' · '+esc(x.type)+'</div></div><div style="text-align:right"><div class="tm" style="color:var(--gold-soft)">'+n(x.price)+'</div><div class="d">กำไร '+n(x.profit)+'</div></div></div>'; }).join(''):'<div class="empty">ยังไม่มีการขายวันนี้</div>';
+}
+
+/* ---- expense ---- */
+function setExp(t){ EXPTYPE=t; [].forEach.call(document.querySelectorAll('#expSeg button'),function(b){b.classList.toggle('on',b.dataset.t===t);}); }
+function saveExpense(){ var item=document.getElementById('eItem').value.trim(), total=Number(document.getElementById('eTotal').value)||0;
+  if(!item||!total){ alert('กรอกรายการและราคารวม'); return; }
+  api('posAddExpense',{pin:PIN, expense:{type:EXPTYPE,item:item,size:document.getElementById('eSize').value,qty:Number(document.getElementById('eQty').value)||1,total:total,note:document.getElementById('eNote').value}}).then(function(r){
+    if(r&&r.ok){ alert('บันทึกรายจ่ายแล้ว ✓'); document.getElementById('eItem').value=''; document.getElementById('eSize').value=''; document.getElementById('eTotal').value=''; document.getElementById('eNote').value=''; }
+    else alert((r&&r.message)||'ไม่สำเร็จ'); }).catch(function(){ alert('เชื่อมต่อไม่สำเร็จ'); });
+}
+function loadSummary(){ document.getElementById('sumBox').innerText='กำลังโหลด…';
+  api('posSummary',{pin:PIN,year:new Date().getFullYear()}).then(function(r){
+    if(!r||!r.ok){ document.getElementById('sumBox').innerText=(r&&r.message)||'โหลดไม่สำเร็จ'; return; }
+    var rows=(r.rows||[]).filter(function(x){ return Number(x['รายได้บริการ']||0)||Number(x['รายได้ขายผม']||0)||Number(x['กำไรสุทธิ']||0); });
+    if(!rows.length){ document.getElementById('sumBox').innerText='ยังไม่มีข้อมูลเดือนนี้'; return; }
+    document.getElementById('sumBox').innerHTML=rows.map(function(x){ return '<div class="srow"><div><b>'+esc(x['เดือน'])+'</b><div class="d">รายได้ '+n((Number(x['รายได้บริการ'])||0)+(Number(x['รายได้ขายผม'])||0))+' · กำไรสุทธิ '+n(x['กำไรสุทธิ'])+'</div></div><div class="tm" style="color:var(--gold-soft)">'+((Number(x['%กำไร'])||0)*100).toFixed(0)+'%</div></div>'; }).join('');
+  }).catch(function(){ document.getElementById('sumBox').innerText='เชื่อมต่อไม่สำเร็จ'; });
+}
+
+/* ---- utils ---- */
+function n(v){ return (Number(v)||0).toLocaleString('en-US'); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(m){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m];}); }
+</script>
+</body>
+</html>
