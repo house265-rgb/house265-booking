@@ -96,28 +96,28 @@ td.r,th.r{text-align:right}
       </div>
 
       <div class="seg" id="modeSeg" style="display:flex;gap:8px;margin-top:14px">
-        <button type="button" class="segbtn on" data-m="buy" onclick="setMode('buy')">🛒 ซื้อผมสำเร็จ</button>
-        <button type="button" class="segbtn" data-m="produce" onclick="setMode('produce')">✂️ ปั้นช่อเอง</button>
+        <button type="button" class="segbtn on" data-m="produce" onclick="setMode('produce')">✂️ ปั้นช่อเอง</button>
+        <button type="button" class="segbtn" data-m="buy" onclick="setMode('buy')">🛒 ซื้อผมสำเร็จ</button>
       </div>
 
-      <div id="buyMode">
+      <div id="produceMode">
+        <div class="row2" style="margin-top:12px">
+          <div><label class="lbl">ปั้นได้ (มัดเล็ก)</label><input class="in" id="pQty" type="number" min="1" placeholder="0" oninput="prev()"></div>
+          <div><label class="lbl">ต้นทุนผมดิบ/มัด (฿) · ผมเพียวๆ</label><input class="in" id="pRaw" type="number" placeholder="0" oninput="prev()"></div>
+        </div>
+        <div class="row2" style="margin-top:8px">
+          <div><label class="lbl">ค่าปั้นช่อ/มัด (฿)</label><input class="in" id="pLabor" type="number" placeholder="0" oninput="prev()"></div>
+          <div><label class="lbl">ค่าวัสดุ/มัด (฿)</label><input class="in" id="pMat" type="number" placeholder="0" oninput="prev()"></div>
+        </div>
+        <label class="lbl" style="margin-top:8px">จำนวนเสีย/สูญ (มัด · บันทึกไว้เฉยๆ)</label><input class="in" id="pWaste" type="number" placeholder="0">
+      </div>
+
+      <div id="buyMode" class="hide">
         <div class="row2" style="margin-top:12px">
           <div><label class="lbl">จำนวน (มัดเล็ก)</label><input class="in" id="rQty" type="number" min="1" placeholder="0" oninput="prev()"></div>
           <div><label class="lbl">ต้นทุน/มัด (฿) · ผมเพียวๆ</label><input class="in" id="rCost" type="number" placeholder="0" oninput="prev()"></div>
         </div>
         <label class="lbl" style="margin-top:8px">ค่าใช้จ่ายเพิ่ม (ขนส่ง ฯลฯ)</label><input class="in" id="rExtra" type="number" placeholder="0" oninput="prev()">
-      </div>
-
-      <div id="produceMode" class="hide">
-        <div class="row2" style="margin-top:12px">
-          <div><label class="lbl">ปั้นได้ (มัดเล็ก)</label><input class="in" id="pQty" type="number" min="1" placeholder="0" oninput="prev()"></div>
-          <div><label class="lbl">ต้นทุนผมดิบรวม (฿)</label><input class="in" id="pRaw" type="number" placeholder="0" oninput="prev()"></div>
-        </div>
-        <div class="row2" style="margin-top:8px">
-          <div><label class="lbl">ค่าปั้นช่อรวม (฿)</label><input class="in" id="pLabor" type="number" placeholder="0" oninput="prev()"></div>
-          <div><label class="lbl">ค่าวัสดุรวม (฿)</label><input class="in" id="pMat" type="number" placeholder="0" oninput="prev()"></div>
-        </div>
-        <label class="lbl" style="margin-top:8px">จำนวนเสีย/สูญ (มัด · ถ้ามี)</label><input class="in" id="pWaste" type="number" placeholder="0">
       </div>
 
       <div class="row2" style="margin-top:8px">
@@ -201,26 +201,37 @@ function boot(){ api('bootstrap',{}).then(function(r){
 function fillTypes(){ var sel=document.getElementById('nvType'); var svc=DATA.services||[];
   sel.innerHTML=svc.map(function(s){return '<option value="'+esc(s.acct_name)+'">'+esc(s.acct_name)+'</option>';}).join(''); onTypeSel(); }
 function onTypeSel(){ var t=document.getElementById('nvType').value; var s=(DATA.services||[]).filter(function(x){return String(x.acct_name)===t;})[0];
-  if(s){ document.getElementById('nvG').placeholder=s.grams_per_mad||'50'; document.getElementById('nvS').placeholder=(s.strands_per_mad===''||s.strands_per_mad==null)?'(ไม่มี)':s.strands_per_mad; } }
+  if(s){ document.getElementById('nvG').placeholder=s.grams_per_mad||'50'; document.getElementById('nvS').placeholder=(s.strands_per_mad===''||s.strands_per_mad==null)?'(ไม่มี)':s.strands_per_mad; } applyProduceDefaults(); }
 
 function loadVariants(){ api('variantsList',{}).then(function(r){ if(!r||!r.ok)return; DATA.variants=r.data.variants||[];
   var opts='<option value="">— เลือกรุ่น —</option>'+DATA.variants.map(function(v){return '<option value="'+esc(v.variant_id)+'">'+esc(v.name)+' · เหลือ '+fmt(v.available)+'</option>';}).join('');
   opts+='<option value="__NEW__">➕ สร้างรุ่นใหม่…</option>'; document.getElementById('vSel').innerHTML=opts; }); }
-function onVariantSel(){ document.getElementById('newVariant').classList.toggle('hide', document.getElementById('vSel').value!=='__NEW__'); }
+function onVariantSel(){ document.getElementById('newVariant').classList.toggle('hide', document.getElementById('vSel').value!=='__NEW__'); applyProduceDefaults(); }
 function loadSuppliers(){ api('suppliersList',{}).then(function(r){ if(!r||!r.ok)return; var sup=r.data.suppliers||[];
   document.getElementById('supSel').innerHTML='<option value="">— ไม่ระบุ —</option>'+sup.map(function(s){return '<option value="'+esc(s.supplier_id)+'">'+esc(s.name)+'</option>';}).join(''); }); }
 
-var MODE='buy';
+var MODE='produce';
 function setMode(m){ MODE=m; document.getElementById('buyMode').classList.toggle('hide',m!=='buy');
   document.getElementById('produceMode').classList.toggle('hide',m!=='produce');
-  [].forEach.call(document.querySelectorAll('#modeSeg .segbtn'),function(b){ b.classList.toggle('on',b.dataset.m===m); }); prev(); }
+  [].forEach.call(document.querySelectorAll('#modeSeg .segbtn'),function(b){ b.classList.toggle('on',b.dataset.m===m); });
+  if(m==='produce')applyProduceDefaults(); prev(); }
+
+/* ดึงค่าปั้นช่อ/วัสดุ ต่อมัด จากเทคนิค (Services) มาเติมให้ ลดการกรอก */
+function applyProduceDefaults(){ if(MODE!=='produce')return;
+  var vSel=document.getElementById('vSel').value, type='';
+  if(vSel==='__NEW__') type=document.getElementById('nvType').value;
+  else if(vSel){ var v=(DATA.variants||[]).filter(function(x){return String(x.variant_id)===vSel;})[0]; type=v?String(v.hair_type):''; }
+  var s=(DATA.services||[]).filter(function(x){return String(x.acct_name)===type;})[0];
+  var pl=document.getElementById('pLabor'), pm=document.getElementById('pMat');
+  if(s){ var lab=Number(s.comb_cost_per_mad)||0, mat=Number(s.material_cost_per_mad)||0;
+    pl.value=lab||''; pm.value=mat||''; pl.placeholder=lab||'0'; pm.placeholder=mat||'0'; } }
 
 function prev(){ var box=document.getElementById('rPrev');
   if(MODE==='produce'){ var q=Number(document.getElementById('pQty').value)||0, raw=Number(document.getElementById('pRaw').value)||0,
-      lab=Number(document.getElementById('pLabor').value)||0, mat=Number(document.getElementById('pMat').value)||0, total=raw+lab+mat;
-    if(q>0&&total>0){ var eff=Math.round(total/q*100)/100;
-      box.innerHTML='ปั้นได้ <b>'+fmt(q)+'</b> มัด · ต้นทุนรวม <b>'+fmt(total)+'</b> ฿ (ผม '+fmt(raw)+' + ปั้น '+fmt(lab)+(mat?(' + วัสดุ '+fmt(mat)):'')+') · ต้นทุน/มัด <b>'+fmt(eff)+'</b> ฿ · จะสร้าง QR <b>'+fmt(q)+'</b> ดวง';
-    } else box.innerHTML='กรอกจำนวนปั้นได้ + ต้นทุน เพื่อดูสรุป'; return; }
+      lab=Number(document.getElementById('pLabor').value)||0, mat=Number(document.getElementById('pMat').value)||0, perMad=raw+lab+mat;
+    if(q>0&&perMad>0){ var total=Math.round(perMad*q);
+      box.innerHTML='ปั้นได้ <b>'+fmt(q)+'</b> มัด · ต้นทุน/มัด <b>'+fmt(Math.round(perMad*100)/100)+'</b> ฿ (ผม '+fmt(raw)+' + ปั้น '+fmt(lab)+(mat?(' + วัสดุ '+fmt(mat)):'')+') · ต้นทุนรวม <b>'+fmt(total)+'</b> ฿ · จะสร้าง QR <b>'+fmt(q)+'</b> ดวง';
+    } else box.innerHTML='กรอกจำนวนปั้นได้ + ต้นทุน/มัด เพื่อดูสรุป'; return; }
   var qq=Number(document.getElementById('rQty').value)||0, c=Number(document.getElementById('rCost').value)||0, e=Number(document.getElementById('rExtra').value)||0;
   if(qq>0&&c>0){ var t=Math.round(qq*c+e), ef=Math.round(t/qq*100)/100;
     box.innerHTML='รับเข้า <b>'+fmt(qq)+'</b> มัด · ต้นทุนรวม <b>'+fmt(t)+'</b> ฿ · ต้นทุน/มัด (รวมค่าใช้จ่าย) <b>'+fmt(ef)+'</b> ฿ · จะสร้าง QR <b>'+fmt(qq)+'</b> ดวง';
@@ -237,9 +248,9 @@ function doReceive(){ if(BUSY)return;
 
   var action, payload;
   if(MODE==='produce'){ var q=Number(document.getElementById('pQty').value)||0, raw=Number(document.getElementById('pRaw').value)||0, lab=Number(document.getElementById('pLabor').value)||0;
-    if(!q){ toast('ใส่จำนวนที่ปั้นได้',1); return; } if(!(raw+lab>0)){ toast('ใส่ต้นทุนผมดิบ/ค่าปั้นช่อ',1); return; }
-    action='produceStock'; payload=Object.assign(base,{ finished_qty:q, raw_cost:raw, labor_cost:lab,
-      material_cost:Number(document.getElementById('pMat').value)||0, waste_qty:Number(document.getElementById('pWaste').value)||0 });
+    if(!q){ toast('ใส่จำนวนที่ปั้นได้',1); return; } if(!(raw+lab>0)){ toast('ใส่ต้นทุนผมดิบ/ค่าปั้นช่อ ต่อมัด',1); return; }
+    action='produceStock'; payload=Object.assign(base,{ finished_qty:q, raw_per_mad:raw, labor_per_mad:lab,
+      material_per_mad:Number(document.getElementById('pMat').value)||0, waste_qty:Number(document.getElementById('pWaste').value)||0 });
   } else { var q2=Number(document.getElementById('rQty').value)||0, c=Number(document.getElementById('rCost').value)||0;
     if(!q2||!c){ toast('กรอกจำนวนและต้นทุน/มัด',1); return; }
     action='receiveStock'; payload=Object.assign(base,{ qty:q2, cost_per_mad:c, extra_cost:Number(document.getElementById('rExtra').value)||0 }); }
