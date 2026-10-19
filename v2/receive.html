@@ -45,6 +45,7 @@ td.r,th.r{text-align:right}
 .label .qr img,.label .qr canvas{width:var(--qr)!important;height:var(--qr)!important}
 .label .lt{font-family:'Kanit',sans-serif;font-size:2.1mm;line-height:1.18;overflow:hidden}
 .label .lt b{font-weight:600;font-size:2.3mm}.label .lt .code{font-family:'IBM Plex Mono';font-size:1.9mm;color:#333;margin-top:.4mm}
+#printArea{position:fixed;left:-10000px;top:0;width:900px}  /* เก็บชุดเต็มไว้นอกจอ · โผล่เฉพาะตอนพิมพ์ */
 @media print{
   @page{margin:6mm}
   body{background:#fff}
@@ -142,6 +143,8 @@ td.r,th.r{text-align:right}
         <div><label class="lbl">ต่อแถว</label><input class="in" id="lcols" type="number" value="3" style="width:68px" oninput="applyLabelSize()"></div>
         <div class="mini" style="margin:0;flex:1;min-width:140px">ปรับให้ตรงสติกเกอร์ของคุณ · ค่าเริ่มต้น 32×25mm แถวละ 3</div>
       </div>
+      <div class="noprint mini" id="previewHead" style="margin-top:12px;color:var(--gold-soft)"></div>
+      <div class="labels noprint" id="labelPreview"></div>
       <div id="printArea"><div class="labels" id="labels"></div></div>
     </div>
 
@@ -265,22 +268,26 @@ function applyLabelSize(){
 function loadLabelSize(){ try{ var s=JSON.parse(localStorage.getItem('h265_label')||'null');
     if(s){ document.getElementById('lw').value=s.w; document.getElementById('lh').value=s.h; document.getElementById('lcols').value=s.c; } }catch(e){}
   applyLabelSize(); }
+var PREVIEW_MAX=6;
+function mkLabel_(d,code){ var el=document.createElement('div'); el.className='label';
+  el.innerHTML='<div class="qr"></div><div class="lt"><b>'+esc(d.variant_name||d.hair_type||'')+'</b>'+
+    (d.variant_color?('<div>สี '+esc(d.variant_color)+'</div>'):'')+'<div class="code">'+esc(code)+'</div></div>'; return el; }
+function drawQRin_(container, codes){ var qrs=container.querySelectorAll('.qr');
+  for(var i=0;i<qrs.length;i++){ var code=codes[i], el=qrs[i]; el.innerHTML='';
+    if(typeof QRCode==='undefined'){ el.innerHTML='<div style="font-size:2mm;color:#111;word-break:break-all">'+esc(code)+'</div>'; continue; }
+    try{ new QRCode(el,{text:code,width:120,height:120,correctLevel:QRCode.CorrectLevel.M}); }catch(e){ el.innerHTML=esc(code); } } }
 function renderLabels(d){
   document.getElementById('resultCard').classList.remove('hide');
   loadLabelSize();
   document.getElementById('lblCount').innerText=fmt(d.count);
   document.getElementById('batchInfo').innerHTML='Batch <b class="mono">'+esc(d.batch_id)+'</b> · '+esc(d.variant_name)+' · ต้นทุน/มัด '+fmt(d.cost_per_mad)+' ฿ (ไม่พิมพ์บนฉลาก)';
-  var box=document.getElementById('labels'); box.innerHTML='';
-  (d.barcodes||[]).forEach(function(code,i){
-    var el=document.createElement('div'); el.className='label';
-    el.innerHTML='<div class="qr" id="q_'+i+'"></div><div class="lt"><b>'+esc(d.variant_name||d.hair_type||'')+'</b>'+
-      (d.variant_color?('<div>สี '+esc(d.variant_color)+'</div>'):'')+'<div class="code">'+esc(code)+'</div></div>';
-    box.appendChild(el);
-  });
-  // render QR (หลัง DOM พร้อม)
-  setTimeout(function(){ (d.barcodes||[]).forEach(function(code,i){ var el=document.getElementById('q_'+i); if(!el)return;
-    if(typeof QRCode==='undefined'){ el.innerHTML='<div style="font-size:2mm;color:#111">'+esc(code)+'</div>'; return; }
-    try{ new QRCode(el,{text:code,width:120,height:120,correctLevel:QRCode.CorrectLevel.M}); }catch(e){ el.innerHTML=esc(code); } }); },60);
+  var codes=d.barcodes||[], full=document.getElementById('labels'), prev=document.getElementById('labelPreview');
+  full.innerHTML=''; prev.innerHTML='';
+  codes.forEach(function(code){ full.appendChild(mkLabel_(d,code)); });                 // ชุดเต็ม (ไว้พิมพ์ · นอกจอ)
+  codes.slice(0,PREVIEW_MAX).forEach(function(code){ prev.appendChild(mkLabel_(d,code)); }); // ตัวอย่างบนจอ
+  var more=codes.length-PREVIEW_MAX;
+  document.getElementById('previewHead').innerHTML='ตัวอย่าง '+Math.min(PREVIEW_MAX,codes.length)+' ดวงแรก'+(more>0?(' · อีก <b>'+fmt(more)+'</b> ดวง จะพิมพ์ครบตอนกดพิมพ์'):'');
+  setTimeout(function(){ drawQRin_(prev, codes.slice(0,PREVIEW_MAX)); drawQRin_(full, codes); },60);
   document.getElementById('resultCard').scrollIntoView({behavior:'smooth'});
 }
 function printLabels(){ window.print(); }
