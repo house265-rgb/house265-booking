@@ -85,7 +85,7 @@ td.r,th.r{text-align:right}
           <div><label class="lbl">ความยาว (นิ้ว)</label><input class="in" id="nvLen" placeholder="30"></div>
         </div>
         <div class="row2" style="margin-top:8px">
-          <div><label class="lbl">สี</label><input class="in" id="nvColor" placeholder="ดำธรรมชาติ"></div>
+          <div><label class="lbl">สี</label><input class="in" id="nvColor" list="colorList" placeholder="เลือกหรือพิมพ์สี"><datalist id="colorList"></datalist></div>
           <div><label class="lbl">เกรด (ถ้ามี)</label><input class="in" id="nvGrade" placeholder=""></div>
         </div>
         <div class="row3" style="margin-top:8px">
@@ -195,11 +195,13 @@ function boot(){ api('bootstrap',{}).then(function(r){
     document.getElementById('app').classList.remove('hide');
     document.getElementById('uInfo').innerText=(DATA.user.name||'')+' · '+(DATA.user.role==='owner'?'เจ้าของ':'ผู้จัดการ');
     document.getElementById('rDate').value=(DATA.settings && DATA.settings.today)|| new Date().toISOString().slice(0,10);
-    fillTypes(); loadVariants(); loadSuppliers(); loadStock(); loadBatches();
+    fillTypes(); fillColors(); loadVariants(); loadSuppliers(); loadStock(); loadBatches();
   }).catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
 
 function fillTypes(){ var sel=document.getElementById('nvType'); var svc=DATA.services||[];
   sel.innerHTML=svc.map(function(s){return '<option value="'+esc(s.acct_name)+'">'+esc(s.acct_name)+'</option>';}).join(''); onTypeSel(); }
+function fillColors(){ var dl=document.getElementById('colorList'); if(!dl)return;
+  dl.innerHTML=(DATA.colors||[]).map(function(c){ return '<option value="'+esc(c.name)+'">'+esc(c.color_id||'')+(c.hex?(' · '+c.hex):'')+'</option>'; }).join(''); }
 function onTypeSel(){ var t=document.getElementById('nvType').value; var s=(DATA.services||[]).filter(function(x){return String(x.acct_name)===t;})[0];
   if(s){ document.getElementById('nvG').placeholder=s.grams_per_mad||'50'; document.getElementById('nvS').placeholder=(s.strands_per_mad===''||s.strands_per_mad==null)?'(ไม่มี)':s.strands_per_mad; } applyProduceDefaults(); }
 
