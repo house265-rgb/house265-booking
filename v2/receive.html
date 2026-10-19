@@ -40,11 +40,14 @@ td.r,th.r{text-align:right}
 /* ---- ฉลาก QR (ขนาดปรับได้ผ่านตัวแปร) ---- */
 :root{--lw:32mm;--lh:25mm;--cols:3;--qr:18mm}
 .labels{display:grid;grid-template-columns:repeat(var(--cols),var(--lw));gap:2mm;margin-top:12px;justify-content:start}
-.label{width:var(--lw);height:var(--lh);background:#fff;color:#111;border:1px solid #ddd;border-radius:2px;display:flex;align-items:center;gap:1.4mm;padding:1.4mm;overflow:hidden}
+.label{width:var(--lw);height:var(--lh);background:#fff;color:#000;border:1px solid #ddd;border-radius:2px;display:flex;flex-direction:column;gap:.5mm;padding:1.3mm;overflow:hidden}
+.label .code{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:3mm;letter-spacing:.25mm;color:#000;text-align:center;line-height:1.05;border-bottom:.25mm solid #000;padding-bottom:.5mm;white-space:nowrap;overflow:hidden}
+.label .body{display:flex;gap:1.3mm;flex:1;min-height:0;align-items:center}
 .label .qr{width:var(--qr);height:var(--qr);flex:0 0 var(--qr);display:flex;align-items:center;justify-content:center}
 .label .qr img,.label .qr canvas{width:var(--qr)!important;height:var(--qr)!important}
-.label .lt{font-family:'Kanit',sans-serif;font-size:2.1mm;line-height:1.18;overflow:hidden}
-.label .lt b{font-weight:600;font-size:2.3mm}.label .lt .code{font-family:'IBM Plex Mono';font-size:1.9mm;color:#333;margin-top:.4mm}
+.label .lt{font-family:'Kanit',sans-serif;font-size:1.75mm;line-height:1.22;overflow:hidden;flex:1;min-width:0}
+.label .lt .l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.label .lt .l b{font-weight:600}
 #printArea{position:fixed;left:-10000px;top:0;width:900px}  /* เก็บชุดเต็มไว้นอกจอ · โผล่เฉพาะตอนพิมพ์ */
 @media print{
   @page{margin:6mm}
@@ -278,7 +281,7 @@ function applyLabelSize(){
   var w=Math.max(10,Number(document.getElementById('lw').value)||32),
       h=Math.max(10,Number(document.getElementById('lh').value)||25),
       c=Math.max(1,Math.round(Number(document.getElementById('lcols').value)||3));
-  var qr=Math.max(8, Math.min(w*0.56, h-5));
+  var qr=Math.max(10, Math.min(w*0.52, h-10));  /* เผื่อแถวรหัสบาร์โค้ดตัวใหญ่ด้านบน */
   var r=document.documentElement.style;
   r.setProperty('--lw',w+'mm'); r.setProperty('--lh',h+'mm'); r.setProperty('--cols',c); r.setProperty('--qr',qr+'mm');
   try{ localStorage.setItem('h265_label',JSON.stringify({w:w,h:h,c:c})); }catch(e){}
@@ -288,8 +291,18 @@ function loadLabelSize(){ try{ var s=JSON.parse(localStorage.getItem('h265_label
   applyLabelSize(); }
 var PREVIEW_MAX=6;
 function mkLabel_(d,code){ var el=document.createElement('div'); el.className='label';
-  el.innerHTML='<div class="qr"></div><div class="lt"><b>'+esc(d.variant_name||d.hair_type||'')+'</b>'+
-    (d.variant_color?('<div>สี '+esc(d.variant_color)+'</div>'):'')+'<div class="code">'+esc(code)+'</div></div>'; return el; }
+  var cid=d.color_id?('['+esc(d.color_id)+'] '):'';
+  var strands=d.strands_per_mad?(esc(d.strands_per_mad)+' ช่อ'):'';
+  var len=(d.variant_length||d.length_in)?(esc(d.variant_length||d.length_in)+'นิ้ว'):'';
+  var l4=[strands,len].filter(Boolean).join(' · ');
+  var col=cid+esc(d.variant_color||d.color_name||'');
+  el.innerHTML='<div class="code">'+esc(code)+'</div><div class="body"><div class="qr"></div><div class="lt">'+
+    '<div class="l"><b>'+esc(d.hair_type||d.variant_name||'')+'</b></div>'+
+    (col.trim()?('<div class="l">'+col+'</div>'):'')+
+    (l4?('<div class="l">'+l4+'</div>'):'')+
+    '<div class="l">เปล่า <b>'+fmt(d.sell_price_per_mad)+'</b>฿</div>'+
+    (Number(d.ext_price)>0?('<div class="l">ต่อ <b>'+fmt(d.ext_price)+'</b>฿</div>'):'')+
+    '</div></div>'; return el; }
 function drawQRin_(container, codes){ var qrs=container.querySelectorAll('.qr');
   for(var i=0;i<qrs.length;i++){ var code=codes[i], el=qrs[i]; el.innerHTML='';
     if(typeof QRCode==='undefined'){ el.innerHTML='<div style="font-size:2mm;color:#111;word-break:break-all">'+esc(code)+'</div>'; continue; }
