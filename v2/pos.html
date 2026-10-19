@@ -461,8 +461,10 @@ function saveSale(){ if(BUSY)return; var sub=cartSub(), disc=window._disc||0, du
     else finishSale(rc);
   }).catch(function(){ BUSY=false; var bb=document.getElementById('btnSave'); if(bb){bb.disabled=false;bb.innerHTML='💾 บันทึกการขาย + ใบเสร็จ';} toast('เชื่อมต่อไม่สำเร็จ',1); }); }
 function uploadSlips(saleId, method, amount, slips, i, done){ if(i>=slips.length){ done(); return; }
-  api('uploadSlip',{sale_id:saleId, method:method, amount:amount, dataUrl:slips[i].dataUrl}).then(function(){ uploadSlips(saleId,method,amount,slips,i+1,done); })
-  .catch(function(){ toast('อัปโหลดสลิปรูปที่ '+(i+1)+' ไม่สำเร็จ',1); uploadSlips(saleId,method,amount,slips,i+1,done); }); }
+  api('uploadSlip',{sale_id:saleId, method:method, amount:amount, dataUrl:slips[i].dataUrl}).then(function(r){
+    if(!r||!r.ok){ alert('⚠️ อัปโหลดสลิปไม่สำเร็จ: '+((r&&r.message)||'ไม่ทราบสาเหตุ')+'\n\n(มักเกิดจากยังไม่ได้อนุญาตสิทธิ์ Drive — ให้รัน grantDrive ใน Apps Script ก่อน)'); }
+    uploadSlips(saleId,method,amount,slips,i+1,done); })
+  .catch(function(){ alert('⚠️ เชื่อมต่อไม่ได้ตอนอัปโหลดสลิปรูปที่ '+(i+1)); uploadSlips(saleId,method,amount,slips,i+1,done); }); }
 function finishSale(rc){ showReceipt(rc); CART=[]; window._disc=0; window._recv=0; window._split=false; window._p2a=0; window._slips=[]; PAY='เงินสด'; renderCart(); if(FULL)loadToday(); }
 
 function showReceipt(rc){ var h='<h3>'+esc(rc.shopName)+'</h3><div class="c">ใบเสร็จรับเงิน</div><div class="c">'+esc(rc.bill)+' · '+esc(rc.datetime)+'</div><div class="c">ลูกค้า: '+esc(rc.customer)+'</div><div class="hr"></div>';
