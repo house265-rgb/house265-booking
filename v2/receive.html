@@ -48,12 +48,16 @@ td.r,th.r{text-align:right}
 #printArea{position:fixed;left:-10000px;top:0;width:900px}  /* เก็บชุดเต็มไว้นอกจอ · โผล่เฉพาะตอนพิมพ์ */
 @media print{
   @page{margin:6mm}
-  body{background:#fff}
-  body *{visibility:hidden}
-  #printArea,#printArea *{visibility:visible}
-  #printArea{position:absolute;left:0;top:0;width:100%}
+  html,body{margin:0!important;padding:0!important;background:#fff!important;height:auto!important}
+  /* ซ่อนทุกอย่างแบบยุบพื้นที่ (display:none) → ไม่เหลือหน้ากระดาษเปล่า */
+  #loginModal,.top,.noprint{display:none!important}
+  .wrap>.card:not(#resultCard){display:none!important}
+  #app,.wrap{display:block!important;margin:0!important;padding:0!important;background:none!important;border:0!important}
+  #resultCard{display:block!important;margin:0!important;padding:0!important;border:0!important;background:none!important;box-shadow:none!important}
+  #resultCard>*:not(#printArea){display:none!important}
+  /* ดึงเฉพาะฉลากกลับเข้าหน้าปกติ → แถวเดียวเรียง 3 ดวง หน้าเดียว */
+  #printArea{position:static!important;left:auto!important;top:auto!important;width:100%!important}
   .labels{gap:2mm}
-  .noprint{display:none!important}
 }
 </style></head>
 <body>
