@@ -68,7 +68,7 @@ td.r,th.r{text-align:right}
 <div id="app" class="hide">
   <header class="top">
     <div class="brand"><b>House<span class="n">265</span></b><span class="tag">รับผมเข้า</span></div>
-    <div class="who"><span class="chip" id="uInfo">—</span><button class="lo" onclick="doLogout()">ออก</button></div>
+    <div class="who"><span class="mini" id="verBadge" style="opacity:.55;margin-right:2px"></span><span class="chip" id="uInfo">—</span><button class="lo" onclick="doLogout()">ออก</button></div>
   </header>
   <div class="wrap">
 
@@ -194,6 +194,7 @@ function boot(){ api('bootstrap',{}).then(function(r){
     DATA=r.data; if(!DATA.user.full){ document.body.innerHTML='<div style="padding:40px;text-align:center;color:#b3aa9c">หน้านี้สำหรับผู้จัดการ/เจ้าของเท่านั้น</div>'; return; }
     document.getElementById('app').classList.remove('hide');
     document.getElementById('uInfo').innerText=(DATA.user.name||'')+' · '+(DATA.user.role==='owner'?'เจ้าของ':'ผู้จัดการ');
+    document.getElementById('verBadge').innerText='ระบบ '+(DATA.version||'เก่า⚠️');
     document.getElementById('rDate').value=(DATA.settings && DATA.settings.today)|| new Date().toISOString().slice(0,10);
     fillTypes(); fillColors(); loadVariants(); loadSuppliers(); loadStock(); loadBatches();
   }).catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
@@ -260,7 +261,7 @@ function doReceive(){ if(BUSY)return;
   var newSup=document.getElementById('supNew').value.trim();
   BUSY=true; var b=document.getElementById('btnReceive'); b.disabled=true; b.innerHTML='⏳ กำลังบันทึก…';
   var go=function(){ api(action,payload).then(function(r){ BUSY=false; b.disabled=false; b.innerHTML='รับเข้า + สร้าง QR';
-      if(!r||!r.ok){ toast((r&&r.message)||'ไม่สำเร็จ',1); return; }
+      if(!r||!r.ok){ toast(((r&&r.message)||'ไม่สำเร็จ')+' · หลังบ้าน '+(DATA&&DATA.version||'เก่า⚠️'),1); return; }
       LAST=r.data; renderLabels(r.data); toast((MODE==='produce'?'ผลิต ':'รับเข้า ')+fmt(r.data.count)+' มัด · Batch '+r.data.batch_id+' ✓');
       ['rQty','rCost','rExtra','pQty','pRaw','pLabor','pMat','pWaste'].forEach(function(id){var e=document.getElementById(id); if(e)e.value='';}); prev();
       loadVariants(); loadStock(); loadBatches();
