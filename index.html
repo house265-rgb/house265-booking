@@ -870,11 +870,13 @@ function renderCal(){
     var id=calY+'-'+pad(calM+1)+'-'+pad(dd);
     var e2=document.createElement('div'); e2.className='cal-day';
     var tooFar=daysBetween(TODAY,id)>maxAdv;
-    var pastHol=(id<TODAY)||isHol(id)||tooFar;
+    // วันหยุด/วันปิด = ให้ "เซิร์ฟเวอร์" ตัดสิน (info.off) เพราะคิดกฎตั้งล่วงหน้าถูกแล้ว
+    // ฝั่งหน้าเว็บคุมแค่ "อดีต/เกินช่วงจองล่วงหน้า" (ไม่เช็ก weeklyOff เองอีก กันขีดทับผิด)
+    var pastFar=(id<TODAY)||tooFar;
     var info=MONTHAVAIL?MONTHAVAIL[id]:null;
     var noAvail=info&&(info.off||info.slots===0);
-    var loading=(MONTHAVAIL===null)&&!pastHol;
-    var offday=pastHol||noAvail;
+    var loading=(MONTHAVAIL===null)&&!pastFar;
+    var offday=pastFar||noAvail;
     var dotHtml='';
     if(!offday&&!loading&&info&&info.slots>0){ var dc=info.slots>=4?'var(--ok)':'var(--warn)'; dotHtml='<span class="avdot" style="background:'+dc+'"></span>'; }
     e2.innerHTML=dd+dotHtml;
