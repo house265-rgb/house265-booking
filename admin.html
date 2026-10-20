@@ -518,7 +518,7 @@ var SET_SCHEMA=[
     {k:'depositType', l:'ชนิดมัดจำ', sel:[['percentage','เปอร์เซ็นต์ (%)'],['fixed','จำนวนเงินคงที่ (บาท)']]},
     {k:'depositValue', l:'ค่ามัดจำ (% หรือ บาท ตามชนิด)', t:'number'}
   ]},
-  {sec:'วันหยุดร้าน', items:[
+  {sec:'วันหยุดร้าน (ค่าพื้นฐาน · ตั้งล่วงหน้าได้ที่การ์ดด้านล่าง)', items:[
     {k:'weeklyOff', l:'หยุดประจำสัปดาห์ · 0=อา 1=จ 2=อ 3=พ 4=พฤ 5=ศ 6=ส (คั่นด้วย ,)', ph:'เช่น 3,4'},
     {k:'holidayDates', l:'วันหยุดเฉพาะวัน · YYYY-MM-DD (คั่นด้วย ,)', ph:'เช่น 2026-12-31,2027-01-01'}
   ]},
@@ -555,8 +555,64 @@ function renderSettings(){
     });
     html+='</div>';
   });
-  html+='<button class="btn" style="margin:2px 0 20px" onclick="saveSettings()">💾 บันทึกการตั้งค่า</button>';
+  html+='<button class="btn" style="margin:2px 0 14px" onclick="saveSettings()">💾 บันทึกการตั้งค่า</button>';
+  html+='<div id="shopSchedBox"><div class="muted" style="text-align:center;padding:16px 0">กำลังโหลดตารางเวลาร้าน…</div></div>';
   document.getElementById('setBody').innerHTML=html;
+  loadShopSched();
+}
+
+/* ===== ตารางเวลาร้านแบบตั้งล่วงหน้า (effective-dated) ===== */
+function woText(s){ var a=String(s||'').split(/[^0-9]+/).filter(String).map(Number); if(!a.length) return 'เปิดทุกวัน'; return 'หยุด '+a.map(function(n){return DOW[n];}).join(', '); }
+function hrsText(o,c){ return (o||c)?((o||'—')+'–'+(c||'—')):'ใช้เวลาร้านหลัก'; }
+function loadShopSched(){ var box=document.getElementById('shopSchedBox'); if(!box)return;
+  callApi('adminListShopSchedule',{pin:ADMIN_PIN}).then(function(r){ if(!r||!r.ok){ box.innerHTML='<div class="muted" style="padding:10px">โหลดตารางเวลาร้านไม่สำเร็จ</div>'; return; } renderShopSched(r); })
+  .catch(function(){ box.innerHTML='<div class="muted" style="padding:10px">เชื่อมต่อไม่สำเร็จ</div>'; }); }
+function renderShopSched(r){ var box=document.getElementById('shopSchedBox'); if(!box)return;
+  var c=r.current||{}, rules=r.rules||[], today=r.today||'';
+  var h='<div class="card"><div class="ssec" style="margin-top:2px">⏰ ตารางเวลาร้าน · ตั้งล่วงหน้าได้</div>';
+  h+='<div class="muted" style="font-size:12.5px;margin-bottom:10px">ใช้ตั้ง "วันหยุด/เวลาเปิด-ปิด" ที่จะมีผล<b>ตั้งแต่วันที่กำหนด</b> — เช่น เปลี่ยนวันหยุดเริ่มเดือนหน้าได้เลย โดยเดือนนี้ยังใช้ของเดิม (ช่างแต่ละคนตั้งเวลา/วันหยุดแยกได้ที่หน้า "ช่าง")</div>';
+  h+='<div style="background:var(--panel,#211f1c);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:12px">'+
+     '<b style="color:var(--gold-soft,#e6cc7e)">มีผลวันนี้ ('+esc(today)+'):</b> '+esc(woText(c.weeklyOff))+' · เวลา '+esc(hrsText(c.openTime,c.closeTime))+'</div>';
+  // รายการกฎที่ตั้งไว้
+  if(rules.length){ h+='<div class="muted" style="margin:2px 0 6px">กฎที่ตั้งไว้</div>';
+    rules.forEach(function(x){ var future = x.effective_from>today, active=(!future);
+      h+='<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)">'+
+         '<div style="flex:1;min-width:0"><b>'+esc(x.effective_from)+'</b> '+(future?'<span style="color:var(--gold-soft,#e6cc7e);font-size:11px">· ล่วงหน้า</span>':'<span style="color:var(--ok,#79c08a);font-size:11px">· ใช้อยู่</span>')+
+         '<div class="muted" style="font-size:12px;margin-top:2px">'+esc(woText(x.weekly_off))+' · '+esc(hrsText(x.open_time,x.close_time))+(x.note?(' · '+esc(x.note)):'')+'</div></div>'+
+         '<button onclick="delShopSched('+x.row+')" style="background:none;border:1px solid var(--line);color:var(--crit,#d98a8a);border-radius:8px;padding:5px 9px;font-size:12px">ลบ</button></div>';
+    });
+  } else { h+='<div class="muted" style="padding:6px 0">ยังไม่มีกฎตั้งล่วงหน้า (ใช้ค่าพื้นฐานด้านบน)</div>'; }
+  // ฟอร์มเพิ่มกฎ
+  h+='<div style="margin-top:14px;padding:12px;background:var(--panel,#211f1c);border:1px solid var(--line);border-radius:10px">'+
+     '<div class="ssec" style="margin:0 0 8px">+ เพิ่ม/แก้กฎ (วันเริ่มเดียวกัน = แทนที่)</div>'+
+     '<div class="sfield"><label>มีผลตั้งแต่วันที่</label><input type="date" id="ss_from" value="'+esc(today)+'"></div>'+
+     '<div class="sfield"><label>วันหยุดประจำสัปดาห์ (เลือกวันที่ปิด)</label><div id="ss_days" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:2px">'+
+       DOW.map(function(d,i){ return '<label style="display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:13px;cursor:pointer"><input type="checkbox" class="ssd" value="'+i+'" style="width:16px;height:16px;accent-color:var(--gold,#c8a75a)">'+d+'</label>'; }).join('')+'</div></div>'+
+     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+
+       '<div class="sfield"><label>เปิดร้าน (เว้นว่าง=ใช้เวลาหลัก)</label><input id="ss_open" placeholder="11:00"></div>'+
+       '<div class="sfield"><label>ปิดร้าน</label><input id="ss_close" placeholder="23:00"></div></div>'+
+     '<div class="sfield"><label>หมายเหตุ (ไม่บังคับ)</label><input id="ss_note" placeholder="เช่น เปลี่ยนวันหยุดเริ่มเดือน พ.ย."></div>'+
+     '<button class="btn" style="width:auto;margin-top:4px" onclick="saveShopSched()">บันทึกกฎ</button>'+
+     '</div>';
+  h+='</div>';
+  box.innerHTML=h;
+}
+function saveShopSched(){
+  var from=(document.getElementById('ss_from')||{}).value||'';
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(from)){ alert('กรุณาเลือกวันเริ่มมีผล'); return; }
+  var days=[]; Array.prototype.forEach.call(document.querySelectorAll('.ssd'),function(c){ if(c.checked) days.push(Number(c.value)); });
+  var rule={ effectiveFrom:from, weeklyOff:days,
+    openTime:((document.getElementById('ss_open')||{}).value||'').trim(),
+    closeTime:((document.getElementById('ss_close')||{}).value||'').trim(),
+    note:((document.getElementById('ss_note')||{}).value||'').trim() };
+  needPin('บันทึกตารางเวลาร้าน ต้องใช้รหัสแอดมิน', function(pin,done){
+    callApi('adminSaveShopSchedule',{pin:pin, rule:rule}).then(function(r){ done(r); if(r&&r.ok){ loadShopSched(); } else if(r&&r.message){ alert(r.message); } })
+    .catch(function(){ done({ok:false}); }); });
+}
+function delShopSched(row){ if(!confirm('ลบกฎนี้?')) return;
+  needPin('ลบตารางเวลาร้าน ต้องใช้รหัสแอดมิน', function(pin,done){
+    callApi('adminRemoveShopSchedule',{pin:pin, rowNum:row}).then(function(r){ done(r); if(r&&r.ok) loadShopSched(); else if(r&&r.message) alert(r.message); })
+    .catch(function(){ done({ok:false}); }); });
 }
 function collectSettings(){
   var obj={};
