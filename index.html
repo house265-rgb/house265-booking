@@ -408,12 +408,15 @@ var STEP_NAMES=['เทคนิค','ขนาด/มัด','ถอด/สี'
    ★ URL นี้ต้องเป็น /exec ของ Web app ที่ Deploy แบบ "ทุกคน (Anyone)" */
 var API_URL = 'https://script.google.com/macros/s/AKfycbwsElkbUA3UYuSWZWrQx59nITnbVVuDGZdK1uMkLaQ2iEwGJ8_OY-j2RVsqbM86aaTx/exec';
 function callApi(action, data){
-  return fetch(API_URL, {
-    method:'POST', redirect:'follow',
+  // กัน cache: ยิง unique ทุกครั้ง (in-app browser/บางเครื่อง cache ผลเดิมไว้ ทำให้ข้อมูลไม่อัปเดต)
+  return fetch(API_URL + (API_URL.indexOf('?')>=0?'&':'?') + '_=' + Date.now(), {
+    method:'POST', redirect:'follow', cache:'no-store',
     headers:{ 'Content-Type':'text/plain;charset=utf-8' },  // simple request → ไม่มี CORS preflight
-    body: JSON.stringify({ action:action, data:data||{} })
+    body: JSON.stringify({ action:action, data:data||{}, _ts:Date.now() })
   }).then(function(r){ return r.json(); });
 }
+// ถ้าหน้าถูกกู้คืนจาก bfcache (กดย้อนกลับ/สลับแอป) → โหลดใหม่ให้ข้อมูลสด
+window.addEventListener('pageshow', function(e){ if(e.persisted) location.reload(); });
 
 /* ===== LINE LIFF ===== ใส่ LIFF ID ที่ได้จาก LINE Developers ตรงนี้ (เว้นว่าง = ไม่ใช้ LIFF ใช้งานแบบกรอกเอง) */
 var LIFF_ID = '2011962580-8W9zGtKI';   // House265 จองคิว (LINE LIFF)
