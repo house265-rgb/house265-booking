@@ -37,6 +37,18 @@ td.r,th.r{text-align:right}
 .modal.show{display:flex}.mbox{background:var(--surface);border:1px solid var(--line);border-radius:16px;width:100%;max-width:400px;overflow:hidden}
 .mh{background:linear-gradient(100deg,var(--gold-dim),var(--gold-soft));color:#231b08;padding:14px;text-align:center;font-weight:600}.mc{padding:16px}
 .hide{display:none}
+.selbtn{text-align:left;cursor:pointer;display:flex;align-items:center;gap:7px;min-height:48px;line-height:1.25}
+.selbtn .btnsub{color:var(--faint);font-size:13px;font-weight:300}
+.selbtn.ph{color:var(--faint)}
+.varcard{display:block;width:100%;text-align:left;background:var(--bg2);border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin-bottom:8px;cursor:pointer;font-family:inherit;color:var(--fg)}
+.varcard:hover{border-color:var(--gold-dim)}.varcard:active{border-color:var(--gold)}
+.varcard.newv{color:var(--gold-soft);border-style:dashed;text-align:center;font-weight:500}
+.varcard .vmain{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.varcard .vmain b{font-weight:600;font-size:15px}
+.varcard .vstock{font-size:13px;font-weight:500;white-space:nowrap}
+.varcard .vchips{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.vchip{display:inline-block;font-size:12px;background:var(--surface2);border:1px solid var(--line);border-radius:6px;padding:2px 8px;color:var(--muted)}
+.vchip.g{color:var(--gold-soft);border-color:var(--gold-dim)}
 /* ---- ฉลาก QR (ขนาดปรับได้ผ่านตัวแปร) ---- */
 :root{--lw:32mm;--lh:25mm;--cols:3;--qr:18mm}
 .labels{display:grid;grid-template-columns:repeat(var(--cols),var(--lw));gap:2mm;margin-top:12px;justify-content:start}
@@ -47,8 +59,9 @@ td.r,th.r{text-align:right}
 .label .qr{width:var(--qr);height:var(--qr);flex:0 0 var(--qr);display:flex;align-items:center;justify-content:center}
 .label .qr img,.label .qr canvas{width:var(--qr)!important;height:var(--qr)!important;image-rendering:pixelated}
 .label .lt{font-family:'Kanit','Noto Sans Thai','Leelawadee UI','Tahoma',sans-serif;font-size:var(--line-fs,1.75mm);line-height:1.22;overflow:hidden;flex:1;min-width:0}
-.label .lt .l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.label .lt .l{white-space:normal;overflow:hidden;line-height:1.14}
 .label .lt .l b{font-weight:600}
+.label .lt .l.hd{line-height:1.08}
 #printArea{position:fixed;left:-10000px;top:0;width:900px}  /* เก็บชุดเต็มไว้นอกจอ · โผล่เฉพาะตอนพิมพ์ */
 @media print{
   @page{margin:6mm}
@@ -84,7 +97,8 @@ td.r,th.r{text-align:right}
     <div class="card">
       <h2>📦 รับผมเข้า (สร้าง Batch + QR)</h2>
       <label class="lbl">รุ่นสินค้า (Variant)</label>
-      <select class="in" id="vSel" onchange="onVariantSel()"></select>
+      <input type="hidden" id="vSel">
+      <button type="button" class="in selbtn" id="vSelBtn" onclick="openVariantPicker()">— เลือกรุ่นสินค้า —</button>
 
       <div id="newVariant" class="hide" style="margin-top:12px;padding:12px;border:1px dashed var(--gold-dim);border-radius:10px">
         <div class="mini" style="margin-top:0;color:var(--gold-soft)">สร้างรุ่นใหม่</div>
@@ -94,8 +108,11 @@ td.r,th.r{text-align:right}
         </div>
         <div class="row2" style="margin-top:8px">
           <div><label class="lbl">สี</label><input class="in" id="nvColor" list="colorList" placeholder="เลือกหรือพิมพ์สี"><datalist id="colorList"></datalist></div>
-          <div><label class="lbl">เกรด (ถ้ามี)</label><input class="in" id="nvGrade" placeholder=""></div>
+          <div><label class="lbl">เกรด (เช่น 4A · ถ้ามี)</label><input class="in" id="nvGrade" placeholder=""></div>
         </div>
+        <div style="margin-top:8px"><label class="lbl">ลักษณะผม (เช่น ผมตรง · ผมหยิก · ผมดัดลอน · ผมลอนธรรมชาติ)</label>
+          <input class="in" id="nvTexture" list="textureList" placeholder="เลือกหรือพิมพ์ลักษณะผม">
+          <datalist id="textureList"><option value="ผมตรง"></option><option value="ผมหยิก"></option><option value="ผมดัดลอน"></option><option value="ผมลอนธรรมชาติ"></option><option value="ผมลอนใหญ่"></option><option value="ผมลอนเล็ก"></option><option value="ผมหยักศก"></option></datalist></div>
         <div class="row3" style="margin-top:8px">
           <div><label class="lbl">กรัม/มัด</label><input class="in" id="nvG" type="number" placeholder="50"></div>
           <div><label class="lbl">ช่อ/มัด</label><input class="in" id="nvS" type="number" placeholder=""></div>
@@ -170,6 +187,11 @@ td.r,th.r{text-align:right}
 
   </div>
 </div>
+<div class="modal" id="varModal"><div class="mbox" style="max-width:540px"><div class="mh">เลือกรุ่นสินค้า</div><div class="mc">
+  <input id="varSearch" class="in" placeholder="ค้นหา ประเภท / สี / เกรด / ลักษณะ / ความยาว" oninput="renderVariantList()">
+  <div id="varList" style="max-height:62vh;overflow:auto;margin-top:10px"></div>
+  <button class="btn sec" style="margin-top:12px" onclick="closeVarPicker()">ปิด</button>
+</div></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -214,10 +236,29 @@ function fillColors(){ var dl=document.getElementById('colorList'); if(!dl)retur
 function onTypeSel(){ var t=document.getElementById('nvType').value; var s=(DATA.services||[]).filter(function(x){return String(x.acct_name)===t;})[0];
   if(s){ document.getElementById('nvG').placeholder=s.grams_per_mad||'50'; document.getElementById('nvS').placeholder=(s.strands_per_mad===''||s.strands_per_mad==null)?'(ไม่มี)':s.strands_per_mad; } applyProduceDefaults(); }
 
-function loadVariants(){ api('variantsList',{}).then(function(r){ if(!r||!r.ok)return; DATA.variants=r.data.variants||[];
-  var opts='<option value="">— เลือกรุ่น —</option>'+DATA.variants.map(function(v){return '<option value="'+esc(v.variant_id)+'">'+esc(v.name)+' · เหลือ '+fmt(v.available)+'</option>';}).join('');
-  opts+='<option value="__NEW__">➕ สร้างรุ่นใหม่…</option>'; document.getElementById('vSel').innerHTML=opts; }); }
+function loadVariants(){ api('variantsList',{}).then(function(r){ if(!r||!r.ok)return; DATA.variants=r.data.variants||[]; updateVarBtn(); }); }
 function onVariantSel(){ document.getElementById('newVariant').classList.toggle('hide', document.getElementById('vSel').value!=='__NEW__'); applyProduceDefaults(); }
+/* ---- variant picker (การ์ด · ค้นหา · แสดงเกรด/ลักษณะ/สี/สต็อก · กันเลือกผิด) ---- */
+function openVariantPicker(){ document.getElementById('varModal').classList.add('show'); document.getElementById('varSearch').value=''; renderVariantList(); setTimeout(function(){ try{document.getElementById('varSearch').focus();}catch(e){} },60); }
+function closeVarPicker(){ document.getElementById('varModal').classList.remove('show'); }
+function varChips_(v){ var c=[]; if(v.grade)c.push('<span class="vchip g">เกรด '+esc(v.grade)+'</span>'); if(v.texture)c.push('<span class="vchip">'+esc(v.texture)+'</span>'); if(v.color)c.push('<span class="vchip">'+esc(v.color)+'</span>'); return c.join(''); }
+function renderVariantList(){ var box=document.getElementById('varList'); if(!box)return; var q=(document.getElementById('varSearch').value||'').trim().toLowerCase();
+  var vs=(DATA.variants||[]).filter(function(v){ if(!q)return true; var hay=(v.hair_type+' '+v.length_in+' '+v.color+' '+(v.grade||'')+' '+(v.texture||'')+' '+v.name).toLowerCase(); return hay.indexOf(q)>=0; });
+  var h='<button type="button" class="varcard newv" onclick="pickVariant(\'__NEW__\')">➕ สร้างรุ่นใหม่…</button>';
+  h+=vs.map(function(v){ var stock=Number(v.available)||0, sc=stock<=0?'var(--crit)':(stock<5?'var(--gold-soft)':'var(--ok)');
+    return '<button type="button" class="varcard" onclick="pickVariant(\''+esc(v.variant_id)+'\')">'+
+      '<div class="vmain"><b>'+esc(v.hair_type)+' '+esc(v.length_in)+'นิ้ว</b><span class="vstock" style="color:'+sc+'">เหลือ '+fmt(stock)+'</span></div>'+
+      (varChips_(v)?('<div class="vchips">'+varChips_(v)+'</div>'):'')+'</button>'; }).join('');
+  if(!vs.length) h+='<div class="mini" style="padding:10px 2px">ไม่พบรุ่นที่ตรงกับคำค้น</div>';
+  box.innerHTML=h; }
+function pickVariant(id){ document.getElementById('vSel').value=id; closeVarPicker(); onVariantSel(); updateVarBtn(); }
+function updateVarBtn(){ var id=(document.getElementById('vSel')||{}).value||'', btn=document.getElementById('vSelBtn'); if(!btn)return;
+  if(id==='__NEW__'){ btn.className='in selbtn'; btn.innerHTML='➕ สร้างรุ่นใหม่…'; return; }
+  var v=(DATA.variants||[]).filter(function(x){return String(x.variant_id)===String(id);})[0];
+  if(!v){ btn.className='in selbtn ph'; btn.innerHTML='— เลือกรุ่นสินค้า —'; return; }
+  var sub=[v.grade?('เกรด '+v.grade):'', v.texture||'', v.color||''].filter(Boolean).join(' · ');
+  btn.className='in selbtn';
+  btn.innerHTML='<span><b>'+esc(v.hair_type)+' '+esc(v.length_in)+'นิ้ว</b>'+(sub?('<br><span class="btnsub">'+esc(sub)+'</span>'):'')+'</span><span class="btnsub" style="margin-left:auto;white-space:nowrap">เหลือ '+fmt(Number(v.available)||0)+'</span>'; }
 function loadSuppliers(){ api('suppliersList',{}).then(function(r){ if(!r||!r.ok)return; var sup=r.data.suppliers||[];
   document.getElementById('supSel').innerHTML='<option value="">— ไม่ระบุ —</option>'+sup.map(function(s){return '<option value="'+esc(s.supplier_id)+'">'+esc(s.name)+'</option>';}).join(''); }); }
 
@@ -252,9 +293,10 @@ function doReceive(){ if(BUSY)return;
   var vSel=document.getElementById('vSel').value;
   var base={ received_date:document.getElementById('rDate').value, supplier_id:document.getElementById('supSel').value };
   if(vSel==='__NEW__'){ var ht=document.getElementById('nvType').value; if(!ht){ toast('เลือกประเภท/เทคนิค',1); return; }
-    var nm=[ht,(document.getElementById('nvLen').value||'')+'นิ้ว',document.getElementById('nvColor').value].filter(Boolean).join(' ');
+    var gr=document.getElementById('nvGrade').value.trim(), tx=document.getElementById('nvTexture').value.trim();
+    var nm=[ht,(document.getElementById('nvLen').value||'')+'นิ้ว',(gr?('เกรด '+gr):''),tx,document.getElementById('nvColor').value].filter(Boolean).join(' ');
     base.newVariant={ name:nm, hair_type:ht, length_in:document.getElementById('nvLen').value, color:document.getElementById('nvColor').value,
-      grade:document.getElementById('nvGrade').value, grams_per_mad:document.getElementById('nvG').value, strands_per_mad:document.getElementById('nvS').value, sell_price_per_mad:document.getElementById('nvPrice').value };
+      grade:gr, texture:tx, grams_per_mad:document.getElementById('nvG').value, strands_per_mad:document.getElementById('nvS').value, sell_price_per_mad:document.getElementById('nvPrice').value };
   } else if(vSel){ base.variant_id=vSel; } else { toast('เลือกหรือสร้างรุ่นสินค้า',1); return; }
 
   var action, payload;
@@ -282,7 +324,7 @@ function applyLabelSize(){
   var w=Math.max(10,Number(document.getElementById('lw').value)||32),
       h=Math.max(10,Number(document.getElementById('lh').value)||25),
       c=Math.max(1,Math.round(Number(document.getElementById('lcols').value)||3));
-  var qr=Math.max(10, Math.min(w*0.52, h-12));  /* เผื่อแถวชื่อร้าน + รหัสบาร์โค้ดตัวใหญ่ด้านบน */
+  var qr=Math.max(10, Math.min(w*0.5, h-7));  /* ชื่อร้านย้ายเข้าคอลัมน์ข้อความแล้ว → QR ใหญ่เต็มความสูง body */
   /* ฟอนต์สเกลตามความสูงป้าย → ขยายป้ายแล้วตัวหนังสือโตตาม อ่านชัดตอนพิมพ์ */
   var codeFs=Math.max(2.4, Math.round(h*0.125*10)/10), lineFs=Math.max(1.6, Math.round(h*0.072*10)/10);
   var r=document.documentElement.style;
@@ -303,8 +345,11 @@ function mkLabel_(d,code){ var el=document.createElement('div'); el.className='l
   /* สีผม: ใช้คอลัมน์ color_name_barcode (ชีต Colors) ตรงๆ · ว่างค่อย fallback เป็น [รหัส] ชื่อ EN */
   var col = d.color_barcode ? esc(d.color_barcode)
           : ((d.color_id?('['+esc(d.color_id)+'] '):'')+esc(d.color_name_en||d.variant_color||d.color_name||''));
-  el.innerHTML='<div class="code">'+esc(code)+'</div><div class="shop">'+esc(SHOP_LABEL_NAME)+'</div><div class="body"><div class="qr"></div><div class="lt">'+
-    '<div class="l"><b>'+esc(typeName)+'</b></div>'+
+  var typeLine=esc(typeName)+(d.grade?(' · '+esc(d.grade)):'');   /* ชื่อประเภท + เกรด (เช่น Feather-Tip · 4A) */
+  el.innerHTML='<div class="code">'+esc(code)+'</div><div class="body"><div class="qr"></div><div class="lt">'+
+    '<div class="l hd"><b>'+esc(SHOP_LABEL_NAME)+'</b></div>'+
+    '<div class="l hd"><b>'+typeLine+'</b></div>'+
+    (d.texture?('<div class="l">'+esc(d.texture)+'</div>'):'')+   /* ลักษณะผม */
     (col.trim()?('<div class="l">'+col+'</div>'):'')+
     (l4?('<div class="l">'+l4+'</div>'):'')+
     '<div class="l">เปล่า <b>'+fmt(d.sell_price_per_mad)+'</b>฿</div>'+
