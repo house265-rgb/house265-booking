@@ -40,19 +40,19 @@ td.r,th.r{text-align:right}
 /* ---- ฉลาก QR (ขนาดปรับได้ผ่านตัวแปร) ---- */
 :root{--lw:32mm;--lh:25mm;--cols:3;--qr:18mm}
 .labels{display:grid;grid-template-columns:repeat(var(--cols),var(--lw));gap:2mm;margin-top:12px;justify-content:start}
-.label{width:var(--lw);height:var(--lh);background:#fff;color:#000;border:1px solid #ddd;border-radius:2px;display:flex;flex-direction:column;gap:.4mm;padding:1.3mm;overflow:hidden}
-.label .shop{font-family:'Kanit',sans-serif;font-weight:600;font-size:calc(var(--line-fs,1.75mm)*.92);letter-spacing:.12mm;color:#000;text-align:center;line-height:1;white-space:nowrap;overflow:hidden;text-transform:uppercase}
-.label .code{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:var(--code-fs,3mm);letter-spacing:.25mm;color:#000;text-align:center;line-height:1.05;border-bottom:.25mm solid #000;padding-bottom:.5mm;white-space:nowrap;overflow:hidden}
+.label{width:var(--lw);height:var(--lh);background:#fff;color:#000;border:1px solid #ddd;border-radius:2px;display:flex;flex-direction:column;gap:.4mm;padding:1.3mm;overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.label .shop{font-family:'Kanit','Noto Sans Thai','Leelawadee UI','Tahoma',sans-serif;font-weight:600;font-size:calc(var(--line-fs,1.75mm)*.92);letter-spacing:.12mm;color:#000;text-align:center;line-height:1;white-space:nowrap;overflow:hidden;text-transform:uppercase}
+.label .code{font-family:'IBM Plex Mono','Sarabun','Courier New',monospace;font-weight:700;font-size:var(--code-fs,3mm);letter-spacing:.25mm;color:#000;text-align:center;line-height:1.05;border-bottom:.25mm solid #000;padding-bottom:.5mm;white-space:nowrap;overflow:hidden}
 .label .body{display:flex;gap:1.3mm;flex:1;min-height:0;align-items:center}
 .label .qr{width:var(--qr);height:var(--qr);flex:0 0 var(--qr);display:flex;align-items:center;justify-content:center}
 .label .qr img,.label .qr canvas{width:var(--qr)!important;height:var(--qr)!important;image-rendering:pixelated}
-.label .lt{font-family:'Kanit',sans-serif;font-size:var(--line-fs,1.75mm);line-height:1.22;overflow:hidden;flex:1;min-width:0}
+.label .lt{font-family:'Kanit','Noto Sans Thai','Leelawadee UI','Tahoma',sans-serif;font-size:var(--line-fs,1.75mm);line-height:1.22;overflow:hidden;flex:1;min-width:0}
 .label .lt .l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .label .lt .l b{font-weight:600}
 #printArea{position:fixed;left:-10000px;top:0;width:900px}  /* เก็บชุดเต็มไว้นอกจอ · โผล่เฉพาะตอนพิมพ์ */
 @media print{
   @page{margin:6mm}
-  html,body{margin:0!important;padding:0!important;background:#fff!important;height:auto!important}
+  html,body{margin:0!important;padding:0!important;background:#fff!important;height:auto!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
   /* ซ่อนทุกอย่างแบบยุบพื้นที่ (display:none) → ไม่เหลือหน้ากระดาษเปล่า */
   #loginModal,.top,.noprint{display:none!important}
   .wrap>.card:not(#resultCard){display:none!important}
@@ -328,7 +328,14 @@ function renderLabels(d){
   setTimeout(function(){ drawQRin_(prev, codes.slice(0,PREVIEW_MAX)); drawQRin_(full, codes); },60);
   document.getElementById('resultCard').scrollIntoView({behavior:'smooth'});
 }
-function printLabels(){ window.print(); }
+function printLabels(){
+  // รอให้ฟอนต์โหลดเสร็จก่อนพิมพ์ (กันกรณีพิมพ์ออกมาแล้วข้อความหาย/เป็นกระดาษเปล่า เพราะฟอนต์ยังไม่พร้อม)
+  var go=function(){ setTimeout(function(){ window.print(); }, 60); };
+  try{
+    if(document.fonts && document.fonts.ready){ document.fonts.ready.then(go); if(document.fonts.status!=='loaded'){ try{ document.fonts.load("600 10px 'Kanit'"); document.fonts.load("700 10px 'IBM Plex Mono'"); }catch(e){} } }
+    else go();
+  }catch(e){ go(); }
+}
 
 function loadStock(){ api('stockSummary',{}).then(function(r){ if(!r||!r.ok)return; var v=r.data.variants||[];
   if(!v.length){ document.getElementById('stockBox').innerHTML='<div class="mini">ยังไม่มีสินค้า</div>'; return; }
