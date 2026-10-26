@@ -41,7 +41,7 @@ td.r,th.r{text-align:right}
 :root{--lw:32mm;--lh:25mm;--cols:3;--qr:18mm}
 .labels{display:grid;grid-template-columns:repeat(var(--cols),var(--lw));gap:2mm;margin-top:12px;justify-content:start}
 .label{width:var(--lw);height:var(--lh);background:#fff;color:#000;border:1px solid #ddd;border-radius:2px;display:flex;flex-direction:column;gap:.4mm;padding:1.3mm;overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-.label .shop{font-family:'Kanit','Noto Sans Thai','Leelawadee UI','Tahoma',sans-serif;font-weight:600;font-size:calc(var(--line-fs,1.75mm)*.92);letter-spacing:.12mm;color:#000;text-align:center;line-height:1;white-space:nowrap;overflow:hidden;text-transform:uppercase}
+.label .shop{font-family:'Kanit','Noto Sans Thai','Leelawadee UI','Tahoma',sans-serif;font-weight:600;font-size:calc(var(--line-fs,1.75mm)*.92);letter-spacing:.1px;color:#000;text-align:center;line-height:1.08;white-space:normal;overflow:hidden;text-transform:none;margin:.4mm 0 .2mm}
 .label .code{font-family:'IBM Plex Mono','Sarabun','Courier New',monospace;font-weight:700;font-size:var(--code-fs,3mm);letter-spacing:.25mm;color:#000;text-align:center;line-height:1.05;border-bottom:.25mm solid #000;padding-bottom:.5mm;white-space:nowrap;overflow:hidden}
 .label .body{display:flex;gap:1.3mm;flex:1;min-height:0;align-items:center}
 .label .qr{width:var(--qr);height:var(--qr);flex:0 0 var(--qr);display:flex;align-items:center;justify-content:center}
@@ -296,14 +296,14 @@ function loadLabelSize(){ try{ var s=JSON.parse(localStorage.getItem('h265_label
 var PREVIEW_MAX=6;
 var SHOP_LABEL_NAME='HOUSE 265 Hair Extension';  /* หัวฉลาก · แก้ชื่อร้านตรงนี้ได้ */
 function mkLabel_(d,code){ var el=document.createElement('div'); el.className='label';
-  var cid=d.color_id?('['+esc(d.color_id)+'] '):'';
   var typeName=d.hair_type_en||d.hair_type||d.variant_name||'';           /* EN ก่อน · ไม่มีค่อย TH */
-  var colName=d.color_name_en||d.variant_color||d.color_name||'';          /* EN ก่อน · ไม่มีค่อย TH */
   var strands=d.strands_per_mad?(esc(d.strands_per_mad)+' ช่อ'):'';
   var len=(d.variant_length||d.length_in)?(esc(d.variant_length||d.length_in)+'นิ้ว'):'';
   var l4=[strands,len].filter(Boolean).join(' · ');
-  var col=cid+esc(colName);
-  el.innerHTML='<div class="shop">'+esc(SHOP_LABEL_NAME)+'</div><div class="code">'+esc(code)+'</div><div class="body"><div class="qr"></div><div class="lt">'+
+  /* สีผม: ใช้คอลัมน์ color_name_barcode (ชีต Colors) ตรงๆ · ว่างค่อย fallback เป็น [รหัส] ชื่อ EN */
+  var col = d.color_barcode ? esc(d.color_barcode)
+          : ((d.color_id?('['+esc(d.color_id)+'] '):'')+esc(d.color_name_en||d.variant_color||d.color_name||''));
+  el.innerHTML='<div class="code">'+esc(code)+'</div><div class="shop">'+esc(SHOP_LABEL_NAME)+'</div><div class="body"><div class="qr"></div><div class="lt">'+
     '<div class="l"><b>'+esc(typeName)+'</b></div>'+
     (col.trim()?('<div class="l">'+col+'</div>'):'')+
     (l4?('<div class="l">'+l4+'</div>'):'')+
