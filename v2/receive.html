@@ -49,6 +49,21 @@ td.r,th.r{text-align:right}
 .varcard .vchips{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
 .vchip{display:inline-block;font-size:12px;background:var(--surface2);border:1px solid var(--line);border-radius:6px;padding:2px 8px;color:var(--muted)}
 .vchip.g{color:var(--gold-soft);border-color:var(--gold-dim)}
+.tabbar{display:flex;gap:6px;margin:0 0 14px}
+.tabbtn{flex:1;background:var(--surface2);border:1px solid var(--line);color:var(--muted);border-radius:11px;padding:11px 6px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit}
+.tabbtn.on{border-color:var(--gold);color:#231b08;background:linear-gradient(135deg,var(--gold-dim),var(--gold-soft))}
+.tabpane.hide{display:none}
+.srow{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line)}
+.srow:last-child{border-bottom:none}
+.srow .si{flex:1;min-width:0}
+.srow .si b{font-weight:500;font-size:14.5px}
+.srow .si .chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.srow .snum{text-align:right;white-space:nowrap}
+.srow .snum .big{font-size:17px;font-weight:600;color:var(--gold-soft)}
+.srow .snum .sub{font-size:11px;color:var(--faint)}
+.breprint{background:none;border:1px solid var(--gold-dim);color:var(--gold-soft);border-radius:9px;padding:7px 11px;font-size:12.5px;cursor:pointer;font-family:inherit;white-space:nowrap}
+.breprint:active{background:var(--gold-ghost)}
+.label .lt .l.shop{white-space:nowrap;overflow:hidden}
 /* ---- ฉลาก QR (ขนาดปรับได้ผ่านตัวแปร) ---- */
 :root{--lw:32mm;--lh:25mm;--cols:3;--qr:18mm}
 .labels{display:grid;grid-template-columns:repeat(var(--cols),var(--lw));gap:2mm;margin-top:12px;justify-content:start}
@@ -67,7 +82,7 @@ td.r,th.r{text-align:right}
   @page{margin:6mm}
   html,body{margin:0!important;padding:0!important;background:#fff!important;height:auto!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
   /* ซ่อนทุกอย่างแบบยุบพื้นที่ (display:none) → ไม่เหลือหน้ากระดาษเปล่า */
-  #loginModal,.top,.noprint{display:none!important}
+  #loginModal,.top,.noprint,.tabbar,.tabpane{display:none!important}
   .wrap>.card:not(#resultCard){display:none!important}
   #app,.wrap{display:block!important;margin:0!important;padding:0!important;background:none!important;border:0!important}
   #resultCard{display:block!important;margin:0!important;padding:0!important;border:0!important;background:none!important;box-shadow:none!important}
@@ -93,7 +108,14 @@ td.r,th.r{text-align:right}
   </header>
   <div class="wrap">
 
-    <!-- รับเข้า -->
+    <div class="tabbar">
+      <button type="button" class="tabbtn on" data-t="receive" onclick="setTab('receive')">📦 รับเข้า</button>
+      <button type="button" class="tabbtn" data-t="stock" onclick="setTab('stock')">📊 สต็อก</button>
+      <button type="button" class="tabbtn" data-t="batch" onclick="setTab('batch')">🧾 Batch</button>
+    </div>
+
+    <!-- ===== TAB: รับเข้า ===== -->
+    <div class="tabpane" id="tabReceive">
     <div class="card">
       <h2>📦 รับผมเข้า (สร้าง Batch + QR)</h2>
       <label class="lbl">รุ่นสินค้า (Variant)</label>
@@ -154,8 +176,35 @@ td.r,th.r{text-align:right}
       <div class="prev" id="rPrev">กรอกข้อมูลเพื่อดูสรุป</div>
       <button class="btn" id="btnReceive" style="margin-top:12px" onclick="doReceive()">รับเข้า + สร้าง QR</button>
     </div>
+    </div><!-- /tabReceive -->
 
-    <!-- ผลลัพธ์ + ฉลาก -->
+    <!-- ===== TAB: สต็อก + พิมพ์ซ้ำ ===== -->
+    <div class="tabpane hide" id="tabStock">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><h2 style="margin:0">📊 สต็อกคงเหลือ</h2><button class="lo" onclick="loadStock()">↻ รีเฟรช</button></div>
+        <input id="stockSearch" class="in" placeholder="ค้นหา ประเภท / สี / เกรด / ลักษณะ / ความยาว" oninput="renderStock()" style="margin-bottom:10px">
+        <div id="stockSum" class="mini" style="margin:0 0 8px"></div>
+        <div id="stockBox"><div class="mini">กำลังโหลด…</div></div>
+      </div>
+      <div class="card">
+        <h2>🖨️ พิมพ์ฉลากซ้ำ</h2>
+        <div class="mini" style="margin-top:0">กรณีเครื่องพิมพ์พลาด หรือฉลากชำรุด — ออกฉลากใหม่ได้ โดยไม่สร้างสต็อกเพิ่ม</div>
+        <label class="lbl" style="margin-top:12px">พิมพ์/สแกนบาร์โค้ด แล้วออกฉลาก 1 ดวง</label>
+        <div style="display:flex;gap:8px"><input id="reBarcode" class="in" placeholder="เช่น H000073L0" onkeydown="if(event.key==='Enter')reprintBarcode()"><button class="btn" style="width:auto;padding:0 20px" onclick="reprintBarcode()">พิมพ์ซ้ำ</button></div>
+        <div class="mini" style="margin-top:8px">• ต้องการพิมพ์ทั้ง Batch? ไปแท็บ <b>🧾 Batch</b> แล้วกดปุ่มพิมพ์ที่ Batch นั้น</div>
+      </div>
+    </div>
+
+    <!-- ===== TAB: Batch ===== -->
+    <div class="tabpane hide" id="tabBatch">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><h2 style="margin:0">🧾 Batch (รอบรับเข้า)</h2><button class="lo" onclick="loadBatches()">↻ รีเฟรช</button></div>
+        <input id="batchSearch" class="in" placeholder="ค้นหา Batch / ประเภท / สี / เกรด / ลักษณะ" oninput="renderBatches()" style="margin-bottom:10px">
+        <div id="batchBox"><div class="mini">กำลังโหลด…</div></div>
+      </div>
+    </div>
+
+    <!-- ===== ฉลาก (ใช้ร่วม: รับเข้า + พิมพ์ซ้ำ) ===== -->
     <div class="card hide" id="resultCard">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <h2 style="margin:0">🏷️ ฉลาก QR (<span id="lblCount">0</span> ดวง)</h2>
@@ -171,18 +220,6 @@ td.r,th.r{text-align:right}
       <div class="noprint mini" id="previewHead" style="margin-top:12px;color:var(--gold-soft)"></div>
       <div class="labels noprint" id="labelPreview"></div>
       <div id="printArea"><div class="labels" id="labels"></div></div>
-    </div>
-
-    <!-- สต็อก -->
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><h2 style="margin:0">📊 สต็อกคงเหลือ</h2><button class="lo" onclick="loadStock()">รีเฟรช</button></div>
-      <div id="stockBox"><div class="mini">กำลังโหลด…</div></div>
-    </div>
-
-    <!-- batch ล่าสุด -->
-    <div class="card">
-      <h2>🧾 Batch ล่าสุด</h2>
-      <div id="batchBox"><div class="mini">กำลังโหลด…</div></div>
     </div>
 
   </div>
@@ -226,17 +263,31 @@ function boot(){ api('bootstrap',{}).then(function(r){
     document.getElementById('uInfo').innerText=(DATA.user.name||'')+' · '+(DATA.user.role==='owner'?'เจ้าของ':'ผู้จัดการ');
     document.getElementById('verBadge').innerText='ระบบ '+(DATA.version||'เก่า⚠️');
     document.getElementById('rDate').value=(DATA.settings && DATA.settings.today)|| new Date().toISOString().slice(0,10);
-    fillTypes(); fillColors(); loadVariants(); loadSuppliers(); loadStock(); loadBatches();
+    SHOP_LABEL_NAME=(DATA.settings&&DATA.settings.label_shop)||SHOP_LABEL_NAME;
+    SHOP_LABEL_SHORT=(DATA.settings&&DATA.settings.label_shop_short)||SHOP_LABEL_SHORT;
+    fillTypes(); fillColors(); fillTextures(); loadVariants(); loadSuppliers();  // สต็อก/batch โหลดตอนเปิดแท็บ (เพจเบา)
   }).catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
 
 function fillTypes(){ var sel=document.getElementById('nvType'); var svc=DATA.services||[];
   sel.innerHTML=svc.map(function(s){return '<option value="'+esc(s.acct_name)+'">'+esc(s.acct_name)+'</option>';}).join(''); onTypeSel(); }
 function fillColors(){ var dl=document.getElementById('colorList'); if(!dl)return;
   dl.innerHTML=(DATA.colors||[]).map(function(c){ return '<option value="'+esc(c.name)+'">'+esc(c.color_id||'')+(c.hex?(' · '+c.hex):'')+'</option>'; }).join(''); }
+/* ลักษณะผม: ดึงจากชีต (Settings.hairTextures) + ค่าที่เคยใช้ในรุ่นสินค้า — จัดการจากชีตได้ ไม่ hardcode */
+function fillTextures(){ var dl=document.getElementById('textureList'); if(!dl)return;
+  var base=[]; var s=(DATA.settings&&DATA.settings.hairTextures)||'';
+  if(s) base=String(s).split(/[,\n]/).map(function(x){return x.trim();}).filter(Boolean);
+  if(!base.length) base=['ผมตรง','ผมหยิก','ผมดัดลอน','ผมลอนธรรมชาติ','ผมลอนใหญ่','ผมลอนเล็ก','ผมหยักศก'];  // เผื่อยังไม่ได้ตั้งในชีต
+  (DATA.variants||[]).forEach(function(v){ var t=String(v.texture||'').trim(); if(t&&base.indexOf(t)<0)base.push(t); });  // ค่าที่เคยใช้
+  dl.innerHTML=base.map(function(t){return '<option value="'+esc(t)+'"></option>';}).join(''); }
+/* ---- แท็บ ---- */
+function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+function setTab(t){ ['receive','stock','batch'].forEach(function(x){ var el=document.getElementById('tab'+cap(x)); if(el)el.classList.toggle('hide',x!==t); });
+  [].forEach.call(document.querySelectorAll('.tabbtn'),function(b){ b.classList.toggle('on',b.dataset.t===t); });
+  if(t==='stock'&&!STOCKDATA)loadStock(); if(t==='batch'&&!BATCHDATA)loadBatches(); window.scrollTo(0,0); }
 function onTypeSel(){ var t=document.getElementById('nvType').value; var s=(DATA.services||[]).filter(function(x){return String(x.acct_name)===t;})[0];
   if(s){ document.getElementById('nvG').placeholder=s.grams_per_mad||'50'; document.getElementById('nvS').placeholder=(s.strands_per_mad===''||s.strands_per_mad==null)?'(ไม่มี)':s.strands_per_mad; } applyProduceDefaults(); }
 
-function loadVariants(){ api('variantsList',{}).then(function(r){ if(!r||!r.ok)return; DATA.variants=r.data.variants||[]; updateVarBtn(); }); }
+function loadVariants(){ api('variantsList',{}).then(function(r){ if(!r||!r.ok)return; DATA.variants=r.data.variants||[]; updateVarBtn(); fillTextures(); }); }
 function onVariantSel(){ document.getElementById('newVariant').classList.toggle('hide', document.getElementById('vSel').value!=='__NEW__'); applyProduceDefaults(); }
 /* ---- variant picker (การ์ด · ค้นหา · แสดงเกรด/ลักษณะ/สี/สต็อก · กันเลือกผิด) ---- */
 function openVariantPicker(){ document.getElementById('varModal').classList.add('show'); document.getElementById('varSearch').value=''; renderVariantList(); setTimeout(function(){ try{document.getElementById('varSearch').focus();}catch(e){} },60); }
@@ -336,7 +387,8 @@ function loadLabelSize(){ try{ var s=JSON.parse(localStorage.getItem('h265_label
     if(s){ document.getElementById('lw').value=s.w; document.getElementById('lh').value=s.h; document.getElementById('lcols').value=s.c; } }catch(e){}
   applyLabelSize(); }
 var PREVIEW_MAX=6;
-var SHOP_LABEL_NAME='HOUSE 265 Hair Extension';  /* หัวฉลาก · แก้ชื่อร้านตรงนี้ได้ */
+var SHOP_LABEL_NAME='HOUSE 265 Hair Extension';   /* ดึงจาก Settings.label_shop (ตั้งในชีตได้) */
+var SHOP_LABEL_SHORT='HOUSE 265';                 /* ใช้อัตโนมัติเมื่อชื่อเต็มยาวเกินฉลาก (Settings.label_shop_short) */
 function mkLabel_(d,code){ var el=document.createElement('div'); el.className='label';
   var typeName=d.hair_type_en||d.hair_type||d.variant_name||'';           /* EN ก่อน · ไม่มีค่อย TH */
   var strands=d.strands_per_mad?(esc(d.strands_per_mad)+' ช่อ'):'';
@@ -347,7 +399,7 @@ function mkLabel_(d,code){ var el=document.createElement('div'); el.className='l
           : ((d.color_id?('['+esc(d.color_id)+'] '):'')+esc(d.color_name_en||d.variant_color||d.color_name||''));
   var typeLine=esc(typeName)+(d.grade?(' · '+esc(d.grade)):'');   /* ชื่อประเภท + เกรด (เช่น Feather-Tip · 4A) */
   el.innerHTML='<div class="code">'+esc(code)+'</div><div class="body"><div class="qr"></div><div class="lt">'+
-    '<div class="l hd"><b>'+esc(SHOP_LABEL_NAME)+'</b></div>'+
+    '<div class="l hd shop"><b>'+esc(SHOP_LABEL_NAME)+'</b></div>'+
     '<div class="l hd"><b>'+typeLine+'</b></div>'+
     (d.texture?('<div class="l">'+esc(d.texture)+'</div>'):'')+   /* ลักษณะผม */
     (col.trim()?('<div class="l">'+col+'</div>'):'')+
@@ -363,15 +415,22 @@ function renderLabels(d){
   document.getElementById('resultCard').classList.remove('hide');
   loadLabelSize();
   document.getElementById('lblCount').innerText=fmt(d.count);
-  document.getElementById('batchInfo').innerHTML='Batch <b class="mono">'+esc(d.batch_id)+'</b> · '+esc(d.variant_name)+' · ต้นทุน/มัด '+fmt(d.cost_per_mad)+' ฿ (ไม่พิมพ์บนฉลาก)';
+  document.getElementById('batchInfo').innerHTML=(d.reprint?'🔁 พิมพ์ซ้ำ · ':'')+'Batch <b class="mono">'+esc(d.batch_id||'-')+'</b> · '+esc(d.variant_name||'')+(d.reprint?'':(' · ต้นทุน/มัด '+fmt(d.cost_per_mad)+' ฿ (ไม่พิมพ์บนฉลาก)'));
   var codes=d.barcodes||[], full=document.getElementById('labels'), prev=document.getElementById('labelPreview');
   full.innerHTML=''; prev.innerHTML='';
   codes.forEach(function(code){ full.appendChild(mkLabel_(d,code)); });                 // ชุดเต็ม (ไว้พิมพ์ · นอกจอ)
   codes.slice(0,PREVIEW_MAX).forEach(function(code){ prev.appendChild(mkLabel_(d,code)); }); // ตัวอย่างบนจอ
   var more=codes.length-PREVIEW_MAX;
   document.getElementById('previewHead').innerHTML='ตัวอย่าง '+Math.min(PREVIEW_MAX,codes.length)+' ดวงแรก'+(more>0?(' · อีก <b>'+fmt(more)+'</b> ดวง จะพิมพ์ครบตอนกดพิมพ์'):'');
-  setTimeout(function(){ drawQRin_(prev, codes.slice(0,PREVIEW_MAX)); drawQRin_(full, codes); },60);
+  setTimeout(function(){ drawQRin_(prev, codes.slice(0,PREVIEW_MAX)); drawQRin_(full, codes); fitShop_(prev); fitShop_(full); },60);
   document.getElementById('resultCard').scrollIntoView({behavior:'smooth'});
+}
+/* ชื่อร้านบรรทัดเดียวเสมอ: ถ้ายาวเกิน → ย่อเป็นชื่อสั้น → ถ้ายังเกินค่อยลดฟอนต์ทีละขั้น */
+function fitShop_(root){ var els=(root||document).querySelectorAll('.label .l.shop');
+  for(var i=0;i<els.length;i++){ var el=els[i], b=el.firstChild; el.style.fontSize='';
+    if(b) b.textContent=SHOP_LABEL_NAME;
+    if(el.scrollWidth>el.clientWidth+0.5 && b) b.textContent=SHOP_LABEL_SHORT;
+    var g=0; while(el.scrollWidth>el.clientWidth+0.5 && g<22){ var cur=parseFloat(getComputedStyle(el).fontSize)||12; el.style.fontSize=(cur*0.94)+'px'; g++; } }
 }
 function printLabels(){
   // รอให้ฟอนต์โหลดเสร็จก่อนพิมพ์ (กันกรณีพิมพ์ออกมาแล้วข้อความหาย/เป็นกระดาษเปล่า เพราะฟอนต์ยังไม่พร้อม)
@@ -382,18 +441,45 @@ function printLabels(){
   }catch(e){ go(); }
 }
 
-function loadStock(){ api('stockSummary',{}).then(function(r){ if(!r||!r.ok)return; var v=r.data.variants||[];
-  if(!v.length){ document.getElementById('stockBox').innerHTML='<div class="mini">ยังไม่มีสินค้า</div>'; return; }
-  var h='<table><tr><th>รุ่น</th><th class="r">รับเข้ารวม/เหลือ</th><th class="r">พร้อมขาย</th><th class="r">จอง</th><th class="r">ขายแล้ว</th></tr>';
-  h+=v.map(function(x){return '<tr><td>'+esc(x.name)+'<div><span class="tag2">'+esc(x.hair_type||'')+'</span> '+esc(x.length_in||'')+'</div></td>'+
-    '<td class="r mono">'+fmt(x.remaining)+'</td><td class="r mono" style="color:var(--gold-soft)">'+fmt(x.available)+'</td><td class="r mono">'+fmt(x.reserved)+'</td><td class="r mono">'+fmt(x.sold)+'</td></tr>';}).join('');
-  document.getElementById('stockBox').innerHTML=h+'</table>'; }); }
-
-function loadBatches(){ api('batchesList',{}).then(function(r){ if(!r||!r.ok)return; var b=r.data.batches||[];
-  if(!b.length){ document.getElementById('batchBox').innerHTML='<div class="mini">ยังไม่มี Batch</div>'; return; }
-  var h='<table><tr><th>Batch</th><th>รุ่น</th><th>วันที่</th><th class="r">รับ/เหลือ</th><th class="r">ต้นทุน/มัด</th></tr>';
-  h+=b.slice(0,20).map(function(x){return '<tr><td class="mono">'+esc(x.batch_id)+'</td><td>'+esc(x.variant_name)+'</td><td>'+esc(x.received_date)+'</td>'+
-    '<td class="r mono">'+fmt(x.qty_received)+'/'+fmt(x.remaining)+'</td><td class="r mono">'+fmt(x.cost_per_mad)+'</td></tr>';}).join('');
-  document.getElementById('batchBox').innerHTML=h+'</table>'; }); }
+/* ---- สต็อก (กระชับ · ค้นหา) ---- */
+var STOCKDATA=null, BATCHDATA=null, BATCH_SHOW=30;
+function sChips_(x){ var c=[]; if(x.grade)c.push('<span class="vchip g">เกรด '+esc(x.grade)+'</span>'); if(x.texture)c.push('<span class="vchip">'+esc(x.texture)+'</span>'); if(x.color)c.push('<span class="vchip">'+esc(x.color)+'</span>'); return c.join(''); }
+function loadStock(){ document.getElementById('stockBox').innerHTML='<div class="mini">กำลังโหลด…</div>';
+  api('stockSummary',{}).then(function(r){ if(!r||!r.ok){ document.getElementById('stockBox').innerHTML='<div class="mini">โหลดไม่สำเร็จ</div>'; return; }
+    STOCKDATA=r.data.variants||[]; renderStock(); }).catch(function(){ document.getElementById('stockBox').innerHTML='<div class="mini">เชื่อมต่อไม่สำเร็จ</div>'; }); }
+function renderStock(){ var box=document.getElementById('stockBox'); if(!box||!STOCKDATA)return;
+  var q=((document.getElementById('stockSearch')||{}).value||'').trim().toLowerCase();
+  var vs=STOCKDATA.filter(function(x){ if(!q)return true; var hay=(x.name+' '+x.hair_type+' '+x.length_in+' '+x.color+' '+(x.grade||'')+' '+(x.texture||'')).toLowerCase(); return hay.indexOf(q)>=0; });
+  var tAv=vs.reduce(function(a,x){return a+Number(x.available||0);},0), tRe=vs.reduce(function(a,x){return a+Number(x.remaining||0);},0);
+  document.getElementById('stockSum').innerHTML='พบ <b>'+vs.length+'</b> รุ่น · พร้อมขายรวม <b style="color:var(--gold-soft)">'+fmt(tAv)+'</b> · คงเหลือรวม <b>'+fmt(tRe)+'</b> มัด';
+  if(!vs.length){ box.innerHTML='<div class="mini" style="padding:8px 0">ไม่พบรุ่นที่ตรงคำค้น</div>'; return; }
+  box.innerHTML=vs.map(function(x){ var av=Number(x.available||0), sc=av<=0?'var(--crit)':(av<5?'var(--gold-soft)':'var(--ok)');
+    return '<div class="srow"><div class="si"><b>'+esc(x.hair_type||x.name)+(x.length_in?(' '+esc(x.length_in)+'นิ้ว'):'')+'</b><div class="chips">'+sChips_(x)+'</div></div>'+
+      '<div class="snum"><div class="big" style="color:'+sc+'">'+fmt(av)+'</div><div class="sub">พร้อมขาย · เหลือ '+fmt(x.remaining)+' · จอง '+fmt(x.reserved)+' · ขาย '+fmt(x.sold)+'</div></div></div>'; }).join(''); }
+/* ---- Batch (กระชับ · ค้นหา · พิมพ์ซ้ำ) ---- */
+function loadBatches(){ document.getElementById('batchBox').innerHTML='<div class="mini">กำลังโหลด…</div>';
+  api('batchesList',{}).then(function(r){ if(!r||!r.ok){ document.getElementById('batchBox').innerHTML='<div class="mini">โหลดไม่สำเร็จ</div>'; return; }
+    BATCHDATA=r.data.batches||[]; BATCH_SHOW=30; renderBatches(); }).catch(function(){ document.getElementById('batchBox').innerHTML='<div class="mini">เชื่อมต่อไม่สำเร็จ</div>'; }); }
+function renderBatches(){ var box=document.getElementById('batchBox'); if(!box||!BATCHDATA)return;
+  var q=((document.getElementById('batchSearch')||{}).value||'').trim().toLowerCase();
+  var bs=BATCHDATA.filter(function(x){ if(!q)return true; var hay=(x.batch_id+' '+x.variant_name+' '+x.hair_type+' '+x.color+' '+(x.grade||'')+' '+(x.texture||'')).toLowerCase(); return hay.indexOf(q)>=0; });
+  var show=bs.slice(0,BATCH_SHOW);
+  var h=show.map(function(x){ var d=String(x.received_date).slice(0,10);
+    return '<div class="srow"><div class="si"><b class="mono">'+esc(x.batch_id)+'</b> <span class="faint" style="font-size:12px">'+esc(d)+'</span>'+
+      '<div style="font-size:13px;margin-top:2px">'+esc(x.hair_type||x.variant_name)+(x.length_in?(' '+esc(x.length_in)+'นิ้ว'):'')+'</div>'+
+      (sChips_(x)?('<div class="chips">'+sChips_(x)+'</div>'):'')+
+      '<div class="sub" style="font-size:11px;color:var(--faint);margin-top:3px">รับ '+fmt(x.qty_received)+' · เหลือ '+fmt(x.remaining)+' · ต้นทุน '+fmt(x.cost_per_mad)+'/มัด</div></div>'+
+      '<button class="breprint" onclick="reprintBatch(\''+esc(x.batch_id)+'\')">🖨️ พิมพ์ซ้ำ</button></div>'; }).join('');
+  if(!bs.length) h='<div class="mini" style="padding:8px 0">ไม่พบ Batch ที่ตรงคำค้น</div>';
+  else if(bs.length>show.length) h+='<button class="btn sec" style="margin-top:10px" onclick="BATCH_SHOW+=30;renderBatches()">ดูเพิ่ม ('+(bs.length-show.length)+')</button>';
+  box.innerHTML=h; }
+/* ---- พิมพ์ฉลากซ้ำ (เครื่องพิมพ์พลาด/ฉลากชำรุด) ---- */
+function reprintBatch(bid){ toast('กำลังเตรียมฉลาก Batch '+bid+'…');
+  api('reprintLabels',{batch_id:bid}).then(function(r){ if(!r||!r.ok){ toast((r&&r.message)||'พิมพ์ซ้ำไม่สำเร็จ',1); return; }
+    LAST=r.data; renderLabels(r.data); toast('เตรียมฉลาก '+fmt(r.data.count)+' ดวง · กด "พิมพ์ฉลาก"'); }).catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
+function reprintBarcode(){ var el=document.getElementById('reBarcode'), bc=(el?el.value:'').trim(); if(!bc){ toast('ใส่บาร์โค้ด',1); return; }
+  toast('กำลังเตรียมฉลาก '+bc+'…');
+  api('reprintLabels',{barcode:bc}).then(function(r){ if(!r||!r.ok){ toast((r&&r.message)||'ไม่พบบาร์โค้ด',1); return; }
+    LAST=r.data; if(el)el.value=''; renderLabels(r.data); toast('เตรียมฉลาก 1 ดวง · กด "พิมพ์ฉลาก"'); }).catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
 </script>
 </body></html>
