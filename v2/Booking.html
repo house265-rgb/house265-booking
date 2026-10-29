@@ -435,7 +435,9 @@ function buildStaff(){ var box=document.getElementById('techStaffList'); box.inn
   any.onclick=function(){ STATE.techId='any'; STATE.techName=''; STATE.date=''; STATE.startTime=''; markSel('techStaffList',any); if(STEP===3){renderStep();} refreshNav(); };
   box.appendChild(any);
   CAT.technicians.forEach(function(t){ var d=document.createElement('div'); d.className='opt'+(STATE.techId===String(t.tech_id)?' sel':''); d.dataset.id=t.tech_id;
-    var note=t.note?('<div class="s" style="color:var(--gold-soft)">'+esc(t.note)+'</div>'):'';
+    var promoTxt=(CAT.promos||[]).filter(function(p){return p.tech&&p.tech===t.name&&p.show_text;}).map(function(p){return '🎁 '+p.show_text;}).join(' · ');
+    var sub=[t.note,promoTxt].filter(Boolean).join(' · ');
+    var note=sub?('<div class="s" style="color:var(--gold-soft)">'+esc(sub)+'</div>'):'';
     d.innerHTML='<div class="t">'+esc(t.name)+'</div>'+note;
     d.onclick=function(){ STATE.techId=String(t.tech_id); STATE.techName=t.name; STATE.date=''; STATE.startTime=''; markSel('techStaffList',d); if(STEP===3){renderStep();} refreshNav(); };
     box.appendChild(d); }); }
@@ -601,6 +603,22 @@ function onAvail(res){ LASTAVAIL=(res&&res.ok)?res.data:null; var area=document.
 function slotHtml(s){ return '<div class="slot" data-start="'+s.time+'" data-end="'+fmtEnd(s.min)+'"><div class="tm">'+s.time+'</div><div class="meta">ว่าง '+s.techs+' ช่าง</div></div>'; }
 function fmtEnd(startMin){ var dur=(LASTAVAIL&&LASTAVAIL.durationMin)||0; var m=Number(startMin)+dur; return ('0'+Math.floor(m/60)).slice(-2)+':'+('0'+(m%60)).slice(-2); }
 
+/* ---- โปรโมชันที่ใช้ได้กับตัวเลือกปัจจุบัน (โชว์ให้ลูกค้าทราบ · หักจริงตอนชำระที่ร้าน) ---- */
+function pnorm(s){ return String(s==null?'':s).trim(); }
+function bkSelAttrs(){ var v=matchedVariants()[0]||{};
+  return { technique:STATE.technique, size:(isByob()?STATE.size:(v.length_in||'')), grade:v.grade||'', texture:v.texture||'', color:v.color||'',
+    qty:STATE.bundle, tech:(STATE.techId==='any'?'':STATE.techName) }; }
+function promoMatchBk(p){ var a=bkSelAttrs();
+  if(p.tech && p.tech!==a.tech)return false;
+  if(p.technique && pnorm(p.technique)!==pnorm(a.technique))return false;
+  if(p.size && digits(p.size)!==digits(a.size))return false;
+  if(p.grade && pnorm(p.grade)!==pnorm(a.grade))return false;
+  if(p.color && pnorm(p.color)!==pnorm(a.color))return false;
+  if(p.texture && pnorm(p.texture)!==pnorm(a.texture))return false;
+  if(p.min_bundle && a.qty<p.min_bundle)return false;
+  return true; }
+function matchingPromos(){ return (CAT.promos||[]).filter(function(p){return p.show_text&&promoMatchBk(p);}); }
+
 /* ================= STEP 4 : summary + QR ================= */
 function buildSummary(){ computeEst();
   var lc=document.getElementById('lblCustomer'); if(lc)lc.innerHTML=lbl('label','customer','ข้อมูลผู้จอง','Your Details');
@@ -615,6 +633,9 @@ function buildSummary(){ computeEst();
   ph+='<div class="pr" style="border-top:1px solid var(--line-soft);margin-top:4px;padding-top:8px"><span>มูลค่างานรวม</span><b>'+fmt(total)+' ฿</b></div>'+
     '<div class="pr dep"><span>มัดจำ (จ่ายตอนนี้)</span><b style="color:var(--gold-soft)">'+fmt(deposit)+' ฿</b></div>'+
     '<div class="pr total"><span>ยอดคงเหลือจ่ายหน้าร้าน</span><b>'+fmt(remain)+' ฿</b></div>';
+  var mp=matchingPromos(); if(mp.length){ ph+='<div class="pr" style="border-top:1px dashed var(--line);margin-top:6px;padding-top:8px"><span style="color:var(--gold-soft)">🎁 โปรที่ใช้ได้</span><b></b></div>'+
+    mp.map(function(p){ return '<div class="pr"><span>'+esc(p.show_text)+'</span><b></b></div>'; }).join('')+
+    '<div style="font-size:11px;color:var(--faint);margin-top:4px">* ส่วนลดจะหักให้ตอนชำระที่ร้าน</div>'; }
   document.getElementById('priceBox').innerHTML=ph;
   document.getElementById('depLabel').innerText='สแกนจ่ายมัดจำ '+fmt(deposit)+' ฿';
   renderQR(deposit);

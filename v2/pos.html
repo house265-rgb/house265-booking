@@ -190,7 +190,7 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(17,16,16,.92);backdr
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
 var TOKEN='',DATA=null,FULL=false,CART=[],CAT='ขายผม',PAY='เงินสด',BUSY=false,RMAP={},USERTECH='';
 window._disc=0; window._recv=0; window._split=false; window._p2m='พร้อมเพย์'; window._p2a=0; window._slips=[];
-window._bookingId=''; window._bookingName=''; window._deposit=0;
+window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName='';
 function api(a,p){ return fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:a,token:TOKEN||'',payload:p||{}})}).then(function(r){return r.json();}); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(m){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m];}); }
 function fmt(v){ return (Number(v)||0).toLocaleString('en-US'); }
@@ -284,7 +284,7 @@ function addScan(code){ if(!code)return;
 var LD=null, LEDIT=null;
 function newProductBase(d){ var technique=techniqueFor(d.hair_type); var len=String(d.length_in||'');
   return { kind:'product', barcode:d.barcode, variant_id:d.variant_id, name:String(d.name||d.hair_type||''),
-    hair_type:String(d.hair_type||''), length_in:len, color:String(d.color||''),
+    hair_type:String(d.hair_type||''), length_in:len, color:String(d.color||''), grade:String(d.grade||''), texture:String(d.texture||''),
     plainPrice:Number(d.sell_price)||0, extPrice:laborFor(technique,len), cost:(d.cost!=null?Number(d.cost):null),
     mode:'plain', technique:technique, size:sizeLabelFor(technique,len), techs:[{name:USERTECH||'',split:100}] }; }
 function openProductFromScan(d){ LEDIT=null; LD=newProductBase(d); renderProduct(); openModal(); }
@@ -373,7 +373,7 @@ function closeLine(){ document.getElementById('lineModal').classList.remove('sho
 /* ===================================================================
  * CART / BILL
  * =================================================================== */
-function clearCart(){ CART=[]; window._disc=0; window._recv=0; window._split=false; window._p2a=0; window._slips=[]; window._bookingId=''; window._bookingName=''; window._deposit=0; renderCart(); }
+function clearCart(){ CART=[]; window._disc=0; window._recv=0; window._split=false; window._p2a=0; window._slips=[]; window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName=''; renderCart(); }
 function delLine(i){ CART.splice(i,1); renderCart(); }
 function editLine(i){ if(CART[i].kind==='product')openProductEdit(i); else openLine(null,null,i); }
 function prodQty(l){ return Math.max(1, Math.round(Number(l.qty_mad)||1)); }
@@ -381,6 +381,31 @@ function lineTotal(l){ if(l.kind==='product') return Math.round((l.mode==='ext'?
 function cartSub(){ return CART.reduce(function(a,l){return a+lineTotal(l);},0); }
 function cartDeposit(){ return Math.max(0, Math.round(Number(window._deposit)||0)); }
 function cartDue(){ return Math.max(0, cartSub()-(window._disc||0)-cartDeposit()); }
+
+/* ---- โปรโมชัน: จับคู่เงื่อนไข (ชื่อจริง) + คิดส่วนลด + เด้งโปรที่ดีสุด ---- */
+function pnorm(s){ return String(s==null?'':s).trim(); }
+function lineAttrs(l){ if(l.kind==='product') return { technique:l.hair_type||'', size:l.length_in||'', grade:l.grade||'', texture:l.texture||'', color:l.color||'', qty:prodQty(l), techs:(l.techs||[]).map(function(t){return t.name;}).filter(Boolean), amount:lineTotal(l) };
+  return { technique:String(l.item||'').replace('ขยับปม',''), size:l.size||'', grade:'', texture:'', color:'', qty:(Number(l.qty)||1), techs:(l.techs||[]).map(function(t){return t.name;}).filter(Boolean), amount:lineTotal(l) }; }
+function promoMatch(p,a){ if(p.tech&&a.techs.indexOf(p.tech)<0)return false;
+  if(p.technique&&pnorm(a.technique)!==pnorm(p.technique))return false;
+  if(p.size&&digits(a.size)!==digits(p.size))return false;
+  if(p.grade&&pnorm(a.grade)!==pnorm(p.grade))return false;
+  if(p.color&&pnorm(a.color)!==pnorm(p.color))return false;
+  if(p.texture&&pnorm(a.texture)!==pnorm(p.texture))return false;
+  if(p.min_bundle&&a.qty<p.min_bundle)return false; return true; }
+function promoDiscount(p){ var attrs=CART.map(lineAttrs);
+  var hasCond=p.tech||p.technique||p.size||p.grade||p.color||p.texture||p.min_bundle;
+  var match=hasCond?attrs.filter(function(a){return promoMatch(p,a);}):attrs; if(!match.length)return 0;
+  var base=match.reduce(function(s,a){return s+a.amount;},0), qty=match.reduce(function(s,a){return s+a.qty;},0), disc=0;
+  if(p.type==='percent')disc=Math.round(base*p.value/100); else disc=(p.per==='mad')?Math.round(p.value*qty):Math.round(p.value);
+  return Math.min(disc, cartSub()); }
+function bestPromo(){ var best=null,bd=0; (DATA&&DATA.promos||[]).forEach(function(p){ var d=promoDiscount(p); if(d>bd){bd=d;best={p:p,disc:d};} }); return best; }
+function promoSuggestHtml(){ var b=bestPromo(); if(!b)return '';
+  var applied=(window._promoName===b.p.name && (window._disc||0)>=b.disc);
+  return '<div style="margin-top:10px;padding:10px 12px;background:var(--gold-ghost);border:1px solid var(--gold-dim);border-radius:11px;display:flex;align-items:center;justify-content:space-between;gap:8px">'+
+    '<div style="font-size:13px;min-width:0"><b style="color:var(--gold-soft)">🎁 '+esc(b.p.name)+'</b><div class="mini" style="margin-top:2px">ลด '+fmt(b.disc)+' ฿</div></div>'+
+    (applied?'<span class="badge ok">ใช้แล้ว</span>':'<button class="chipbtn" style="border-color:var(--gold-dim);color:var(--gold-soft)" onclick="applyPromo()">ใช้โปรนี้</button>')+'</div>'; }
+function applyPromo(){ var b=bestPromo(); if(!b)return; window._disc=b.disc; window._promoName=b.p.name; renderCart(); toast('ใช้โปร: '+b.p.name); }
 function lineTechNames(l){ var arr=(l.techs||[]); return arr.map(function(t){return t.name;}).filter(Boolean).join('+'); }
 
 function renderCart(){ var box=document.getElementById('cartBody');
@@ -398,7 +423,7 @@ function renderCart(){ var box=document.getElementById('cartBody');
     return '<div style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)"><div style="flex:1;min-width:0;cursor:pointer" onclick="editLine('+i+')"><b style="font-weight:500">'+esc(l.kind==='product'?l.name:l.item)+'</b>'+tag+' <span style="color:var(--gold);font-size:12px">✎</span><div class="mini" style="margin-top:2px">'+esc(det.join(' · '))+'</div></div><div class="mono" style="color:var(--gold-soft)">'+fmt(lineTotal(l))+'</div><button class="x" onclick="delLine('+i+')">✕</button></div>';
   }).join('');
   var sub=cartSub(), disc=window._disc||0, dep=cartDeposit(), due=cartDue();
-  var pay='<div style="margin-top:8px"><label class="lbl">ส่วนลด (฿)</label><input class="in" type="number" value="'+disc+'" onchange="window._disc=parseFloat(this.value)||0;renderCart()"></div>'+
+  var pay=promoSuggestHtml()+'<div style="margin-top:8px"><label class="lbl">ส่วนลด (฿)'+(window._promoName?(' · <span style="color:var(--gold-soft);text-transform:none;letter-spacing:0">โปร: '+esc(window._promoName)+'</span>'):'')+'</label><input class="in" type="number" value="'+disc+'" onchange="window._disc=parseFloat(this.value)||0;window._promoName=\'\';renderCart()"></div>'+
     '<div class="tot"><span>รวมย่อย</span><b>'+fmt(sub)+'</b></div>'+
     (dep>0?('<div class="tot"><span>หัก มัดจำที่ชำระแล้ว</span><b style="color:var(--ok)">-'+fmt(dep)+'</b></div>'):'')+
     '<div class="tot grand"><span>ยอดชำระ</span><b>'+fmt(due)+'</b></div>'+
@@ -500,7 +525,7 @@ function saveSale(){ if(BUSY)return; var sub=cartSub(), disc=window._disc||0, du
   var probs=saveProblems(due); if(probs.length){ toast(probs[0],1); return; }
   var cn=document.getElementById('cName'), cp=document.getElementById('cPhone'); var payments=buildPayments(due);
   var sale={ customer:(cn?cn.value:'')||'ลูกค้า', phone:(cp?cp.value.trim():''), discount:disc, payments:payments,
-    booking_id:(window._bookingId||''), deposit_applied:cartDeposit(),
+    booking_id:(window._bookingId||''), deposit_applied:cartDeposit(), note:(window._promoName?('โปร: '+window._promoName):''),
     lines:CART.map(function(l){ if(l.kind==='product') return {type:'product', variant_id:l.variant_id, barcode:l.barcode, qty_mad:prodQty(l), unitPrice:(l.mode==='ext'?l.extPrice:l.plainPrice), ext:(l.mode==='ext'?{on:true,technique:l.technique,size:l.size,techs:l.techs.filter(function(t){return t.name;})}:{on:false})};
       return {type:l.kind,item:l.item,size:l.size,qty_mad:l.qty,price:l.price,techs:(l.techs||[]).filter(function(t){return t.name;})}; }) };
   BUSY=true; var b=document.getElementById('btnSave'); if(b){b.disabled=true;b.innerHTML='⏳ กำลังบันทึก…';}
@@ -515,7 +540,7 @@ function uploadSlips(saleId, method, amount, slips, i, done){ if(i>=slips.length
     if(!r||!r.ok){ alert('⚠️ อัปโหลดสลิปไม่สำเร็จ: '+((r&&r.message)||'ไม่ทราบสาเหตุ')+'\n\n(มักเกิดจากยังไม่ได้อนุญาตสิทธิ์ Drive — ให้รัน grantDrive ใน Apps Script ก่อน)'); }
     uploadSlips(saleId,method,amount,slips,i+1,done); })
   .catch(function(){ alert('⚠️ เชื่อมต่อไม่ได้ตอนอัปโหลดสลิปรูปที่ '+(i+1)); uploadSlips(saleId,method,amount,slips,i+1,done); }); }
-function finishSale(rc){ showReceipt(rc); CART=[]; window._disc=0; window._recv=0; window._split=false; window._p2a=0; window._slips=[]; window._bookingId=''; window._bookingName=''; window._deposit=0; PAY='เงินสด'; renderCart(); if(FULL)loadToday(); }
+function finishSale(rc){ showReceipt(rc); CART=[]; window._disc=0; window._recv=0; window._split=false; window._p2a=0; window._slips=[]; window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName=''; PAY='เงินสด'; renderCart(); if(FULL)loadToday(); }
 
 function showReceipt(rc){ var h='<h3>'+esc(rc.shopName)+'</h3><div class="c">ใบเสร็จรับเงิน</div><div class="c">'+esc(rc.bill)+' · '+esc(rc.datetime)+'</div><div class="c">ลูกค้า: '+esc(rc.customer)+'</div><div class="hr"></div>';
   (rc.lines||[]).forEach(function(l){ var q=(l.type==='product')?'':(' '+l.qty+'มัด'); var tg=(l.type==='product'&&!l.ext)?'':(l.tech?(' ('+esc(l.tech)+')'):(l.ext?' (ต่อผม)':'')); h+='<div class="rr"><span>'+esc(l.item)+' '+esc(l.size||'')+q+tg+'</span><span>'+fmt(l.price)+'</span></div>'; });
@@ -648,7 +673,7 @@ function checkoutToCart(bk,v){ if(!bk)return;
   if(bk.variant_id){ var ht=(v&&v.hair_type)||'', len=String((v&&v.length_in)||bk.size||''), technique=techniqueFor(ht);
     var perMad=laborFor(technique,len)||0; if(!perMad && Number(bk.suggest_total)&&qty) perMad=Math.round(Number(bk.suggest_total)/qty);
     line={ kind:'product', variant_id:bk.variant_id, barcode:'', name:(v&&v.name)||bk.detail||('ต่อผม '+ht),
-      hair_type:ht, length_in:len, color:(v&&v.color)||'', plainPrice:perMad, extPrice:perMad, cost:null,
+      hair_type:ht, length_in:len, color:(v&&v.color)||'', grade:(v&&v.grade)||'', texture:(v&&v.texture)||'', plainPrice:perMad, extPrice:perMad, cost:null,
       mode:'ext', technique:technique, size:sizeLabelFor(technique,len), techs:[{name:USERTECH||'',split:100}], qty_mad:qty };
   } else { var svc=svcById(bk.service_id)||{}; var it=svc.acct_name||bk.detail||'บริการ';
     line={ kind:'service', item:it, size:'', qty:qty, unit:0, price:Math.round(Number(bk.suggest_total)||0), techs:[{name:USERTECH||'',split:100}] }; }
@@ -658,6 +683,6 @@ function checkoutToCart(bk,v){ if(!bk)return;
   closeLine(); setPage('Sale'); renderCart();
   var cn=document.getElementById('cName'); if(cn)cn.value=bk.name||''; var cp=document.getElementById('cPhone'); if(cp)cp.value=bk.phone||'';
   toast('โหลดคิวเข้าบิลแล้ว · เลือกช่าง/ยืนยันราคา แล้วบันทึก'); }
-function detachBooking(){ window._bookingId=''; window._bookingName=''; window._deposit=0; renderCart(); toast('ยกเลิกการผูกคิวกับบิลนี้'); }
+function detachBooking(){ window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName=''; renderCart(); toast('ยกเลิกการผูกคิวกับบิลนี้'); }
 </script>
 </body></html>
