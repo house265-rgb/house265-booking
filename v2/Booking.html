@@ -359,26 +359,25 @@ var CAT=null;
 var STATE={ serviceId:'', technique:'', mode:'new', grade:'', texture:'', color:'', size:'', bundle:1, variantId:'', removalId:'', techId:'any', techName:'', date:'', startTime:'', endTime:'' };
 var STEP=1, MAXSTEP=5, LASTAVAIL=null, EST=null, calY, calM, TODAY='', MONTHAVAIL=null;
 var STEP_NAMES=['เลือกบริการ','เลือกผม','ช่าง · วัน · เวลา','ข้อมูล & สรุป','ยืนยันคิว'];
+/* 4 รูปแบบบริการมาตรฐาน (fix ในโค้ด เพราะผูกกับวิธีคิดเงิน) · ราคาอยู่ในชีตตามตารางด้านล่าง */
 var MODES=[
-  {id:'new',   t:'ขึ้นผมใหม่',        s:'ใช้ผมร้าน · เลือกเกรด/ลักษณะ/สี/ขนาด จากสต็อกจริง'},
-  {id:'byob',  t:'นำผมมาเอง',         s:'ไม่คิดค่าผม · คิดเฉพาะค่าบริการต่อ'},
-  {id:'move',  t:'ขยับปมเดิม',        s:'reposition ปมเดิม · ราคารวมค่าถอดแล้ว'},
-  {id:'removal',t:'ถอดออกอย่างเดียว',  s:'ถอดผมต่อเดิมออก ไม่ต่อใหม่'}
+  {id:'new',   t:'ขึ้นผมใหม่',        en:'New Hair',       s:'ใช้ผมร้าน · เลือกเกรด/ลักษณะ/สี/ขนาด จากสต็อกจริง'},
+  {id:'byob',  t:'นำผมมาเอง',         en:'Bring Your Own', s:'ไม่คิดค่าผม · คิดเฉพาะค่าบริการต่อ'},
+  {id:'move',  t:'ขยับปมเดิม',        en:'Reposition',     s:'จัดปมเดิมใหม่ · ราคารวมค่าถอดแล้ว'},
+  {id:'removal',t:'ถอดออกอย่างเดียว',  en:'Removal',        s:'ถอดผมต่อเดิมออก ไม่ต่อใหม่'}
 ];
+var STEP_EN=['Service','Hair','Stylist · Date · Time','Details & Summary','Confirm'];
+/* คำแปลลักษณะผม (ชุดคำคงที่ ~8 คำ) · ถ้ามีลักษณะใหม่ที่ไม่อยู่ในนี้ จะแสดงไทยอย่างเดียว */
+var TEXTURE_EN={'ผมตรง':'Straight','ผมหยิก':'Curly','ผมดัดลอน':'Wavy (Permed)','ผมลอนธรรมชาติ':'Natural Wave','ผมยืด สปาแล้ว':'Rebonded','ผมลอนใหญ่':'Loose Wave','ผมลอนเล็ก':'Tight Wave','ผมหยักศก':'Kinky'};
 function isNew(){return STATE.mode==='new';} function isByob(){return STATE.mode==='byob';}
 function isMove(){return STATE.mode==='move';} function isRemoval(){return STATE.mode==='removal';}
 
-/* ---- ข้อความ/ภาษา จากชีต BookingText (มี fallback ในโค้ด ถ้าชีตยังไม่ตั้งค่า) ---- */
-function T(cat,key){ return (CAT&&CAT.uiText&&CAT.uiText[cat]&&CAT.uiText[cat][String(key)])||null; }
-function enOf(cat,key,fb){ var t=T(cat,key); return (t&&t.en)||fb||''; }
-function lbl(cat,key,thFb,enFb){ var t=T(cat,key); var th=(t&&t.th)||thFb, en=(t&&t.en)||enFb;
-  return esc(th)+(en?(' <span class="en">('+esc(en)+')</span>'):''); }
-function modeList(){ var u=CAT&&CAT.uiText&&CAT.uiText.mode; var order=['new','byob','move','removal'];
-  return order.filter(function(k){ return !u || u[k]; }).map(function(k){ var t=u&&u[k], def=MODES.filter(function(m){return m.id===k;})[0]||{};
-    return { id:k, t:(t&&t.th)||def.t, en:(t&&t.en)||'', s:(t&&t.hint)||def.s }; })
-    .sort(function(a,b){ var ua=u&&u[a.id]?(u[a.id].order||0):0, ub=u&&u[b.id]?(u[b.id].order||0):0; return ua-ub; }); }
-function stepName(i){ var t=T('step',i); return (t&&t.th)||STEP_NAMES[i-1]; }
-function texEn(val){ var t=T('texture',val); return (t&&t.en)||''; }
+/* ---- ป้ายข้อความ (ไทย+อังกฤษ ฝังในโค้ด) · ชื่อของ "ข้อมูลจริง" (เทคนิค/สี/ถอด) ดึงจาก name_en ในชีต ---- */
+function lbl(cat,key,thFb,enFb){ return esc(thFb)+(enFb?(' <span class="en">('+esc(enFb)+')</span>'):''); }
+function modeList(){ return MODES; }
+function stepName(i){ return STEP_NAMES[i-1]; }
+function stepEn(i){ return STEP_EN[i-1]||''; }
+function texEn(val){ return TEXTURE_EN[val]||''; }
 
 /* ================= LOAD ================= */
 window.onload=function(){ initLiff();
@@ -459,7 +458,8 @@ function renderStep2(){ var title=document.getElementById('s2title'), body=docum
     body.innerHTML='<span class="lbl" style="margin-top:0">ชนิดงานถอด</span><div class="opts" id="rmList"></div>'+priceHintBox();
     var box=document.getElementById('rmList');
     rms.forEach(function(r){ var d=document.createElement('div'); d.className='opt'+(STATE.removalId===String(r.removal_id)?' sel':''); d.dataset.id=r.removal_id;
-      d.innerHTML='<div class="t">'+esc(r.name)+'</div><div class="s">'+fmt(r.price)+' ฿</div>';
+      var ren=r.name_en?(' <span style="color:var(--faint);font-size:12px">('+esc(r.name_en)+')</span>'):'';
+      d.innerHTML='<div class="t">'+esc(r.name)+ren+'</div><div class="s">'+fmt(r.price)+' ฿</div>';
       d.onclick=function(){ STATE.removalId=String(r.removal_id); markSel('rmList',d); updatePriceHint(); refreshNav(); }; box.appendChild(d); });
     return; }
   if(isByob()){ title.innerText='ขนาดผมที่นำมา & จำนวนมัด';
@@ -539,7 +539,7 @@ function computeEst(){ var s=svc(); EST=null; var qty=Math.max(1,STATE.bundle||1
 function renderStep(){ [].forEach.call(document.querySelectorAll('.step'),function(s){ s.classList.toggle('active',Number(s.dataset.step)===STEP); });
   var sp=document.getElementById('stepbar'); sp.innerHTML='';
   for(var i=1;i<=MAXSTEP;i++){ var d=document.createElement('div'); d.className='d'+(i<STEP?' done':'')+(i===STEP?' on':''); sp.appendChild(d); }
-  var sEn=enOf('step',STEP,''); document.getElementById('stepLabel').innerHTML='ขั้นที่ '+STEP+' / '+MAXSTEP+' · <b>'+esc(stepName(STEP))+'</b>'+(sEn?(' · '+esc(sEn)):'');
+  var sEn=stepEn(STEP); document.getElementById('stepLabel').innerHTML='ขั้นที่ '+STEP+' / '+MAXSTEP+' · <b>'+esc(stepName(STEP))+'</b>'+(sEn?(' · '+esc(sEn)):'');
   if(STEP===2){ renderStep2(); updatePriceHint(); }
   if(STEP===3){ prepStep3(); }
   if(STEP===4){ buildSummary(); }
