@@ -120,6 +120,24 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(17,16,16,.92);backdr
     </aside>
   </div></div>
 
+  <div class="page" id="pageQueue"><div style="max-width:740px;margin:0 auto;padding:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-size:20px;font-weight:600">คิวจอง</div>
+      <button class="lo" onclick="loadQueue()">↻ รีเฟรช</button>
+    </div>
+    <div class="cart" style="margin:0 0 12px">
+      <div class="row2"><div><label class="lbl">วันที่</label><input id="qDate" class="in" type="date" onchange="loadQueue()"></div>
+        <div><label class="lbl">สถานะ</label><select id="qStatus" class="in" onchange="loadQueue()"><option value="">รอทำ (ค้างอยู่)</option><option value="รอ">รอยืนยัน</option><option value="ยืนยัน">ยืนยันแล้ว</option><option value="เช็คเอาต์">เช็คเอาต์แล้ว</option><option value="ยกเลิก">ยกเลิก</option><option value="all">ทั้งหมด</option></select></div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
+        <button class="chipbtn" onclick="qPreset(0)">วันนี้</button>
+        <button class="chipbtn" onclick="qPreset(1)">พรุ่งนี้</button>
+        <button class="chipbtn" onclick="qPreset('all')">ทุกวัน</button>
+      </div>
+    </div>
+    <div id="qSum" class="mini" style="margin:0 0 8px"></div>
+    <div id="queueBox" class="cart" style="margin:0"><div class="empty">กำลังโหลด…</div></div>
+  </div></div>
+
   <div class="page" id="pageToday"><div style="max-width:700px;margin:0 auto;padding:16px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
       <div style="font-size:20px;font-weight:600">สรุปวันนี้</div>
@@ -154,6 +172,7 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(17,16,16,.92);backdr
 
   <nav class="tabbar">
     <button id="navSale" class="on" onclick="setPage('Sale')"><span class="ic">🧾</span>ขาย</button>
+    <button id="navQueue" onclick="setPage('Queue')"><span class="ic">📅</span>คิว</button>
     <button id="navToday" onclick="setPage('Today')"><span class="ic">📊</span>สรุป</button>
     <button id="navSlips" onclick="setPage('Slips')"><span class="ic">📁</span>บิล</button>
   </nav>
@@ -171,6 +190,7 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(17,16,16,.92);backdr
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
 var TOKEN='',DATA=null,FULL=false,CART=[],CAT='ขายผม',PAY='เงินสด',BUSY=false,RMAP={},USERTECH='';
 window._disc=0; window._recv=0; window._split=false; window._p2m='พร้อมเพย์'; window._p2a=0; window._slips=[];
+window._bookingId=''; window._bookingName=''; window._deposit=0;
 function api(a,p){ return fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:a,token:TOKEN||'',payload:p||{}})}).then(function(r){return r.json();}); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(m){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m];}); }
 function fmt(v){ return (Number(v)||0).toLocaleString('en-US'); }
@@ -198,8 +218,8 @@ function boot(){ api('bootstrap',{}).then(function(r){ if(!r||!r.ok){ if(r&&r.co
     buildCats(); renderMenu(); renderCart();
   }).catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
 
-function setPage(p){ ['Sale','Today','Slips'].forEach(function(x){ document.getElementById('page'+x).classList.toggle('on',x===p); document.getElementById('nav'+x).classList.toggle('on',x===p); });
-  if(p==='Today')loadToday(); if(p==='Slips'){ initHistDates(); loadHistory(); } window.scrollTo(0,0); }
+function setPage(p){ ['Sale','Queue','Today','Slips'].forEach(function(x){ document.getElementById('page'+x).classList.toggle('on',x===p); document.getElementById('nav'+x).classList.toggle('on',x===p); });
+  if(p==='Today')loadToday(); if(p==='Slips'){ initHistDates(); loadHistory(); } if(p==='Queue'){ initQueueDate(); loadQueue(); } window.scrollTo(0,0); }
 function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
 
 /* ---- catalog helpers ---- */
@@ -279,7 +299,8 @@ function pdName(i,v){ LD.techs[i].name=v; }
 function pdSplit(i,v){ LD.techs[i].split=v; renderProduct(); }
 function pdEven(){ var n=LD.techs.length; if(n<=1){if(n)LD.techs[0].split=100;return;} var b=Math.floor(100/n); LD.techs.forEach(function(t,k){t.split=b+(k===0?(100-b*n):0);}); }
 function techOpts(sel){ return '<option value="">— ช่าง —</option>'+(DATA.technicians||[]).map(function(t){return '<option'+(String(t.name)===sel?' selected':'')+'>'+esc(t.name)+'</option>';}).join(''); }
-function pdTotal(){ return Math.round(LD.mode==='ext'?(Number(LD.extPrice)||0):(Number(LD.plainPrice)||0)); }
+function pdQ(){ return Math.max(1, Math.round(Number(LD.qty_mad)||1)); }
+function pdTotal(){ return Math.round((LD.mode==='ext'?(Number(LD.extPrice)||0):(Number(LD.plainPrice)||0))*pdQ()); }
 
 function renderProduct(){ var l=LD, ext=(l.mode==='ext'), multi=l.techs.length>1, sum=pdSum(); var h='';
   h+='<div class="idrow">'+
@@ -298,7 +319,7 @@ function renderProduct(){ var l=LD, ext=(l.mode==='ext'), multi=l.techs.length>1
     h+=l.techs.map(function(t,i){ return '<div class="tw"><select class="in" style="flex:1" onchange="pdName('+i+',this.value)">'+techOpts(t.name)+'</select>'+(multi?('<input class="in" type="number" style="width:56px;text-align:center" value="'+(t.split||0)+'" onchange="pdSplit('+i+',parseFloat(this.value)||0)"><span class="faint">%</span><button class="x" onclick="pdRmTech('+i+')">✕</button>'):'')+'</div>'; }).join('');
     h+='<button class="btn sec" style="width:auto;padding:6px 12px;font-size:12px;margin:2px 0 10px" onclick="pdAddTech()">+ เพิ่มช่างร่วม</button>';
   }
-  h+='<div class="tot grand" style="font-size:15px"><span>'+(ext?'ราคาขายต่อผม':'ราคาขายเปล่า')+'</span><b id="pdTot" style="font-size:20px">'+fmt(pdTotal())+'</b></div>';
+  h+='<div class="tot grand" style="font-size:15px"><span>'+(ext?'ราคาขายต่อผม':'ราคาขายเปล่า')+(pdQ()>1?(' <span class="faint" style="font-size:12px">× '+pdQ()+' มัด</span>'):'')+'</span><b id="pdTot" style="font-size:20px">'+fmt(pdTotal())+'</b></div>';
   if(FULL && ext){ var comm=Math.round(commPerMad(l.technique)); var prof=(l.cost!=null)?(l.extPrice-l.cost-comm):null;
     h+='<div class="mini"><b>ค่ามือช่าง:</b> '+fmt(comm)+(prof!=null?(' &nbsp;<b>กำไร:</b> <span style="color:'+(prof>=0?'var(--ok)':'var(--crit)')+'">'+fmt(prof)+'</span>'):'')+'</div>'; }
   else if(FULL && !ext && l.cost!=null){ h+='<div class="mini"><b>กำไร:</b> <span style="color:var(--ok)">'+fmt(l.plainPrice-l.cost)+'</span></div>'; }
@@ -352,28 +373,35 @@ function closeLine(){ document.getElementById('lineModal').classList.remove('sho
 /* ===================================================================
  * CART / BILL
  * =================================================================== */
-function clearCart(){ CART=[]; window._disc=0; window._recv=0; window._split=false; window._p2a=0; window._slips=[]; renderCart(); }
+function clearCart(){ CART=[]; window._disc=0; window._recv=0; window._split=false; window._p2a=0; window._slips=[]; window._bookingId=''; window._bookingName=''; window._deposit=0; renderCart(); }
 function delLine(i){ CART.splice(i,1); renderCart(); }
 function editLine(i){ if(CART[i].kind==='product')openProductEdit(i); else openLine(null,null,i); }
-function lineTotal(l){ if(l.kind==='product') return Math.round(l.mode==='ext'?(Number(l.extPrice)||0):(Number(l.plainPrice)||0)); return Number(l.price)||0; }
+function prodQty(l){ return Math.max(1, Math.round(Number(l.qty_mad)||1)); }
+function lineTotal(l){ if(l.kind==='product') return Math.round((l.mode==='ext'?(Number(l.extPrice)||0):(Number(l.plainPrice)||0))*prodQty(l)); return Number(l.price)||0; }
 function cartSub(){ return CART.reduce(function(a,l){return a+lineTotal(l);},0); }
+function cartDeposit(){ return Math.max(0, Math.round(Number(window._deposit)||0)); }
+function cartDue(){ return Math.max(0, cartSub()-(window._disc||0)-cartDeposit()); }
 function lineTechNames(l){ var arr=(l.techs||[]); return arr.map(function(t){return t.name;}).filter(Boolean).join('+'); }
 
 function renderCart(){ var box=document.getElementById('cartBody');
   var curName=document.getElementById('cName')?document.getElementById('cName').value:'';
   var curPhone=document.getElementById('cPhone')?document.getElementById('cPhone').value:'';
+  var bkBanner=window._bookingId?('<div style="margin-bottom:10px;padding:10px 12px;background:var(--gold-ghost);border:1px solid var(--gold-dim);border-radius:11px;display:flex;align-items:center;justify-content:space-between;gap:8px"><div style="font-size:13px"><b style="color:var(--gold-soft)">📅 เช็คเอาต์คิว '+esc(window._bookingId)+'</b><div class="mini" style="margin-top:2px">'+esc(window._bookingName||'')+(cartDeposit()>0?(' · มัดจำ '+fmt(cartDeposit())+' ฿'):'')+'</div></div><button class="x" style="color:var(--muted)" onclick="detachBooking()">ไม่ผูกคิว</button></div>'):'';
   var cust='<div class="row2" style="margin-bottom:10px"><input id="cName" class="in" placeholder="ชื่อลูกค้า (ไม่บังคับ)" value="'+esc(curName)+'"><input id="cPhone" class="in" inputmode="tel" placeholder="เบอร์โทร (ไม่บังคับ)" value="'+esc(curPhone)+'"></div>';
+  cust=bkBanner+cust;
   if(!CART.length){ box.innerHTML=cust+'<div class="empty">ยังไม่มีรายการ<br><span class="faint">สแกน QR · หรือเพิ่มบริการ/สินค้า</span></div>'; return; }
   var lines=CART.map(function(l,i){ var det=[], tag='';
-    if(l.kind==='product'){ if(l.hair_type)det.push(l.hair_type); if(l.length_in)det.push(l.length_in+'นิ้ว'); if(l.color)det.push('สี '+l.color); det.push(l.barcode);
+    if(l.kind==='product'){ if(l.hair_type)det.push(l.hair_type); if(l.length_in)det.push(l.length_in+'นิ้ว'); if(l.color)det.push('สี '+l.color); if(prodQty(l)>1)det.push(prodQty(l)+' มัด'); if(l.barcode)det.push(l.barcode);
       if(l.mode==='ext'){ tag='<span style="color:var(--gold-soft);font-size:11px;background:var(--gold-ghost);border:1px solid var(--gold-dim);border-radius:6px;padding:1px 6px;margin-left:4px">✂️ ต่อผม'+(lineTechNames(l)?(' · '+esc(lineTechNames(l))):'')+'</span>'; }
       else { tag='<span style="color:var(--faint);font-size:11px;margin-left:4px">· ขายเปล่า</span>'; }
     } else { if(l.size)det.push(l.size); det.push((l.qty||1)+' '+(l.kind==='custom'?'ชิ้น':'มัด')); var tn=lineTechNames(l); if(tn)det.push(tn); }
     return '<div style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)"><div style="flex:1;min-width:0;cursor:pointer" onclick="editLine('+i+')"><b style="font-weight:500">'+esc(l.kind==='product'?l.name:l.item)+'</b>'+tag+' <span style="color:var(--gold);font-size:12px">✎</span><div class="mini" style="margin-top:2px">'+esc(det.join(' · '))+'</div></div><div class="mono" style="color:var(--gold-soft)">'+fmt(lineTotal(l))+'</div><button class="x" onclick="delLine('+i+')">✕</button></div>';
   }).join('');
-  var sub=cartSub(), disc=window._disc||0, due=Math.max(0,sub-disc);
+  var sub=cartSub(), disc=window._disc||0, dep=cartDeposit(), due=cartDue();
   var pay='<div style="margin-top:8px"><label class="lbl">ส่วนลด (฿)</label><input class="in" type="number" value="'+disc+'" onchange="window._disc=parseFloat(this.value)||0;renderCart()"></div>'+
-    '<div class="tot"><span>รวมย่อย</span><b>'+fmt(sub)+'</b></div><div class="tot grand"><span>ยอดชำระ</span><b>'+fmt(due)+'</b></div>'+
+    '<div class="tot"><span>รวมย่อย</span><b>'+fmt(sub)+'</b></div>'+
+    (dep>0?('<div class="tot"><span>หัก มัดจำที่ชำระแล้ว</span><b style="color:var(--ok)">-'+fmt(dep)+'</b></div>'):'')+
+    '<div class="tot grand"><span>ยอดชำระ</span><b>'+fmt(due)+'</b></div>'+
     '<div class="chkline"><input type="checkbox" id="splitChk" '+(window._split?'checked':'')+' onchange="window._split=this.checked;renderCart()"><label for="splitChk">แยกจ่าย 2 ช่องทาง</label></div>';
 
   if(!window._split){
@@ -428,7 +456,7 @@ function compressImage(file,maxW,q,cb){ try{ var img=new Image(); var url=URL.cr
   img.onerror=function(){ URL.revokeObjectURL(url); cb(null); }; img.src=url; }catch(e){ cb(null); } }
 
 /* อัปเดตเฉพาะตัวเลขที่เปลี่ยน — ไม่ render ใหม่ทั้งบิล (กันเคอร์เซอร์เด้ง/โฟกัสหลุด) */
-function updateMoney(){ var sub=cartSub(), disc=window._disc||0, due=Math.max(0,sub-disc);
+function updateMoney(){ var sub=cartSub(), disc=window._disc||0, due=cartDue();
   if(!window._split && PAY==='เงินสด'){ var recv=window._recv||0; var chg=document.getElementById('chg'); if(chg)chg.innerText=fmt(Math.max(0,recv-due)); }
   if(window._split){ var a2=Math.min(due,window._p2a||0), a1=Math.max(0,due-a2);
     var e1=document.getElementById('p1amt'); if(e1)e1.innerText=fmt(a1); var e1b=document.getElementById('p1amt2'); if(e1b)e1b.innerText=fmt(a1);
@@ -468,11 +496,12 @@ function buildPayments(due){
   var p1=document.getElementById('p1m'); var m1=p1?p1.value:PAY;
   var arr=[]; if(a1>0)arr.push({method:m1,amount:a1}); if(a2>0)arr.push({method:window._p2m,amount:a2}); return arr;
 }
-function saveSale(){ if(BUSY)return; var sub=cartSub(), disc=window._disc||0, due=Math.max(0,sub-disc);
+function saveSale(){ if(BUSY)return; var sub=cartSub(), disc=window._disc||0, due=cartDue();
   var probs=saveProblems(due); if(probs.length){ toast(probs[0],1); return; }
   var cn=document.getElementById('cName'), cp=document.getElementById('cPhone'); var payments=buildPayments(due);
   var sale={ customer:(cn?cn.value:'')||'ลูกค้า', phone:(cp?cp.value.trim():''), discount:disc, payments:payments,
-    lines:CART.map(function(l){ if(l.kind==='product') return {type:'product', variant_id:l.variant_id, barcode:l.barcode, qty_mad:1, unitPrice:(l.mode==='ext'?l.extPrice:l.plainPrice), ext:(l.mode==='ext'?{on:true,technique:l.technique,size:l.size,techs:l.techs.filter(function(t){return t.name;})}:{on:false})};
+    booking_id:(window._bookingId||''), deposit_applied:cartDeposit(),
+    lines:CART.map(function(l){ if(l.kind==='product') return {type:'product', variant_id:l.variant_id, barcode:l.barcode, qty_mad:prodQty(l), unitPrice:(l.mode==='ext'?l.extPrice:l.plainPrice), ext:(l.mode==='ext'?{on:true,technique:l.technique,size:l.size,techs:l.techs.filter(function(t){return t.name;})}:{on:false})};
       return {type:l.kind,item:l.item,size:l.size,qty_mad:l.qty,price:l.price,techs:(l.techs||[]).filter(function(t){return t.name;})}; }) };
   BUSY=true; var b=document.getElementById('btnSave'); if(b){b.disabled=true;b.innerHTML='⏳ กำลังบันทึก…';}
   var slips=(window._slips||[]).slice(); var slipMethod=(payments.filter(function(p){return p.method!=='เงินสด';})[0]||{}).method||'';
@@ -486,7 +515,7 @@ function uploadSlips(saleId, method, amount, slips, i, done){ if(i>=slips.length
     if(!r||!r.ok){ alert('⚠️ อัปโหลดสลิปไม่สำเร็จ: '+((r&&r.message)||'ไม่ทราบสาเหตุ')+'\n\n(มักเกิดจากยังไม่ได้อนุญาตสิทธิ์ Drive — ให้รัน grantDrive ใน Apps Script ก่อน)'); }
     uploadSlips(saleId,method,amount,slips,i+1,done); })
   .catch(function(){ alert('⚠️ เชื่อมต่อไม่ได้ตอนอัปโหลดสลิปรูปที่ '+(i+1)); uploadSlips(saleId,method,amount,slips,i+1,done); }); }
-function finishSale(rc){ showReceipt(rc); CART=[]; window._disc=0; window._recv=0; window._split=false; window._p2a=0; window._slips=[]; PAY='เงินสด'; renderCart(); if(FULL)loadToday(); }
+function finishSale(rc){ showReceipt(rc); CART=[]; window._disc=0; window._recv=0; window._split=false; window._p2a=0; window._slips=[]; window._bookingId=''; window._bookingName=''; window._deposit=0; PAY='เงินสด'; renderCart(); if(FULL)loadToday(); }
 
 function showReceipt(rc){ var h='<h3>'+esc(rc.shopName)+'</h3><div class="c">ใบเสร็จรับเงิน</div><div class="c">'+esc(rc.bill)+' · '+esc(rc.datetime)+'</div><div class="c">ลูกค้า: '+esc(rc.customer)+'</div><div class="hr"></div>';
   (rc.lines||[]).forEach(function(l){ var q=(l.type==='product')?'':(' '+l.qty+'มัด'); var tg=(l.type==='product'&&!l.ext)?'':(l.tech?(' ('+esc(l.tech)+')'):(l.ext?' (ต่อผม)':'')); h+='<div class="rr"><span>'+esc(l.item)+' '+esc(l.size||'')+q+tg+'</span><span>'+fmt(l.price)+'</span></div>'; });
@@ -563,5 +592,72 @@ function viewSlip(fid,sid){ document.getElementById('imTitle').innerText='สล
     document.getElementById('imBody').innerHTML='<img src="'+r.data.dataUrl+'" style="max-width:100%;border-radius:10px"><div class="row2" style="margin-top:12px"><button class="btn sec" onclick="closeImg()">ปิด</button><a class="btn" style="text-align:center;text-decoration:none;color:#231b08" href="'+r.data.dataUrl+'" download="'+esc(sid||'slip')+'.jpg">บันทึกรูป</a></div>';
   }).catch(function(){ document.getElementById('imBody').innerHTML='<div class="empty">เชื่อมต่อไม่สำเร็จ</div>'; }); }
 function closeImg(){ document.getElementById('imgModal').classList.remove('show'); }
+
+/* ===================================================================
+ * คิวจอง (Phase 3) — ดูคิว · เช็คเอาท์เข้าบิล · ยกเลิกคืนสต็อก
+ * =================================================================== */
+var QBK=null, QBV=null, QCANCEL=false;
+function svcById(id){ return (DATA.services||[]).filter(function(s){return String(s.service_id)===String(id);})[0]; }
+function initQueueDate(){ var d=document.getElementById('qDate'); if(d&&!d.value)d.value=todayStr(); }
+function qPreset(n){ var d=document.getElementById('qDate'); if(n==='all'){ d.value=''; } else { var x=new Date(); x.setDate(x.getDate()+n); d.value=ymd_(x); } loadQueue(); }
+function qStatusBadge(s){ if(s==='เช็คเอาต์')return '<span class="badge ok">✓ เช็คเอาต์</span>'; if(s==='ยกเลิก')return '<span class="badge bad">ยกเลิก</span>'; if(s==='ยืนยัน')return '<span class="badge ok">✓ ยืนยัน</span>'; return '<span class="badge warn">⏳ รอ</span>'; }
+function loadQueue(){ var box=document.getElementById('queueBox'); if(!box)return;
+  var date=(document.getElementById('qDate')||{}).value||'', stSel=(document.getElementById('qStatus')||{}).value;
+  box.innerHTML='<div class="empty">กำลังโหลด…</div>';
+  var payload={}; if(date)payload.date=date; if(stSel&&stSel!=='all'&&stSel!=='')payload.status=stSel;
+  api('bookingsList',payload).then(function(r){ var sum=document.getElementById('qSum');
+    if(!r||!r.ok){ box.innerHTML='<div class="empty">'+esc((r&&r.message)||'โหลดไม่สำเร็จ')+'</div>'; if(sum)sum.innerHTML=''; return; }
+    var list=r.data.bookings||[];
+    if(stSel===''||stSel==null){ list=list.filter(function(b){return b.status!=='เช็คเอาต์'&&b.status!=='ยกเลิก';}); }
+    if(sum)sum.innerHTML='พบ <b>'+fmt(list.length)+'</b> คิว · '+(date?esc(date):'ทุกวัน');
+    box.innerHTML=list.length?list.map(qRow).join(''):'<div class="empty">ไม่มีคิวตามเงื่อนไข</div>';
+  }).catch(function(){ box.innerHTML='<div class="empty">เชื่อมต่อไม่สำเร็จ</div>'; }); }
+function qRow(b){ return '<div class="sliprow" style="cursor:pointer;align-items:flex-start" onclick="openQueueBooking(\''+esc(b.booking_id)+'\')">'+
+  '<div style="text-align:center;min-width:54px"><b style="color:var(--gold-soft);font-size:16px">'+esc(b.start||'--')+'</b><div class="mini">'+esc(b.end||'')+'</div></div>'+
+  '<div class="meta"><b style="font-weight:500">'+esc(b.name||'ลูกค้า')+'</b> <span class="faint">'+esc(b.booking_id)+'</span>'+
+  '<div class="mini" style="margin-top:2px">'+esc(b.detail||'')+(b.qty_mad?(' · '+fmt(b.qty_mad)+' มัด'):'')+(b.tech_name?(' · '+esc(b.tech_name)):'')+'</div>'+
+  '<div style="margin-top:5px">'+qStatusBadge(b.status)+(b.deposit>0?(' <span class="mini">มัดจำ '+fmt(b.deposit)+'฿</span>'):'')+'</div></div>'+
+  '<div style="text-align:right;white-space:nowrap"><b style="color:var(--gold-soft);font-size:16px">'+fmt(b.suggest_total)+'</b> <span class="faint">฿</span><div class="mini" style="color:var(--gold)">จัดการ ›</div></div></div>'; }
+function openQueueBooking(id){ QCANCEL=false; var body=document.getElementById('lmBody'); document.getElementById('lmTitle').innerText='คิว '+id;
+  body.innerHTML='<div class="empty">กำลังโหลด…</div>'; document.getElementById('lineModal').classList.add('show');
+  api('bookingDetail',{booking_id:id}).then(function(r){ if(!r||!r.ok){ body.innerHTML='<div class="empty">'+esc((r&&r.message)||'โหลดไม่สำเร็จ')+'</div>'; return; }
+    var bk=r.data.booking, v=bk.variant; QBK=bk; QBV=v;
+    var h='<div class="mini">'+esc(bk.date)+' · '+esc(bk.start)+'–'+esc(bk.end)+' น. &nbsp;'+qStatusBadge(bk.status)+'</div>';
+    h+='<div style="margin:8px 0 2px"><b style="font-weight:500">'+esc(bk.name)+'</b>'+(bk.phone?(' · '+esc(bk.phone)):'')+'</div>';
+    h+='<div class="hr2"></div><div class="idrow">'+
+       '<span class="pill">บริการ <b>'+esc(bk.detail||(svcById(bk.service_id)||{}).acct_name||'-')+'</b></span>'+
+       (v?('<span class="pill">ผม <b>'+esc(v.hair_type)+' '+esc(v.length_in)+'นิ้ว</b></span>'+(v.grade?('<span class="pill">เกรด <b>'+esc(v.grade)+'</b></span>'):'')+(v.texture?('<span class="pill">'+esc(v.texture)+'</span>'):'')+(v.color?('<span class="pill">สี <b>'+esc(v.color)+'</b></span>'):'')):'')+
+       '<span class="pill">จำนวน <b>'+fmt(bk.qty_mad)+' มัด</b></span></div>';
+    h+='<div class="tot"><span>ยอดประเมิน</span><b>'+fmt(bk.suggest_total)+' ฿</b></div>';
+    h+='<div class="tot"><span>มัดจำที่ชำระแล้ว</span><b style="color:var(--ok)">'+fmt(bk.deposit)+' ฿</b></div>';
+    h+='<div class="tot grand"><span>คงเหลือเก็บหน้าร้าน</span><b>'+fmt(Math.max(0,Number(bk.suggest_total)-Number(bk.deposit)))+'</b></div>';
+    h+='<div id="qAct" style="margin-top:14px"></div>';
+    body.innerHTML=h; renderQueueActions();
+  }).catch(function(){ body.innerHTML='<div class="empty">เชื่อมต่อไม่สำเร็จ</div>'; }); }
+function renderQueueActions(){ var w=document.getElementById('qAct'); if(!w||!QBK)return; var bk=QBK;
+  if(QCANCEL){ w.innerHTML='<div class="warn">ยืนยันยกเลิกคิวนี้? ระบบจะคืนสต็อกที่กันไว้ให้อัตโนมัติ</div><div class="row2" style="margin-top:8px"><button class="btn sec" onclick="QCANCEL=false;renderQueueActions()">ไม่ยกเลิก</button><button class="btn" style="background:var(--crit);color:#fff" onclick="doCancelBooking()">ยืนยันยกเลิก</button></div>'; return; }
+  if(bk.status==='เช็คเอาต์'){ w.innerHTML='<div class="mini" style="text-align:center">คิวนี้เช็คเอาต์ไปแล้ว</div><button class="btn sec" style="margin-top:10px" onclick="closeLine()">ปิด</button>'; return; }
+  if(bk.status==='ยกเลิก'){ w.innerHTML='<div class="mini" style="text-align:center">คิวนี้ถูกยกเลิก</div><button class="btn sec" style="margin-top:10px" onclick="closeLine()">ปิด</button>'; return; }
+  w.innerHTML='<button class="btn" onclick="checkoutToCart(QBK,QBV)">✅ เช็คเอาท์ — ทำบิล</button>'+
+    '<div class="row2" style="margin-top:8px"><button class="btn sec" onclick="closeLine()">ปิด</button><button class="btn sec" style="color:var(--crit)" onclick="QCANCEL=true;renderQueueActions()">ยกเลิกคิว</button></div>'; }
+function doCancelBooking(){ if(!QBK)return; var id=QBK.booking_id;
+  api('cancelBooking',{booking_id:id}).then(function(r){ if(!r||!r.ok){ toast((r&&r.message)||'ยกเลิกไม่สำเร็จ',1); return; }
+    QCANCEL=false; closeLine(); toast('ยกเลิกคิวแล้ว · คืนสต็อก'); loadQueue(); }).catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
+function checkoutToCart(bk,v){ if(!bk)return;
+  var qty=Math.max(1,Math.round(Number(bk.qty_mad)||1)); var line;
+  if(bk.variant_id){ var ht=(v&&v.hair_type)||'', len=String((v&&v.length_in)||bk.size||''), technique=techniqueFor(ht);
+    var perMad=laborFor(technique,len)||0; if(!perMad && Number(bk.suggest_total)&&qty) perMad=Math.round(Number(bk.suggest_total)/qty);
+    line={ kind:'product', variant_id:bk.variant_id, barcode:'', name:(v&&v.name)||bk.detail||('ต่อผม '+ht),
+      hair_type:ht, length_in:len, color:(v&&v.color)||'', plainPrice:perMad, extPrice:perMad, cost:null,
+      mode:'ext', technique:technique, size:sizeLabelFor(technique,len), techs:[{name:USERTECH||'',split:100}], qty_mad:qty };
+  } else { var svc=svcById(bk.service_id)||{}; var it=svc.acct_name||bk.detail||'บริการ';
+    line={ kind:'service', item:it, size:'', qty:qty, unit:0, price:Math.round(Number(bk.suggest_total)||0), techs:[{name:USERTECH||'',split:100}] }; }
+  CART=[line];
+  window._bookingId=bk.booking_id; window._bookingName=(bk.name||'')+(bk.phone?(' · '+bk.phone):''); window._deposit=Math.round(Number(bk.deposit)||0);
+  window._disc=0; window._recv=0; window._split=false; window._p2a=0; window._slips=[]; PAY='เงินสด';
+  closeLine(); setPage('Sale'); renderCart();
+  var cn=document.getElementById('cName'); if(cn)cn.value=bk.name||''; var cp=document.getElementById('cPhone'); if(cp)cp.value=bk.phone||'';
+  toast('โหลดคิวเข้าบิลแล้ว · เลือกช่าง/ยืนยันราคา แล้วบันทึก'); }
+function detachBooking(){ window._bookingId=''; window._bookingName=''; window._deposit=0; renderCart(); toast('ยกเลิกการผูกคิวกับบิลนี้'); }
 </script>
 </body></html>
