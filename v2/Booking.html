@@ -223,11 +223,13 @@
     <!-- STEP 1 : เลือกบริการ (เทคนิค + รูปแบบ) -->
     <section class="step" data-step="1">
       <div class="qtitle"><span class="n">01</span>เลือกบริการ</div>
-      <span class="lbl">เทคนิค <span class="en">(Technique)</span></span>
-      <div class="opts" id="techList"></div>
-      <span class="lbl">รูปแบบบริการ</span>
+      <span class="lbl">รูปแบบบริการ <span class="en">(Service Type)</span></span>
       <div class="opts" id="modeList"></div>
-      <div id="modeHint" class="note" style="display:none;margin-top:10px"></div>
+      <div id="modeHint" class="note" style="display:none;margin-top:10px;margin-bottom:4px"></div>
+      <div id="techSection">
+        <span class="lbl">เทคนิค <span class="en">(Technique)</span></span>
+        <div class="opts" id="techList"></div>
+      </div>
     </section>
 
     <!-- STEP 2 : เลือกผม (เกรด → ลักษณะ → สี → ขนาด → จำนวน) -->
@@ -359,12 +361,13 @@ var CAT=null;
 var STATE={ serviceId:'', technique:'', mode:'new', grade:'', texture:'', color:'', size:'', bundle:1, variantId:'', removalId:'', techId:'any', techName:'', date:'', startTime:'', endTime:'' };
 var STEP=1, MAXSTEP=5, LASTAVAIL=null, EST=null, calY, calM, TODAY='', MONTHAVAIL=null;
 var STEP_NAMES=['เลือกบริการ','เลือกผม','ช่าง · วัน · เวลา','ข้อมูล & สรุป','ยืนยันคิว'];
-/* 4 รูปแบบบริการมาตรฐาน (fix ในโค้ด เพราะผูกกับวิธีคิดเงิน) · ราคาอยู่ในชีตตามตารางด้านล่าง */
+/* 4 รูปแบบบริการมาตรฐาน (fix ในโค้ด เพราะผูกกับวิธีคิดเงิน) · ราคาอยู่ในชีตตามตารางที่ให้ไว้
+ * ถอดออกอย่างเดียว = ตัวเลือกแรก · เลือกแล้วข้ามเทคนิคไปเลือกชนิดงานถอดได้เลย */
 var MODES=[
-  {id:'new',   t:'ขึ้นผมใหม่',        en:'New Hair',       s:'ใช้ผมร้าน · เลือกเกรด/ลักษณะ/สี/ขนาด จากสต็อกจริง'},
+  {id:'removal',t:'ถอดออกอย่างเดียว',  en:'Removal',        s:'ถอดผมต่อเดิมออก ไม่ต่อใหม่ · เลือกชนิดงานถอดในขั้นถัดไป'},
+  {id:'new',   t:'ซื้อผมใหม่',         en:'New Hair',       s:'ใช้ผมร้าน · เลือกเกรด/ลักษณะ/สี/ขนาด จากสต็อกจริง'},
   {id:'byob',  t:'นำผมมาเอง',         en:'Bring Your Own', s:'ไม่คิดค่าผม · คิดเฉพาะค่าบริการต่อ'},
-  {id:'move',  t:'ขยับปมเดิม',        en:'Reposition',     s:'จัดปมเดิมใหม่ · ราคารวมค่าถอดแล้ว'},
-  {id:'removal',t:'ถอดออกอย่างเดียว',  en:'Removal',        s:'ถอดผมต่อเดิมออก ไม่ต่อใหม่'}
+  {id:'move',  t:'ขยับปมเดิม',        en:'Reposition',     s:'จัดปมเดิมใหม่ · ราคารวมค่าถอดแล้ว'}
 ];
 var STEP_EN=['Service','Hair','Stylist · Date · Time','Details & Summary','Confirm'];
 /* คำแปลลักษณะผม (ชุดคำคงที่ ~8 คำ) · ถ้ามีลักษณะใหม่ที่ไม่อยู่ในนี้ จะแสดงไทยอย่างเดียว */
@@ -395,7 +398,7 @@ function onCat(res){ try{
     document.getElementById('loadingBox').style.display='none';
     document.getElementById('wizard').style.display='block';
     var t=new Date(); TODAY=iso(t); calY=t.getFullYear(); calM=t.getMonth();
-    buildTechniques(); buildModes(); buildStaff();
+    buildTechniques(); buildModes(); buildStaff(); syncModeUI();
     document.getElementById('navBar').style.display='block';
     renderStep();
   }catch(e){ showFatal('เกิดข้อผิดพลาด:<br><small style="color:var(--faint)">'+(e&&e.message?e.message:e)+'</small>'); } }
@@ -418,9 +421,11 @@ function setMode(m){ STATE.mode=m; resetHair();
   var h=document.getElementById('modeHint');
   if(m==='byob'){ h.style.display='block'; h.innerHTML='นำผมมาเอง — '+((CAT.shop&&CAT.shop.byobNote)||'ผมที่นำมาต้องเป็นช่อพร้อมต่อแล้ว · รับขั้นต่ำ 1 มัด'); }
   else if(m==='move'){ h.style.display='block'; h.innerHTML='ขยับปมเดิม — ราคารวมค่าถอดแล้ว ไม่ต้องเลือกผม'; }
-  else if(m==='removal'){ h.style.display='block'; h.innerHTML='ถอดออกอย่างเดียว — เลือกชนิดงานถอดในขั้นถัดไป'; }
+  else if(m==='removal'){ h.style.display='block'; h.innerHTML='ถอดออกอย่างเดียว — ไม่ต้องเลือกเทคนิค กด “ถัดไป” เพื่อเลือกชนิดงานถอดได้เลย'; }
   else h.style.display='none';
-  refreshNav(); }
+  syncModeUI(); refreshNav(); }
+/* ซ่อนส่วนเลือกเทคนิคเมื่อเป็นงานถอดอย่างเดียว (ไม่ต้องใช้เทคนิค) */
+function syncModeUI(){ var ts=document.getElementById('techSection'); if(ts)ts.style.display=isRemoval()?'none':'block'; }
 function resetHair(){ STATE.grade=''; STATE.texture=''; STATE.color=''; STATE.size=''; STATE.variantId=''; STATE.bundle=(STATE.mode==='move'||STATE.mode==='removal')?1:1; STATE.removalId=''; }
 
 /* ================= STEP 1 staff ================= */
@@ -430,7 +435,8 @@ function buildStaff(){ var box=document.getElementById('techStaffList'); box.inn
   any.onclick=function(){ STATE.techId='any'; STATE.techName=''; STATE.date=''; STATE.startTime=''; markSel('techStaffList',any); if(STEP===3){renderStep();} refreshNav(); };
   box.appendChild(any);
   CAT.technicians.forEach(function(t){ var d=document.createElement('div'); d.className='opt'+(STATE.techId===String(t.tech_id)?' sel':''); d.dataset.id=t.tech_id;
-    d.innerHTML='<div class="t">'+esc(t.name)+'</div>';
+    var note=t.note?('<div class="s" style="color:var(--gold-soft)">'+esc(t.note)+'</div>'):'';
+    d.innerHTML='<div class="t">'+esc(t.name)+'</div>'+note;
     d.onclick=function(){ STATE.techId=String(t.tech_id); STATE.techName=t.name; STATE.date=''; STATE.startTime=''; markSel('techStaffList',d); if(STEP===3){renderStep();} refreshNav(); };
     box.appendChild(d); }); }
 
@@ -551,7 +557,7 @@ function refreshNav(){ var ok=stepValid(), btn=document.getElementById('nextBtn'
   var hint=document.getElementById('navHint'); hint.innerHTML='';
   if((STEP===1||STEP===2)){ computeEst(); if(EST) hint.innerHTML='รวมโดยประมาณ <b>'+fmt(EST.total)+' ฿</b> · มัดจำ <b>'+fmt(EST.deposit)+' ฿</b>'; } }
 function stepValid(){ switch(STEP){
-    case 1: return !!STATE.serviceId && !!STATE.mode;
+    case 1: if(isRemoval()) return !!STATE.mode; return !!STATE.serviceId && !!STATE.mode;
     case 2: if(isMove())return true; if(isRemoval())return !!STATE.removalId;
             if(isByob())return !!STATE.size && STATE.bundle>=1;
             return !!STATE.variantId && STATE.bundle>=1 && stockOfSelection()>=STATE.bundle;
@@ -613,8 +619,8 @@ function buildSummary(){ computeEst();
   document.getElementById('depLabel').innerText='สแกนจ่ายมัดจำ '+fmt(deposit)+' ฿';
   renderQR(deposit);
   ['cName','cPhone'].forEach(function(id){ document.getElementById(id).oninput=refreshNav; }); }
-function serviceLabel(){ var s=svc(); var m=({'new':'ขึ้นผมใหม่','byob':'นำผมมาเอง','move':'ขยับปม','removal':'ถอดออก'})[STATE.mode];
-  return (s?s.acct_name:'')+' · '+m; }
+function serviceLabel(){ var s=svc(); var m=({'new':'ซื้อผมใหม่','byob':'นำผมมาเอง','move':'ขยับปม','removal':'ถอดออกอย่างเดียว'})[STATE.mode];
+  return isRemoval()?m:((s?s.acct_name+' · ':'')+m); }
 function detailLabel(){ if(isRemoval()){ var rm=(CAT.removals||[]).filter(function(r){return String(r.removal_id)===String(STATE.removalId);})[0]; return rm?rm.name:'-'; }
   if(isMove())return 'ใช้ผมเดิม';
   if(isByob())return STATE.size+'นิ้ว · '+STATE.bundle+' มัด';
