@@ -256,19 +256,28 @@
         <div class="cal-grid" id="calDays"></div>
       </div>
       <div class="callegend" id="calLegend"></div>
+      <div id="calFull" style="display:none"></div>
       <span class="lbl" id="timeLbl" style="display:none">เวลา <span class="en">(Time)</span></span>
       <div id="timeArea"></div>
     </section>
 
-    <!-- STEP 4 : ข้อมูลลูกค้า & สรุปราคา -->
+    <!-- STEP 4 : สรุป · กรอกข้อมูล · ชำระมัดจำ · แนบสลิป (ขั้นสุดท้าย) -->
     <section class="step" data-step="4">
-      <div class="qtitle"><span class="n">04</span>ข้อมูลลูกค้า &amp; สรุปราคา</div>
+      <div class="qtitle"><span class="n">04</span>สรุป &amp; ชำระมัดจำ</div>
+      <div class="terms">
+        <div class="th">TERMS &amp; CONDITIONS</div>
+        <ul>
+          <li>ยกเลิกคิว จองผิดวัน หรือผิดแบบ ไม่คืนมัดจำทุกกรณี</li>
+          <li>เลื่อนคิวล่วงหน้า 5 วัน ไม่มีค่าธรรมเนียม</li>
+          <li>มาสายเกิน 15 นาที ขอสงวนสิทธิ์หักมัดจำ · เกิน 30 นาที ตัดคิว</li>
+          <li>กรณีมีงานถอดผม กรุณามาก่อนเวลา 1 ชั่วโมง</li>
+        </ul>
+      </div>
+      <div class="sumcard" id="sumCard"></div>
       <span class="lbl" id="lblCustomer">ข้อมูลผู้จอง <span class="en">(Your Details)</span></span>
       <input type="text" id="cName" placeholder="ชื่อ - นามสกุล">
       <input type="tel" id="cPhone" placeholder="เบอร์โทรศัพท์ติดต่อ">
       <input type="text" id="cLine" placeholder="ชื่อ / LINE ID (ไม่บังคับ)">
-      <span class="lbl">สรุปราคา</span>
-      <div class="sumcard" id="sumCard"></div>
       <div class="pricebox" id="priceBox"></div>
       <div class="qr-box">
         <div class="t" id="depLabel">สแกนจ่ายมัดจำ</div>
@@ -280,23 +289,9 @@
         <button type="button" onclick="saveQR()" style="margin-top:14px;padding:11px 16px;background:none;border:1px solid var(--line);color:var(--muted);font-size:12px">บันทึก QR เป็นรูปภาพ</button>
         <div id="qrMissing" class="qr-missing">* ยังไม่ได้ตั้งค่าเบอร์พร้อมเพย์ในระบบ</div>
       </div>
-      <div class="note">ชำระมัดจำแล้ว เก็บสลิปไว้ส่งยืนยันคิวในขั้นถัดไป · ยอดคงเหลือชำระหน้าร้าน</div>
-    </section>
-
-    <!-- STEP 5 : ยืนยันคิว -->
-    <section class="step" data-step="5">
-      <div class="qtitle"><span class="n">05</span>ยืนยันคิว</div>
-      <div class="terms">
-        <div class="th">TERMS &amp; CONDITIONS</div>
-        <ul>
-          <li>ยกเลิกคิว จองผิดวัน หรือผิดแบบ ไม่คืนมัดจำทุกกรณี</li>
-          <li>เลื่อนคิวล่วงหน้า 5 วัน ไม่มีค่าธรรมเนียม</li>
-          <li>มาสายเกิน 15 นาที ขอสงวนสิทธิ์หักมัดจำ · เกิน 30 นาที ตัดคิว</li>
-          <li>กรณีมีงานถอดผม กรุณามาก่อนเวลา 1 ชั่วโมง</li>
-        </ul>
-      </div>
-      <div class="sumcard" id="confirmCard"></div>
-      <div class="note" style="text-align:center">กด"ยืนยันการจอง" ระบบจะกันคิวและสต็อกให้ แล้วแสดงบัตรคิวพร้อม QR มัดจำ</div>
+      <span class="lbl">แนบสลิปโอนมัดจำ <span class="en">(Payment Slip)</span></span>
+      <input type="file" id="slip" accept="image/*">
+      <div class="note" style="text-align:center">กด "ยืนยันการจอง" ระบบจะกันคิว + สต็อกให้ แล้วแสดงบัตรคิว · แคป/บันทึกรูปไว้ส่งร้าน</div>
     </section>
   </div>
 </div>
@@ -359,8 +354,8 @@ function applyLineProfile(p){ var ln=document.getElementById('cLine'); if(ln&&!l
 /* ================= STATE ================= */
 var CAT=null;
 var STATE={ serviceId:'', technique:'', mode:'new', grade:'', texture:'', color:'', size:'', bundle:1, variantId:'', removalId:'', techId:'any', techName:'', date:'', startTime:'', endTime:'' };
-var STEP=1, MAXSTEP=5, LASTAVAIL=null, EST=null, calY, calM, TODAY='', MONTHAVAIL=null;
-var STEP_NAMES=['เลือกบริการ','เลือกผม','ช่าง · วัน · เวลา','ข้อมูล & สรุป','ยืนยันคิว'];
+var STEP=1, MAXSTEP=4, LASTAVAIL=null, EST=null, calY, calM, TODAY='', MONTHAVAIL=null;
+var STEP_NAMES=['เลือกบริการ','เลือกผม','ช่าง · วัน · เวลา','สรุป & ชำระมัดจำ'];
 /* 4 รูปแบบบริการมาตรฐาน (fix ในโค้ด เพราะผูกกับวิธีคิดเงิน) · ราคาอยู่ในชีตตามตารางที่ให้ไว้
  * ถอดออกอย่างเดียว = ตัวเลือกแรก · เลือกแล้วข้ามเทคนิคไปเลือกชนิดงานถอดได้เลย */
 var MODES=[
@@ -369,7 +364,7 @@ var MODES=[
   {id:'byob',  t:'นำผมมาเอง',         en:'Bring Your Own', s:'ไม่คิดค่าผม · คิดเฉพาะค่าบริการต่อ'},
   {id:'move',  t:'ขยับปมเดิม',        en:'Reposition',     s:'จัดปมเดิมใหม่ · ราคารวมค่าถอดแล้ว'}
 ];
-var STEP_EN=['Service','Hair','Stylist · Date · Time','Details & Summary','Confirm'];
+var STEP_EN=['Service','Hair','Stylist · Date · Time','Confirm & Pay'];
 /* คำแปลลักษณะผม (ชุดคำคงที่ ~8 คำ) · ถ้ามีลักษณะใหม่ที่ไม่อยู่ในนี้ จะแสดงไทยอย่างเดียว */
 var TEXTURE_EN={'ผมตรง':'Straight','ผมหยิก':'Curly','ผมดัดลอน':'Wavy (Permed)','ผมลอนธรรมชาติ':'Natural Wave','ผมยืด สปาแล้ว':'Rebonded','ผมลอนใหญ่':'Loose Wave','ผมลอนเล็ก':'Tight Wave','ผมหยักศก':'Kinky'};
 function isNew(){return STATE.mode==='new';} function isByob(){return STATE.mode==='byob';}
@@ -551,7 +546,6 @@ function renderStep(){ [].forEach.call(document.querySelectorAll('.step'),functi
   if(STEP===2){ renderStep2(); updatePriceHint(); }
   if(STEP===3){ prepStep3(); }
   if(STEP===4){ buildSummary(); }
-  if(STEP===5){ buildConfirm(); }
   document.getElementById('backBtn').style.visibility=STEP>1?'visible':'hidden';
   refreshNav(); window.scrollTo({top:0,behavior:'smooth'}); }
 function refreshNav(){ var ok=stepValid(), btn=document.getElementById('nextBtn'); btn.disabled=!ok;
@@ -564,8 +558,7 @@ function stepValid(){ switch(STEP){
             if(isByob())return !!STATE.size && STATE.bundle>=1;
             return !!STATE.variantId && STATE.bundle>=1 && stockOfSelection()>=STATE.bundle;
     case 3: return !!STATE.techId && !!STATE.date && !!STATE.startTime;
-    case 4: return !!v('cName') && !!v('cPhone');
-    case 5: return true;
+    case 4: return !!v('cName') && !!v('cPhone') && !!(document.getElementById('slip')&&document.getElementById('slip').files[0]);
   } return false; }
 function goNext(){ if(!stepValid())return; if(STEP===MAXSTEP){ return doSubmit(); } STEP++; renderStep(); }
 function goBack(){ if(STEP>1){ STEP--; renderStep(); } }
@@ -586,9 +579,23 @@ function renderLegend(){ document.getElementById('calLegend').innerHTML=
 function selForServer(){ var p={ service_id:STATE.serviceId, technique:STATE.technique, mode:STATE.mode,
     qty_mad:(isMove()?1:STATE.bundle), tech_id:STATE.techId, date:STATE.date };
   if(isNew())p.variant_id=STATE.variantId; if(isByob())p.size=STATE.size; if(isRemoval())p.removal_id=STATE.removalId; return p; }
-function loadMonthAvail(){ MONTHAVAIL=null; renderCal();
-  callApi('bookMonth',Object.assign(selForServer(),{year:calY,month:calM})).then(function(res){ MONTHAVAIL=(res&&res.ok&&res.data.days)?res.data.days:{}; renderCal(); })
-    .catch(function(){ MONTHAVAIL={}; renderCal(); }); }
+function loadMonthAvail(){ MONTHAVAIL=null; renderCal(); updateCalFull();
+  callApi('bookMonth',Object.assign(selForServer(),{year:calY,month:calM})).then(function(res){ MONTHAVAIL=(res&&res.ok&&res.data.days)?res.data.days:{}; renderCal(); updateCalFull(); })
+    .catch(function(){ MONTHAVAIL={}; renderCal(); updateCalFull(); }); }
+/* ปฏิทินเต็มทั้งเดือน → แจ้งลูกค้า + ปุ่มข้ามไปเดือนที่ว่างถัดไป (กันเข้าใจผิดว่ายังโหลดไม่เสร็จ) */
+function monthHasAvail(){ if(!MONTHAVAIL)return true; return Object.keys(MONTHAVAIL).some(function(k){ var i=MONTHAVAIL[k]; return i&&!i.off&&i.slots>0; }); }
+function updateCalFull(){ var el=document.getElementById('calFull'); if(!el)return;
+  if(MONTHAVAIL===null||monthHasAvail()){ el.style.display='none'; el.innerHTML=''; return; }
+  el.style.display='block';
+  el.innerHTML='<div class="warnbox" style="display:block">คิวเดือน '+THM[calM]+' '+calY+' เต็ม/ปิดทั้งเดือนแล้ว'+
+    '<br><button type="button" onclick="findNextMonth()" style="margin-top:10px;padding:10px 18px;background:linear-gradient(100deg,var(--gold-dim),var(--gold-soft));color:#1a1a1a;border:none;border-radius:10px;font-size:14px;cursor:pointer">ค้นหาเดือนที่ว่างถัดไป →</button></div>'; }
+var _findTries=0;
+function findNextMonth(){ _findTries=0; advanceSearch(); }
+function advanceSearch(){ if(_findTries>=6){ var el=document.getElementById('calFull'); if(el)el.innerHTML='<div class="warnbox" style="display:block">ไม่พบวันว่างในช่วงที่จองได้ กรุณาติดต่อร้านโดยตรง</div>'; return; }
+  _findTries++; calM++; if(calM>11){calM=0;calY++;} MONTHAVAIL=null; renderCal();
+  var el=document.getElementById('calFull'); if(el){ el.style.display='block'; el.innerHTML='<div class="cal-loading">⟳ กำลังค้นเดือนที่ว่าง…</div>'; }
+  callApi('bookMonth',Object.assign(selForServer(),{year:calY,month:calM})).then(function(res){ MONTHAVAIL=(res&&res.ok&&res.data.days)?res.data.days:{}; renderCal();
+    if(monthHasAvail()){ updateCalFull(); } else { advanceSearch(); } }).catch(function(){ MONTHAVAIL={}; renderCal(); updateCalFull(); }); }
 function loadAvailability(){ STATE.startTime=''; var area=document.getElementById('timeArea');
   document.getElementById('timeLbl').style.display='block';
   area.innerHTML='<div class="skeleton"><div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div></div>';
@@ -639,7 +646,8 @@ function buildSummary(){ computeEst();
   document.getElementById('priceBox').innerHTML=ph;
   document.getElementById('depLabel').innerText='สแกนจ่ายมัดจำ '+fmt(deposit)+' ฿';
   renderQR(deposit);
-  ['cName','cPhone'].forEach(function(id){ document.getElementById(id).oninput=refreshNav; }); }
+  ['cName','cPhone'].forEach(function(id){ document.getElementById(id).oninput=refreshNav; });
+  var sl=document.getElementById('slip'); if(sl)sl.onchange=refreshNav; }
 function serviceLabel(){ var s=svc(); var m=({'new':'ซื้อผมใหม่','byob':'นำผมมาเอง','move':'ขยับปม','removal':'ถอดออกอย่างเดียว'})[STATE.mode];
   return isRemoval()?m:((s?s.acct_name+' · ':'')+m); }
 function detailLabel(){ if(isRemoval()){ var rm=(CAT.removals||[]).filter(function(r){return String(r.removal_id)===String(STATE.removalId);})[0]; return rm?rm.name:'-'; }
@@ -659,17 +667,20 @@ function buildConfirm(){ computeEst();
     '<div class="srow"><span>มัดจำ</span><b style="color:var(--gold-soft)">'+fmt(deposit)+' ฿</b></div>'; }
 
 /* ================= SUBMIT ================= */
+function fileDataUrl(file){ return new Promise(function(res,rej){ var r=new FileReader(); r.onload=function(){res(r.result);}; r.onerror=rej; r.readAsDataURL(file); }); }
 function doSubmit(){ var btn=document.getElementById('nextBtn'); btn.disabled=true; btn.innerText='กำลังจอง…';
-  var payload=Object.assign(selForServer(),{ date:STATE.date, start:STATE.startTime, name:v('cName'), phone:v('cPhone'), line_id:v('cLine'),
-    lineUserId:(LINE_PROFILE&&LINE_PROFILE.userId)||'' });
-  callApi('createBooking',payload).then(onBooked).catch(function(){ showMsg('เกิดข้อผิดพลาด กรุณาลองใหม่'); btn.disabled=false; btn.innerText='ยืนยันการจอง'; }); }
+  var file=document.getElementById('slip')&&document.getElementById('slip').files[0];
+  var go=function(slipUrl){ var payload=Object.assign(selForServer(),{ date:STATE.date, start:STATE.startTime, name:v('cName'), phone:v('cPhone'), line_id:v('cLine'),
+      lineUserId:(LINE_PROFILE&&LINE_PROFILE.userId)||'', slipDataUrl:slipUrl||'' });
+    callApi('createBooking',payload).then(onBooked).catch(function(){ showMsg('เกิดข้อผิดพลาด กรุณาลองใหม่'); btn.disabled=false; btn.innerText='ยืนยันการจอง'; }); };
+  if(file){ fileDataUrl(file).then(go).catch(function(){ go(''); }); } else go(''); }
 function onBooked(res){ var btn=document.getElementById('nextBtn'); btn.disabled=false; btn.innerText='ยืนยันการจอง';
   if(!res||!res.ok){ var retime=(res&&(res.code==='TAKEN')); var restock=(res&&res.code==='NO_STOCK');
     showMsg((res&&res.message)||'จองไม่สำเร็จ','การจองไม่สำเร็จ',function(){ if(retime){STEP=3;renderStep();} else if(restock){STEP=2;renderStep();} }); return; }
   var b=res.data;
   document.getElementById('ticketBody').innerHTML=
     srow('รหัสคิว',b.booking_id)+srow('ชื่อผู้จอง',v('cName'))+srow('วันที่',toDMY(b.date))+srow('เวลา',b.start+(b.end?(' - '+b.end):''))+
-    srow('ช่าง',STATE.techId==='any'?'ร้านจัดให้':STATE.techName)+srow('รายการ',b.label)+
+    srow('ช่าง',b.tech_name||(STATE.techId==='any'?'ร้านจัดให้':STATE.techName))+srow('รายการ',b.label)+
     '<div class="pricebox" style="margin-top:12px"><div class="pr"><span>มูลค่างาน</span><b>'+fmt(b.total)+' ฿</b></div>'+
     '<div class="pr dep"><span>มัดจำ (ต้องชำระ)</span><b style="color:var(--gold-soft)">'+fmt(b.deposit)+' ฿</b></div>'+
     '<div class="pr total"><span>คงเหลือหน้าร้าน</span><b>'+fmt(b.remain)+' ฿</b></div></div>'+
