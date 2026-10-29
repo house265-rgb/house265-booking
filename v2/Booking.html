@@ -684,9 +684,12 @@ function onBooked(res){ var btn=document.getElementById('nextBtn'); btn.disabled
     '<div class="pricebox" style="margin-top:12px"><div class="pr"><span>มูลค่างาน</span><b>'+fmt(b.total)+' ฿</b></div>'+
     '<div class="pr dep"><span>มัดจำ (ต้องชำระ)</span><b style="color:var(--gold-soft)">'+fmt(b.deposit)+' ฿</b></div>'+
     '<div class="pr total"><span>คงเหลือหน้าร้าน</span><b>'+fmt(b.remain)+' ฿</b></div></div>'+
-    (Number(b.deposit)>0&&b.promptPayId?('<div class="qr-box" style="margin:14px 0 0"><div class="t">สแกนจ่ายมัดจำ '+fmt(b.deposit)+' ฿</div><div id="tQr"></div><div style="font-size:11px;color:var(--faint);margin-top:8px">พร้อมเพย์ · '+esc(b.promptPayId)+'</div></div>'):'');
+    (function(){ var bill=(String(b.promptPayType||'').toLowerCase()==='biller'&&b.promptPayBiller); var hasPay=Number(b.deposit)>0&&(bill||b.promptPayId);
+      return hasPay?('<div class="qr-box" style="margin:14px 0 0"><div class="t">สแกนจ่ายมัดจำ '+fmt(b.deposit)+' ฿</div><div id="tQr"></div><div style="font-size:11px;color:var(--faint);margin-top:8px">'+(bill?('ร้านค้า · อ้างอิง '+esc(b.booking_id)):('พร้อมเพย์ · '+esc(b.promptPayId)))+'</div></div>'):''; })();
   document.getElementById('ticketModal').style.display='flex';
-  if(Number(b.deposit)>0&&b.promptPayId) setTimeout(function(){ renderQRInto('tQr',b.promptPayId,b.deposit); },80); }
+  var tcfg={ type:(String(b.promptPayType||'').toLowerCase()==='biller'&&b.promptPayBiller)?'biller':'personal', promptPayId:b.promptPayId||'', billerId:String(b.promptPayBiller||'').replace(/[^0-9]/g,''), ref:b.promptPayRef||'' };
+  var tHas=(tcfg.type==='biller')?!!tcfg.billerId:!!b.promptPayId;
+  if(Number(b.deposit)>0&&tHas) setTimeout(function(){ renderQRInto('tQr',tcfg,b.deposit,b.booking_id); },80); }
 function srow(k,val){ return '<div class="srow"><span>'+k+'</span><b>'+esc(val)+'</b></div>'; }
 
 /* ================= CALENDAR ================= */
@@ -707,19 +710,26 @@ function renderCal(){ document.getElementById('calTitle').innerText=THM[calM]+' 
     if(id===STATE.date)e2.className+=' sel'; days.appendChild(e2); } }
 function pickDate(id){ STATE.date=id; STATE.startTime=''; renderCal(); loadAvailability(); refreshNav(); window.scrollTo({top:document.getElementById('timeArea').offsetTop-80,behavior:'smooth'}); }
 
-/* ================= PromptPay QR ================= */
-function renderQR(amount){ renderQRInto('qrRender',(CAT.shop&&CAT.shop.promptPayId)||'',amount); }
-function renderQRInto(boxId,id,amount){ var box=document.getElementById(boxId); if(!box)return; box.innerHTML='';
-  id=String(id||'').replace(/[^0-9]/g,''); var miss=document.getElementById('qrMissing');
-  if(!id||id.length<10||!amount||amount<=0){ if(miss&&boxId==='qrRender')miss.style.display='block'; box.innerHTML='<div style="color:var(--faint);font-size:12px">—</div>'; return; }
+/* ================= PromptPay QR (บุคคล tag29 / ร้านค้า K-Shop tag30 Bill Payment) ================= */
+function ppCfg(){ var s=CAT.shop||{}; var biller=String(s.promptPayBiller||'').replace(/[^0-9]/g,'');
+  var type=(String(s.promptPayType||'').toLowerCase()==='biller'&&biller)?'biller':'personal';
+  return { type:type, promptPayId:String(s.promptPayId||''), billerId:biller, ref:String(s.promptPayRef||'') }; }
+function renderQR(amount){ renderQRInto('qrRender',ppCfg(),amount,''); }
+function renderQRInto(boxId,cfg,amount,ref){ var box=document.getElementById(boxId); if(!box)return; box.innerHTML='';
+  var miss=document.getElementById('qrMissing');
+  var has=(cfg.type==='biller')?!!cfg.billerId:(String(cfg.promptPayId||'').replace(/[^0-9]/g,'').length>=10);
+  if(!has||!amount||amount<=0){ if(miss&&boxId==='qrRender')miss.style.display='block'; box.innerHTML='<div style="color:var(--faint);font-size:12px">—</div>'; return; }
   if(miss&&boxId==='qrRender')miss.style.display='none';
-  if(typeof QRCode==='undefined'){ box.innerHTML='<div style="color:var(--faint);font-size:12px">พร้อมเพย์ '+esc(id)+'</div>'; return; }
-  try{ new QRCode(box,{text:ppPayload(id,amount),width:210,height:210,colorDark:'#000',colorLight:'#fff',correctLevel:(window.QRCode&&QRCode.CorrectLevel)?QRCode.CorrectLevel.M:1}); }
+  if(typeof QRCode==='undefined'){ box.innerHTML='<div style="color:var(--faint);font-size:12px">'+esc(cfg.type==='biller'?('ร้านค้า '+cfg.billerId):('พร้อมเพย์ '+cfg.promptPayId))+'</div>'; return; }
+  try{ new QRCode(box,{text:ppPayload(cfg,amount,ref),width:210,height:210,colorDark:'#000',colorLight:'#fff',correctLevel:(window.QRCode&&QRCode.CorrectLevel)?QRCode.CorrectLevel.M:1}); }
   catch(e){ box.innerHTML='<div style="color:var(--crit);font-size:12px">สร้าง QR ไม่สำเร็จ</div>'; } }
-function ppPayload(id,amount){ function f(t,v){ return t+String(v.length).padStart(2,'0')+v; }
-  var num=String(id).replace(/[^0-9]/g,''); var target=num.length>=13?num:('0000000000000'+num.replace(/^0/,'66')).slice(-13);
-  var tag=num.length>=15?'03':(num.length>=13?'02':'01'); var amt=Number(amount).toFixed(2);
-  var noCrc=f('00','01')+f('01','12')+f('29',f('00','A000000677010111')+f(tag,target))+f('53','764')+f('54',amt)+f('58','TH')+'6304';
+function ppPayload(cfg,amount,ref){ function f(t,v){ return t+String(v.length).padStart(2,'0')+v; }
+  var amt=Number(amount).toFixed(2), merchant;
+  if(cfg.type==='biller'&&cfg.billerId){ var m=f('00','A000000677010112')+f('01',String(cfg.billerId).replace(/[^0-9]/g,''));
+    var r=String(ref||cfg.ref||'').replace(/[^0-9A-Za-z]/g,''); if(r)m+=f('02',r); merchant=f('30',m); }
+  else { var num=String(cfg.promptPayId).replace(/[^0-9]/g,''); var target=num.length>=13?num:('0000000000000'+num.replace(/^0/,'66')).slice(-13);
+    var tag=num.length>=15?'03':(num.length>=13?'02':'01'); merchant=f('29',f('00','A000000677010111')+f(tag,target)); }
+  var noCrc=f('00','01')+f('01',amount>0?'12':'11')+merchant+f('53','764')+(amount>0?f('54',amt):'')+f('58','TH')+'6304';
   return noCrc+crc16(noCrc); }
 function crc16(str){ var crc=0xFFFF; for(var i=0;i<str.length;i++){ crc^=str.charCodeAt(i)<<8; for(var j=0;j<8;j++){ crc=(crc&0x8000)?((crc<<1)^0x1021):(crc<<1); crc&=0xFFFF; } } return crc.toString(16).toUpperCase().padStart(4,'0'); }
 function saveQR(){ var box=document.getElementById('qrRender'); var cv=box.querySelector('canvas'), im=box.querySelector('img'); var url=cv?cv.toDataURL('image/png'):(im?im.src:''); if(!url){ showMsg('ยังไม่มี QR'); return; }
