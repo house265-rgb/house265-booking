@@ -458,13 +458,21 @@ function variantsForTech(){ return (CAT.variants||[]).filter(function(v){ return
 function variantsAvail(){ return variantsForTech().filter(function(v){ return Number(v.available)>0; }); }
 var DIMS=[ {k:'grade',f:'grade',label:'เกรดผม',en:'Hair grade'}, {k:'texture',f:'texture',label:'ลักษณะผม',en:'Texture'},
            {k:'color',f:'color',label:'สีผม',en:'Color'}, {k:'size',f:'length_in',label:'ขนาดผม',en:'Length'} ];
+function fieldEq(d,vVal,sVal){ if(d.k==='size')return digits(vVal)===digits(sVal); return String(vVal||'').trim()===String(sVal||'').trim(); }
 function distinctVals(dimField){ var seen={}, out=[]; variantsForTech().forEach(function(v){ var x=String(v[dimField]||'').trim(); if(x&&!seen[x]){seen[x]=1;out.push(x);} }); return out; }
-function activeDims(){ return DIMS.filter(function(d){ return distinctVals(d.f).length>0; }); }
+/* ค่าของแต่ละมิติ · ขนาด = รวมทุกขนาดที่ร้านมี (ServiceSizes) + ที่มีในรุ่นจริง → โชว์ครบ ของหมดทำจาง */
+function dimVals(d){ if(d.k!=='size') return distinctVals(d.f);
+  var seen={}, out=[];
+  variantsForTech().forEach(function(v){ var x=digits(v.length_in); if(x&&!seen[x]){seen[x]=1;out.push(x);} });
+  sizesForTech().forEach(function(z){ var x=digits(z.size); if(x&&!seen[x]){seen[x]=1;out.push(x);} });
+  out.sort(function(a,b){ return (parseInt(a,10)||0)-(parseInt(b,10)||0); });
+  return out; }
+function activeDims(){ return DIMS.filter(function(d){ return dimVals(d).length>0; }); }
 function stKey(k){ return STATE[k]; }
-function matchExcept(v,exceptK){ for(var i=0;i<DIMS.length;i++){ var d=DIMS[i]; if(d.k===exceptK)continue; var sv=stKey(d.k); if(sv&&String(v[d.f]||'').trim()!==String(sv).trim())return false; } return true; }
+function matchExcept(v,exceptK){ for(var i=0;i<DIMS.length;i++){ var d=DIMS[i]; if(d.k===exceptK)continue; var sv=stKey(d.k); if(sv&&!fieldEq(d,v[d.f],sv))return false; } return true; }
 /* มีของให้เลือกมั้ย (เช็กกับสต็อกจริง) → ใช้ทำจางตัวที่หมด */
-function optAvail(dim,val){ return variantsAvail().some(function(v){ return matchExcept(v,dim.k) && String(v[dim.f]||'').trim()===String(val).trim(); }); }
-function matchedVariants(){ return variantsForTech().filter(function(v){ for(var i=0;i<DIMS.length;i++){ var d=DIMS[i]; var sv=stKey(d.k); if(sv&&String(v[d.f]||'').trim()!==String(sv).trim())return false; } return true; }); }
+function optAvail(dim,val){ return variantsAvail().some(function(v){ return matchExcept(v,dim.k) && fieldEq(dim,v[dim.f],val); }); }
+function matchedVariants(){ return variantsForTech().filter(function(v){ for(var i=0;i<DIMS.length;i++){ var d=DIMS[i]; var sv=stKey(d.k); if(sv&&!fieldEq(d,v[d.f],sv))return false; } return true; }); }
 function matchedAvail(){ return matchedVariants().filter(function(v){ return Number(v.available)>0; }); }
 function resolveVariant(){ var dims=activeDims(), allSel=dims.every(function(d){return !!stKey(d.k);});
   var ma=matchedAvail();
@@ -485,12 +493,11 @@ function renderStep2(){ var title=document.getElementById('s2title'), body=docum
       d.innerHTML='<div class="t">'+esc(r.name)+ren+'</div><div class="s">'+fmt(r.price)+' ฿</div>';
       d.onclick=function(){ STATE.removalId=String(r.removal_id); markSel('rmList',d); updatePriceHint(); refreshNav(); }; box.appendChild(d); });
     return; }
-  if(isByob()){ title.innerText='ขนาดผมที่นำมา & จำนวนมัด';
-    var sizes=sizesForTech();
+  if(isByob()){ title.innerText='นำผมมาเอง — เลือกจำนวน';
     var h='<div class="warnbox" style="display:block;text-align:left;line-height:1.7">⚠️ '+esc((CAT.shop&&CAT.shop.byobNote)||'ผมที่นำมาต้องเป็นช่อพร้อมต่อแล้ว')+'</div>';
-    h+='<span class="lbl">'+lbl('label','size','ขนาดผม','Length')+' <span class="en">(นิ้ว)</span></span><div class="chips" id="sizeList"></div>';
+    h+='<div class="note">ระบุจำนวนผมที่นำมา (ไม่ต้องเลือกขนาด)</div>';
     h+=bundleBlock(); h+=priceHintBox();
-    body.innerHTML=h; buildSizeChips(sizes,true); syncBundle(); return; }
+    body.innerHTML=h; syncBundle(); updatePriceHint(); return; }
   /* new */
   title.innerText='เลือกผม (จากสต็อกร้าน)';
   if(!variantsForTech().length){ body.innerHTML='<div class="warnbox" style="display:block">ขออภัย ยังไม่มีข้อมูลผม '+esc(STATE.technique)+' ในระบบ<br>กรุณาเลือก "นำผมมาเอง" หรือเทคนิคอื่น</div>'; return; }
@@ -500,7 +507,7 @@ function renderStep2(){ var title=document.getElementById('s2title'), body=docum
   body.innerHTML=html; renderDims(); syncBundle(); }
 
 function renderDims(){ activeDims().forEach(function(d){ var box=document.getElementById('dim_'+d.k); if(!box)return; box.innerHTML='';
-    var vals=distinctVals(d.f);
+    var vals=dimVals(d);
     if(d.k==='color'){ vals.forEach(function(val){ var meta=(CAT.colors||[]).filter(function(c){return String(c.name).trim()===String(val).trim();})[0]||{};
         var av=optAvail(d,val), sel=(STATE.color===val);
         var w=document.createElement('div'); w.className='sw'+(sel?' sel':'')+(av?'':' dis');
@@ -557,7 +564,7 @@ function computeEst(){ var s=svc(); EST=null; var qty=Math.max(1,STATE.bundle||1
   if(!s)return; var pm=Number(s.per_mad_min)||30;
   if(isMove()){ var mFirst=Math.round(Number(s.move_price)||0), mAdd=Math.round(Number(s.move_add)||0); var t2=mFirst+mAdd*(qty-1);
     EST={total:t2,deposit:depositOf(t2),base:t2,durationMin:Math.round((Number(s.move_base_min)||45)+pm*(qty-1)),label:'ขยับปม '+s.acct_name+' · '+qtyUnit(s,qty)}; return; }
-  if(isByob()){ if(!STATE.size)return; var t3=Math.round((s.byob_base||0)+(s.byob_per_bundle||0)*qty); EST={total:t3,deposit:depositOf(t3),base:t3,durationMin:Math.round(pm*qty),label:s.acct_name+' (นำผมมาเอง) · '+qtyUnit(s,qty)}; return; }
+  if(isByob()){ var t3=Math.round((s.byob_base||0)+(s.byob_per_bundle||0)*qty); EST={total:t3,deposit:depositOf(t3),base:t3,durationMin:Math.round(pm*qty),label:s.acct_name+' (นำผมมาเอง) · '+qtyUnit(s,qty)}; return; }
   /* new */ if(!STATE.variantId)return; var v=matchedAvail()[0]; if(!v)return;
   var unit=(Number(v.sell_price_per_mad)>0?Number(v.sell_price_per_mad):sizePrice(v.length_in)), base=unit*qty, col=(CAT.colors||[]).filter(function(c){return String(c.name).trim()===String(v.color).trim();})[0], sur=col?Math.round((Number(col.surcharge)||0)*qty):0;
   var t4=base+sur; EST={total:t4,deposit:depositOf(t4),base:base,colorSur:sur,colorName:v.color,durationMin:Math.round(pm*qty),
@@ -582,7 +589,7 @@ function refreshNav(){ var ok=stepValid(), btn=document.getElementById('nextBtn'
 function stepValid(){ switch(STEP){
     case 1: if(isRemoval()) return !!STATE.mode; return !!STATE.serviceId && !!STATE.mode;
     case 2: if(isMove())return true; if(isRemoval())return !!STATE.removalId;
-            if(isByob())return !!STATE.size && STATE.bundle>=1;
+            if(isByob())return STATE.bundle>=1;
             return !!STATE.variantId && STATE.bundle>=1 && stockOfSelection()>=STATE.bundle;
     case 3: return !!STATE.techId && !!STATE.date && !!STATE.startTime;
     case 4: return !!v('cName') && !!v('cPhone') && !!(document.getElementById('slip')&&document.getElementById('slip').files[0]);
