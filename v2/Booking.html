@@ -126,6 +126,9 @@
   @keyframes sh{to{background-position:-200% 0}}
   .slotgrp{margin-top:8px}
   .slotgrp .h{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:16px 0 10px;display:flex;align-items:center;gap:8px}
+  .slotgrp .h.alt{color:var(--faint)}
+  .slot.reco{border-color:var(--gold-dim)}
+  .slot .star{position:absolute;top:7px;right:9px;font-size:11px;color:var(--gold-soft)}
   .slots{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .slot{border:1px solid var(--line-soft);background:var(--panel);border-radius:11px;padding:12px;cursor:pointer;
     text-align:center;transition:all .18s;position:relative}
@@ -270,7 +273,7 @@
           <li>ยกเลิกคิว จองผิดวัน หรือผิดแบบ ไม่คืนมัดจำทุกกรณี</li>
           <li>เลื่อนคิวล่วงหน้า 5 วัน ไม่มีค่าธรรมเนียม</li>
           <li>มาสายเกิน 15 นาที ขอสงวนสิทธิ์หักมัดจำ · เกิน 30 นาที ตัดคิว</li>
-          <li>กรณีมีงานถอดผม กรุณามาก่อนเวลา 1 ชั่วโมง</li>
+          <li>งานถอดผมใช้เวลาตามความยากง่ายของสภาพผม กรุณามาให้ตรงเวลานัด</li>
         </ul>
       </div>
       <div class="sumcard" id="sumCard"></div>
@@ -311,7 +314,7 @@
     <div class="ttop"><h3>VIP BOOKING PASS</h3><div class="ex">HOUSE265 EXCLUSIVE</div></div>
     <div class="twarn">
       มาให้ตรงเวลานะคะ <b>เลท 15 นาทีหักมัดจำ · เลท 30 นาทีตัดคิว</b><br>
-      มีงานถอดมาก่อน 1 ชั่วโมง · เผื่อเวลาเดินทางด้วยนะคะ 🙏
+      งานถอดผมใช้เวลาตามสภาพผม · เผื่อเวลาเดินทางมาให้ตรงเวลานะคะ 🙏
     </div>
     <div class="tbody" id="ticketBody"></div>
     <div class="tfoot">
@@ -359,7 +362,7 @@ var STEP_NAMES=['เลือกบริการ','เลือกผม','ช
 /* 4 รูปแบบบริการมาตรฐาน (fix ในโค้ด เพราะผูกกับวิธีคิดเงิน) · ราคาอยู่ในชีตตามตารางที่ให้ไว้
  * ถอดออกอย่างเดียว = ตัวเลือกแรก · เลือกแล้วข้ามเทคนิคไปเลือกชนิดงานถอดได้เลย */
 var MODES=[
-  {id:'removal',t:'ถอดออกอย่างเดียว',  en:'Removal',        s:'ถอดผมต่อเดิมออก ไม่ต่อใหม่ · เลือกชนิดงานถอดในขั้นถัดไป'},
+  {id:'removal',t:'ถอดผม',             en:'Removal',        s:'ถอดผมต่อเดิมออก · เลือกชนิดงานถอดในขั้นถัดไป'},
   {id:'new',   t:'ซื้อผมใหม่',         en:'New Hair',       s:'ใช้ผมร้าน · เลือกเกรด/ลักษณะ/สี/ขนาด จากสต็อกจริง'},
   {id:'byob',  t:'นำผมมาเอง',         en:'Bring Your Own', s:'ไม่คิดค่าผม · คิดเฉพาะค่าบริการต่อ'},
   {id:'move',  t:'ขยับปมเดิม',        en:'Reposition',     s:'จัดปมเดิมใหม่ · ราคารวมค่าถอดแล้ว'}
@@ -376,6 +379,13 @@ function modeList(){ return MODES; }
 function stepName(i){ return STEP_NAMES[i-1]; }
 function stepEn(i){ return STEP_EN[i-1]||''; }
 function texEn(val){ return TEXTURE_EN[val]||''; }
+/* หน่วยขายของเทคนิค (ข้อ4 จะทำให้ปรับตาม Services ได้ · ตอนนี้ค่าเริ่มต้น = มัด) */
+function unitLabel(){ return 'มัด'; }
+/* สีจุดตัวอย่าง: ใช้ hex จากชีต Colors (แนวทางเดิม) · ถ้า hex ว่าง/ผิดรูปแบบ ใช้สีมาตรฐานตามชื่อ */
+var NAME_HEX={'ดำธรรมชาติ':'#141210','สีดำ':'#000000','ดำ':'#000000','น้ำตาลเข้ม':'#3b2415','น้ำตาลอ่อน':'#8a5a2b','น้ำตาล':'#5b3a1e','น้ำตาลทอง':'#9a6b2f','ทอง':'#c8a75a','สีทอง':'#c8a75a','บลอนด์':'#d8b878','เทา':'#8a8a8a','แดง':'#7a2e2e'};
+function colorHex(meta,name){ var h=String((meta&&meta.hex)||'').trim();
+  if(/^#?[0-9a-fA-F]{6}$/.test(h)||/^#?[0-9a-fA-F]{3}$/.test(h)) return (h.charAt(0)==='#'?h:('#'+h));
+  return NAME_HEX[String(name).trim()]||'#333'; }
 
 /* ================= LOAD ================= */
 window.onload=function(){ initLiff();
@@ -416,7 +426,7 @@ function setMode(m){ STATE.mode=m; resetHair();
   var h=document.getElementById('modeHint');
   if(m==='byob'){ h.style.display='block'; h.innerHTML='นำผมมาเอง — '+((CAT.shop&&CAT.shop.byobNote)||'ผมที่นำมาต้องเป็นช่อพร้อมต่อแล้ว · รับขั้นต่ำ 1 มัด'); }
   else if(m==='move'){ h.style.display='block'; h.innerHTML='ขยับปมเดิม — ราคารวมค่าถอดแล้ว ไม่ต้องเลือกผม'; }
-  else if(m==='removal'){ h.style.display='block'; h.innerHTML='ถอดออกอย่างเดียว — ไม่ต้องเลือกเทคนิค กด “ถัดไป” เพื่อเลือกชนิดงานถอดได้เลย'; }
+  else if(m==='removal'){ h.style.display='block'; h.innerHTML='ถอดผม — ไม่ต้องเลือกเทคนิค กด “ถัดไป” เพื่อเลือกชนิดงานถอดได้เลย'; }
   else h.style.display='none';
   syncModeUI(); refreshNav(); }
 /* ซ่อนส่วนเลือกเทคนิคเมื่อเป็นงานถอดอย่างเดียว (ไม่ต้องใช้เทคนิค) */
@@ -438,20 +448,24 @@ function buildStaff(){ var box=document.getElementById('techStaffList'); box.inn
     box.appendChild(d); }); }
 
 /* ================= STEP 2 : เลือกผม (adaptive) ================= */
-function variantsForTech(){ return (CAT.variants||[]).filter(function(v){ return String(v.hair_type).trim()===String(STATE.technique).trim() && Number(v.available)>0; }); }
+/* variantsForTech = ทุกรุ่นของเทคนิค (รวมที่หมด → โชว์แบบจาง) · variantsAvail = เฉพาะที่มีของ */
+function variantsForTech(){ return (CAT.variants||[]).filter(function(v){ return String(v.hair_type).trim()===String(STATE.technique).trim(); }); }
+function variantsAvail(){ return variantsForTech().filter(function(v){ return Number(v.available)>0; }); }
 var DIMS=[ {k:'grade',f:'grade',label:'เกรดผม',en:'Hair grade'}, {k:'texture',f:'texture',label:'ลักษณะผม',en:'Texture'},
            {k:'color',f:'color',label:'สีผม',en:'Color'}, {k:'size',f:'length_in',label:'ขนาดผม',en:'Length'} ];
 function distinctVals(dimField){ var seen={}, out=[]; variantsForTech().forEach(function(v){ var x=String(v[dimField]||'').trim(); if(x&&!seen[x]){seen[x]=1;out.push(x);} }); return out; }
 function activeDims(){ return DIMS.filter(function(d){ return distinctVals(d.f).length>0; }); }
 function stKey(k){ return STATE[k]; }
 function matchExcept(v,exceptK){ for(var i=0;i<DIMS.length;i++){ var d=DIMS[i]; if(d.k===exceptK)continue; var sv=stKey(d.k); if(sv&&String(v[d.f]||'').trim()!==String(sv).trim())return false; } return true; }
-function optAvail(dim,val){ return variantsForTech().some(function(v){ return matchExcept(v,dim.k) && String(v[dim.f]||'').trim()===String(val).trim(); }); }
+/* มีของให้เลือกมั้ย (เช็กกับสต็อกจริง) → ใช้ทำจางตัวที่หมด */
+function optAvail(dim,val){ return variantsAvail().some(function(v){ return matchExcept(v,dim.k) && String(v[dim.f]||'').trim()===String(val).trim(); }); }
 function matchedVariants(){ return variantsForTech().filter(function(v){ for(var i=0;i<DIMS.length;i++){ var d=DIMS[i]; var sv=stKey(d.k); if(sv&&String(v[d.f]||'').trim()!==String(sv).trim())return false; } return true; }); }
+function matchedAvail(){ return matchedVariants().filter(function(v){ return Number(v.available)>0; }); }
 function resolveVariant(){ var dims=activeDims(), allSel=dims.every(function(d){return !!stKey(d.k);});
-  var mv=matchedVariants();
-  if(allSel && mv.length){ STATE.variantId=String(mv[0].variant_id); return mv.reduce(function(a,v){return a+Number(v.available);},0); }
+  var ma=matchedAvail();
+  if(allSel && ma.length){ STATE.variantId=String(ma[0].variant_id); return ma.reduce(function(a,v){return a+Number(v.available);},0); }
   STATE.variantId=''; return 0; }
-function stockOfSelection(){ var mv=matchedVariants(); return mv.reduce(function(a,v){return a+Number(v.available);},0); }
+function stockOfSelection(){ return matchedAvail().reduce(function(a,v){return a+Number(v.available);},0); }
 
 function renderStep2(){ var title=document.getElementById('s2title'), body=document.getElementById('s2body');
   if(isMove()){ title.innerText='ยืนยันบริการขยับปม';
@@ -473,24 +487,26 @@ function renderStep2(){ var title=document.getElementById('s2title'), body=docum
     body.innerHTML=h; buildSizeChips(sizes,true); syncBundle(); return; }
   /* new */
   title.innerText='เลือกผม (จากสต็อกร้าน)';
-  if(!variantsForTech().length){ body.innerHTML='<div class="warnbox" style="display:block">ขออภัย ขณะนี้ไม่มีผม '+esc(STATE.technique)+' พร้อมบริการในสต็อก<br>กรุณาเลือก "นำผมมาเอง" หรือเทคนิคอื่น</div>'; return; }
-  var html=''; activeDims().forEach(function(d){ html+='<span class="lbl">'+lbl('label',d.k,d.label,d.en)+'</span>'+(d.k==='color'?('<div class="swatches" id="dim_'+d.k+'"></div>'):('<div class="chips" id="dim_'+d.k+'"></div>')); });
+  if(!variantsForTech().length){ body.innerHTML='<div class="warnbox" style="display:block">ขออภัย ยังไม่มีข้อมูลผม '+esc(STATE.technique)+' ในระบบ<br>กรุณาเลือก "นำผมมาเอง" หรือเทคนิคอื่น</div>'; return; }
+  var html=(variantsAvail().length===0)?('<div class="warnbox" style="display:block;margin-bottom:12px">ผม '+esc(STATE.technique)+' หมดสต็อกชั่วคราว (แบบที่มีจะกดเลือกได้ · แบบที่หมดจะจางไว้)<br>เลือก "นำผมมาเอง" หรือเทคนิคอื่นได้</div>'):'';
+  activeDims().forEach(function(d){ html+='<span class="lbl">'+lbl('label',d.k,d.label,d.en)+'</span>'+(d.k==='color'?('<div class="swatches" id="dim_'+d.k+'"></div>'):('<div class="chips" id="dim_'+d.k+'"></div>')); });
   html+=bundleBlock(); html+=priceHintBox();
   body.innerHTML=html; renderDims(); syncBundle(); }
 
 function renderDims(){ activeDims().forEach(function(d){ var box=document.getElementById('dim_'+d.k); if(!box)return; box.innerHTML='';
     var vals=distinctVals(d.f);
-    if(d.k==='color'){ vals.forEach(function(val){ var meta=(CAT.colors||[]).filter(function(c){return String(c.name).trim()===val;})[0]||{};
+    if(d.k==='color'){ vals.forEach(function(val){ var meta=(CAT.colors||[]).filter(function(c){return String(c.name).trim()===String(val).trim();})[0]||{};
         var av=optAvail(d,val), sel=(STATE.color===val);
         var w=document.createElement('div'); w.className='sw'+(sel?' sel':'')+(av?'':' dis');
-        var sur=Number(meta.surcharge)||0, surtxt=sur>0?('<br><span style="color:var(--gold-soft);font-size:10px">+'+fmt(sur)+'/มัด</span>'):'';
+        var sur=Number(meta.surcharge)||0, surtxt=sur>0?('<br><span style="color:var(--gold-soft);font-size:10px">+'+fmt(sur)+'/'+unitLabel()+'</span>'):'';
         var cen=meta.name_en?('<br><span style="font-size:9.5px;color:var(--faint)">'+esc(meta.name_en)+'</span>'):'';
-        w.innerHTML='<div class="dot" style="background:'+(meta.hex||'#333')+'"></div><div class="nm">'+esc(val)+cen+surtxt+'</div>';
+        var out=av?'':'<br><span style="font-size:9px;color:var(--crit)">หมด</span>';
+        w.innerHTML='<div class="dot" style="background:'+esc(colorHex(meta,val))+'"></div><div class="nm">'+esc(val)+cen+surtxt+out+'</div>';
         if(av) w.onclick=function(){ STATE.color=(STATE.color===val?'':val); afterDim(); }; box.appendChild(w); });
     } else { vals.forEach(function(val){ var av=optAvail(d,val), sel=(stKey(d.k)===val);
         var c=document.createElement('div'); c.className='chip'+(sel?' sel':'')+(av?'':' dis');
-        var sub=(d.k==='size')?'นิ้ว':(d.k==='texture'?texEn(val):'');
-        c.innerHTML=esc(val)+(sub?('<span class="sm">'+esc(sub)+'</span>'):'');
+        var sub=av?((d.k==='size')?'นิ้ว':(d.k==='texture'?texEn(val):'')):'หมด';
+        c.innerHTML=esc(val)+(sub?('<span class="sm"'+(av?'':' style="color:var(--crit)"')+'>'+esc(sub)+'</span>'):'');
         if(av) c.onclick=function(){ STATE[d.k]=(stKey(d.k)===val?'':val); afterDim(); }; box.appendChild(c); }); }
   }); }
 function afterDim(){ resolveVariant(); renderDims(); syncBundle(); updatePriceHint(); refreshNav(); }
@@ -527,16 +543,20 @@ function updatePriceHint(){ var box=document.getElementById('chosenBox'); if(!bo
 /* ================= PRICE ESTIMATE (client preview; server authoritative) ================= */
 function svc(){ return CAT.services.filter(function(s){return String(s.service_id)===String(STATE.serviceId);})[0]; }
 function sizePrice(len){ var s=svc(); if(!s)return 0; var d=digits(len); var hit=(CAT.serviceSizes||[]).filter(function(z){return String(z.service_id)===String(s.service_id)&&digits(z.size)===d;})[0]; return hit?Number(hit.price):0; }
-function depositOf(total){ var S=CAT.settings||{}; var isFixed=(String(S.depositType||'').toLowerCase()==='fixed')||Number(S.depositValue)>100; return isFixed?Math.round(Number(S.depositValue)||0):Math.round(total*(Number(S.depositValue)||0)/100); }
+/* มัดจำไม่เกินมูลค่างาน (ตรงกับ backend) */
+function depositOf(total){ var S=CAT.settings||{}; var isFixed=(String(S.depositType||'').toLowerCase()==='fixed')||Number(S.depositValue)>100; var d=isFixed?Math.round(Number(S.depositValue)||0):Math.round(total*(Number(S.depositValue)||0)/100); return Math.min(Math.max(0,total),d); }
 function computeEst(){ var s=svc(); EST=null; var qty=Math.max(1,STATE.bundle||1);
-  if(isRemoval()){ var rm=(CAT.removals||[]).filter(function(r){return String(r.removal_id)===String(STATE.removalId);})[0]; if(!rm)return; var t=Math.round(rm.price); EST={total:t,deposit:depositOf(t),base:t,label:'ถอดผม: '+rm.name}; return; }
-  if(!s)return;
-  if(isMove()){ var t2=Math.round(s.move_price||0); EST={total:t2,deposit:depositOf(t2),base:t2,label:'ขยับปม '+s.acct_name}; return; }
-  if(isByob()){ if(!STATE.size)return; var t3=Math.round((s.byob_base||0)+(s.byob_per_bundle||0)*qty); EST={total:t3,deposit:depositOf(t3),base:t3,label:s.acct_name+' (นำผมมาเอง) '+STATE.size+'นิ้ว · '+qty+' มัด'}; return; }
-  /* new */ if(!STATE.variantId)return; var v=matchedVariants()[0]; if(!v)return;
+  if(isRemoval()){ var rm=(CAT.removals||[]).filter(function(r){return String(r.removal_id)===String(STATE.removalId);})[0]; if(!rm)return; var t=Math.round(rm.price);
+    EST={total:t,deposit:depositOf(t),base:t,durationMin:Math.round((Number(rm.dur_per_mad)||20)*qty)||30,label:'ถอดผม: '+rm.name}; return; }
+  if(!s)return; var pm=Number(s.per_mad_min)||30;
+  if(isMove()){ var t2=Math.round(s.move_price||0); EST={total:t2,deposit:depositOf(t2),base:t2,durationMin:Math.round(Number(s.move_base_min)||45),label:'ขยับปม '+s.acct_name}; return; }
+  if(isByob()){ if(!STATE.size)return; var t3=Math.round((s.byob_base||0)+(s.byob_per_bundle||0)*qty); EST={total:t3,deposit:depositOf(t3),base:t3,durationMin:Math.round(pm*qty),label:s.acct_name+' (นำผมมาเอง) '+STATE.size+'นิ้ว · '+qty+' มัด'}; return; }
+  /* new */ if(!STATE.variantId)return; var v=matchedAvail()[0]; if(!v)return;
   var unit=sizePrice(v.length_in), base=unit*qty, col=(CAT.colors||[]).filter(function(c){return String(c.name).trim()===String(v.color).trim();})[0], sur=col?Math.round((Number(col.surcharge)||0)*qty):0;
-  var t4=base+sur; EST={total:t4,deposit:depositOf(t4),base:base,colorSur:sur,colorName:v.color,
+  var t4=base+sur; EST={total:t4,deposit:depositOf(t4),base:base,colorSur:sur,colorName:v.color,durationMin:Math.round(pm*qty),
     label:s.acct_name+' '+v.length_in+'นิ้ว เกรด'+v.grade+' '+v.color+' · '+qty+' มัด'}; }
+function durText(m){ m=Math.round(m||0); var h=Math.floor(m/60),mm=m%60; return ((h?h+' ชม.':'')+(mm?(' '+mm+' นาที'):'')).trim()||'0 นาที'; }
+function estDuration(){ return (LASTAVAIL&&LASTAVAIL.durationMin)||((EST&&EST.durationMin)||0); }
 
 /* ================= STEP ENGINE ================= */
 function renderStep(){ [].forEach.call(document.querySelectorAll('.step'),function(s){ s.classList.toggle('active',Number(s.dataset.step)===STEP); });
@@ -568,7 +588,7 @@ function prepStep3(){ computeEst();
   document.getElementById('lblStylist').innerHTML=lbl('label','stylist','ช่าง','Stylist');
   document.getElementById('lblDate').innerHTML=lbl('label','date','วันที่','Date');
   document.getElementById('timeLbl').innerHTML=lbl('label','time','เวลา','Time');
-  var dn=document.getElementById('durNote5'); if(EST){ dn.style.display='block'; dn.innerHTML='เลือกวันที่มีเวลาว่างพอ · จุดสีบอกว่าวันนั้นว่างมาก/น้อย'; }
+  var dn=document.getElementById('durNote5'); if(EST){ dn.style.display='block'; dn.innerHTML='บริการนี้ใช้เวลาประมาณ <b style="color:var(--gold-soft)">'+durText(estDuration())+'</b> · เลือกวันที่มีเวลาว่างพอ (จุดสีบอกว่าว่างมาก/น้อย)'; }
   renderLegend(); renderCal(); loadMonthAvail();
   document.getElementById('timeLbl').style.display=STATE.date?'block':'none';
   if(STATE.date) loadAvailability(); else document.getElementById('timeArea').innerHTML=''; }
@@ -604,15 +624,19 @@ function onAvail(res){ LASTAVAIL=(res&&res.ok)?res.data:null; var area=document.
   if(!res||!res.ok){ area.innerHTML='<div class="warnbox" style="display:block">'+esc((res&&res.message)||'เกิดข้อผิดพลาด')+'</div>'; return; }
   var d=res.data; if(d.holiday){ area.innerHTML='<div class="warnbox" style="display:block">วันที่เลือกร้านหยุด กรุณาเลือกวันอื่น</div>'; return; }
   if(!d.slots||!d.slots.length){ area.innerHTML='<div class="warnbox" style="display:block">ขออภัย วันนี้ไม่มีเวลาว่างพอสำหรับบริการนี้ กรุณาเลือกวันอื่น</div>'; return; }
-  area.innerHTML='<div class="slotgrp"><div class="h">⏰ เวลาว่าง</div><div class="slots">'+d.slots.map(slotHtml).join('')+'</div></div>';
+  var reco=d.slots.filter(function(s){return s.recommended;}), other=d.slots.filter(function(s){return !s.recommended;});
+  var html='';
+  if(reco.length) html+='<div class="slotgrp"><div class="h">⭐ เวลาแนะนำ</div><div class="slots">'+reco.map(slotHtml).join('')+'</div></div>';
+  if(other.length) html+='<div class="slotgrp"><div class="h alt">เวลาว่างอื่น</div><div class="slots">'+other.map(slotHtml).join('')+'</div></div>';
+  area.innerHTML=html;
   [].forEach.call(area.querySelectorAll('.slot'),function(el){ el.onclick=function(){ STATE.startTime=el.dataset.start; STATE.endTime=el.dataset.end;
     [].forEach.call(area.querySelectorAll('.slot'),function(x){x.classList.remove('sel');}); el.classList.add('sel'); refreshNav(); }; }); }
-function slotHtml(s){ return '<div class="slot" data-start="'+s.time+'" data-end="'+fmtEnd(s.min)+'"><div class="tm">'+s.time+'</div><div class="meta">ว่าง '+s.techs+' ช่าง</div></div>'; }
+function slotHtml(s){ return '<div class="slot'+(s.recommended?' reco':'')+'" data-start="'+s.time+'" data-end="'+fmtEnd(s.min)+'">'+(s.recommended?'<span class="star">⭐</span>':'')+'<div class="tm">'+s.time+'</div><div class="meta">ว่าง '+s.techs+' ช่าง</div></div>'; }
 function fmtEnd(startMin){ var dur=(LASTAVAIL&&LASTAVAIL.durationMin)||0; var m=Number(startMin)+dur; return ('0'+Math.floor(m/60)).slice(-2)+':'+('0'+(m%60)).slice(-2); }
 
 /* ---- โปรโมชันที่ใช้ได้กับตัวเลือกปัจจุบัน (โชว์ให้ลูกค้าทราบ · หักจริงตอนชำระที่ร้าน) ---- */
 function pnorm(s){ return String(s==null?'':s).trim(); }
-function bkSelAttrs(){ var v=matchedVariants()[0]||{};
+function bkSelAttrs(){ var v=matchedAvail()[0]||matchedVariants()[0]||{};
   return { technique:STATE.technique, size:(isByob()?STATE.size:(v.length_in||'')), grade:v.grade||'', texture:v.texture||'', color:v.color||'',
     qty:STATE.bundle, tech:(STATE.techId==='any'?'':STATE.techName) }; }
 function promoMatchBk(p){ var a=bkSelAttrs();
@@ -632,7 +656,8 @@ function buildSummary(){ computeEst();
   var total=(LASTAVAIL&&LASTAVAIL.total)||((EST&&EST.total)||0), deposit=(LASTAVAIL&&LASTAVAIL.deposit)||((EST&&EST.deposit)||0), remain=Math.max(0,total-deposit);
   var lines=[ ['บริการ', serviceLabel()], ['รายละเอียด', detailLabel()],
     ['ช่าง', STATE.techId==='any'?'ร้านจัดช่างให้':STATE.techName],
-    ['วันที่', toDMY(STATE.date)], ['เวลา', STATE.startTime+(STATE.endTime?(' - '+STATE.endTime):'')] ];
+    ['วันที่', toDMY(STATE.date)], ['เวลา', STATE.startTime+(STATE.endTime?(' - '+STATE.endTime):'')],
+    ['ระยะเวลา', durText(estDuration())] ];
   document.getElementById('sumCard').innerHTML=lines.map(function(l){ return '<div class="srow"><span>'+l[0]+'</span><b>'+esc(l[1])+'</b></div>'; }).join('');
   var ph='';
   if(EST&&EST.base!=null) ph+='<div class="pr"><span>ค่าบริการ</span><b>'+fmt(EST.base)+' ฿</b></div>';
@@ -648,23 +673,12 @@ function buildSummary(){ computeEst();
   renderQR(deposit);
   ['cName','cPhone'].forEach(function(id){ document.getElementById(id).oninput=refreshNav; });
   var sl=document.getElementById('slip'); if(sl)sl.onchange=refreshNav; }
-function serviceLabel(){ var s=svc(); var m=({'new':'ซื้อผมใหม่','byob':'นำผมมาเอง','move':'ขยับปม','removal':'ถอดออกอย่างเดียว'})[STATE.mode];
+function serviceLabel(){ var s=svc(); var m=({'new':'ซื้อผมใหม่','byob':'นำผมมาเอง','move':'ขยับปม','removal':'ถอดผม'})[STATE.mode];
   return isRemoval()?m:((s?s.acct_name+' · ':'')+m); }
 function detailLabel(){ if(isRemoval()){ var rm=(CAT.removals||[]).filter(function(r){return String(r.removal_id)===String(STATE.removalId);})[0]; return rm?rm.name:'-'; }
   if(isMove())return 'ใช้ผมเดิม';
   if(isByob())return STATE.size+'นิ้ว · '+STATE.bundle+' มัด';
-  var v=matchedVariants()[0]; return v?(v.length_in+'นิ้ว · เกรด'+v.grade+' · '+v.texture+' · '+v.color+' · '+STATE.bundle+' มัด'):'-'; }
-
-/* ================= STEP 5 : confirm ================= */
-function buildConfirm(){ computeEst();
-  var total=(LASTAVAIL&&LASTAVAIL.total)||((EST&&EST.total)||0), deposit=(LASTAVAIL&&LASTAVAIL.deposit)||((EST&&EST.deposit)||0);
-  document.getElementById('confirmCard').innerHTML=
-    '<div class="srow"><span>ผู้จอง</span><b>'+esc(v('cName')||'-')+'</b></div>'+
-    '<div class="srow"><span>บริการ</span><b>'+esc(serviceLabel())+'</b></div>'+
-    '<div class="srow"><span>รายละเอียด</span><b>'+esc(detailLabel())+'</b></div>'+
-    '<div class="srow"><span>วัน · เวลา</span><b>'+esc(toDMY(STATE.date)+' · '+STATE.startTime)+'</b></div>'+
-    '<div class="srow"><span>มูลค่างาน</span><b>'+fmt(total)+' ฿</b></div>'+
-    '<div class="srow"><span>มัดจำ</span><b style="color:var(--gold-soft)">'+fmt(deposit)+' ฿</b></div>'; }
+  var v=matchedAvail()[0]||matchedVariants()[0]; return v?(v.length_in+'นิ้ว · เกรด'+v.grade+' · '+v.texture+' · '+v.color+' · '+STATE.bundle+' มัด'):'-'; }
 
 /* ================= SUBMIT ================= */
 function fileDataUrl(file){ return new Promise(function(res,rej){ var r=new FileReader(); r.onload=function(){res(r.result);}; r.onerror=rej; r.readAsDataURL(file); }); }
@@ -678,18 +692,13 @@ function onBooked(res){ var btn=document.getElementById('nextBtn'); btn.disabled
   if(!res||!res.ok){ var retime=(res&&(res.code==='TAKEN')); var restock=(res&&res.code==='NO_STOCK');
     showMsg((res&&res.message)||'จองไม่สำเร็จ','การจองไม่สำเร็จ',function(){ if(retime){STEP=3;renderStep();} else if(restock){STEP=2;renderStep();} }); return; }
   var b=res.data;
+  /* ตั๋วสั้น พอดีหน้าจอเดียว · ไม่มี QR (ลูกค้าชำระมัดจำ+แนบสลิปในขั้นก่อนหน้าแล้ว) */
   document.getElementById('ticketBody').innerHTML=
     srow('รหัสคิว',b.booking_id)+srow('ชื่อผู้จอง',v('cName'))+srow('วันที่',toDMY(b.date))+srow('เวลา',b.start+(b.end?(' - '+b.end):''))+
     srow('ช่าง',b.tech_name||(STATE.techId==='any'?'ร้านจัดให้':STATE.techName))+srow('รายการ',b.label)+
-    '<div class="pricebox" style="margin-top:12px"><div class="pr"><span>มูลค่างาน</span><b>'+fmt(b.total)+' ฿</b></div>'+
-    '<div class="pr dep"><span>มัดจำ (ต้องชำระ)</span><b style="color:var(--gold-soft)">'+fmt(b.deposit)+' ฿</b></div>'+
-    '<div class="pr total"><span>คงเหลือหน้าร้าน</span><b>'+fmt(b.remain)+' ฿</b></div></div>'+
-    (function(){ var bill=(String(b.promptPayType||'').toLowerCase()==='biller'&&b.promptPayBiller); var hasPay=Number(b.deposit)>0&&(bill||b.promptPayId);
-      return hasPay?('<div class="qr-box" style="margin:14px 0 0"><div class="t">สแกนจ่ายมัดจำ '+fmt(b.deposit)+' ฿</div><div id="tQr"></div><div style="font-size:11px;color:var(--faint);margin-top:8px">'+(bill?('ร้านค้า · อ้างอิง '+esc(b.booking_id)):('พร้อมเพย์ · '+esc(b.promptPayId)))+'</div></div>'):''; })();
-  document.getElementById('ticketModal').style.display='flex';
-  var tcfg={ type:(String(b.promptPayType||'').toLowerCase()==='biller'&&b.promptPayBiller)?'biller':'personal', promptPayId:b.promptPayId||'', billerId:String(b.promptPayBiller||'').replace(/[^0-9]/g,''), ref:b.promptPayRef||'' };
-  var tHas=(tcfg.type==='biller')?!!tcfg.billerId:!!b.promptPayId;
-  if(Number(b.deposit)>0&&tHas) setTimeout(function(){ renderQRInto('tQr',tcfg,b.deposit,b.booking_id); },80); }
+    '<div class="srow"><span>มัดจำ (ชำระแล้ว)</span><b style="color:var(--ok)">'+fmt(b.deposit)+' ฿</b></div>'+
+    '<div class="srow"><span>คงเหลือหน้าร้าน</span><b style="color:var(--gold-soft)">'+fmt(b.remain)+' ฿</b></div>';
+  document.getElementById('ticketModal').style.display='flex'; }
 function srow(k,val){ return '<div class="srow"><span>'+k+'</span><b>'+esc(val)+'</b></div>'; }
 
 /* ================= CALENDAR ================= */

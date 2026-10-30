@@ -79,17 +79,18 @@ td.r,th.r{text-align:right}
 .label .lt .l.hd{line-height:1.08}
 #printArea{position:fixed;left:-10000px;top:0;width:900px}  /* เก็บชุดเต็มไว้นอกจอ · โผล่เฉพาะตอนพิมพ์ */
 @media print{
-  @page{margin:6mm}
+  /* @page{size:...} ถูก inject ตามขนาดป้ายจริงใน applyLabelSize() → 1 ดวง = 1 หน้า เท่าสติกเกอร์พอดี */
   html,body{margin:0!important;padding:0!important;background:#fff!important;height:auto!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-  /* ซ่อนทุกอย่างแบบยุบพื้นที่ (display:none) → ไม่เหลือหน้ากระดาษเปล่า */
   #loginModal,.top,.noprint,.tabbar,.tabpane{display:none!important}
   .wrap>.card:not(#resultCard){display:none!important}
   #app,.wrap{display:block!important;margin:0!important;padding:0!important;background:none!important;border:0!important}
   #resultCard{display:block!important;margin:0!important;padding:0!important;border:0!important;background:none!important;box-shadow:none!important}
   #resultCard>*:not(#printArea){display:none!important}
-  /* ดึงเฉพาะฉลากกลับเข้าหน้าปกติ → แถวเดียวเรียง 3 ดวง หน้าเดียว */
-  #printArea{position:static!important;left:auto!important;top:auto!important;width:100%!important}
-  .labels{gap:2mm}
+  #printArea{position:static!important;left:auto!important;top:auto!important;width:auto!important}
+  /* ป้ายละ 1 หน้า · ไม่มีขอบ/เงา · จัดกึ่งกลางสติกเกอร์ */
+  .labels{display:block!important;gap:0!important;margin:0!important}
+  .label{border:none!important;border-radius:0!important;margin:0 auto!important;box-shadow:none!important;page-break-after:always;break-after:page;overflow:hidden}
+  .label:last-child{page-break-after:auto;break-after:auto}
 }
 </style></head>
 <body>
@@ -381,6 +382,9 @@ function applyLabelSize(){
   var r=document.documentElement.style;
   r.setProperty('--lw',w+'mm'); r.setProperty('--lh',h+'mm'); r.setProperty('--cols',c); r.setProperty('--qr',qr+'mm');
   r.setProperty('--code-fs',codeFs+'mm'); r.setProperty('--line-fs',lineFs+'mm');
+  /* ตั้งขนาดหน้ากระดาษตอนพิมพ์ให้เท่าป้าย (1 ดวง/หน้า พอดีสติกเกอร์ · ไม่ล้น ไม่มีขอบดำ) */
+  var ps=document.getElementById('printPageStyle'); if(!ps){ ps=document.createElement('style'); ps.id='printPageStyle'; document.head.appendChild(ps); }
+  ps.textContent='@media print{@page{size:'+w+'mm '+h+'mm;margin:0}}';
   try{ localStorage.setItem('h265_label',JSON.stringify({w:w,h:h,c:c})); }catch(e){}
 }
 function loadLabelSize(){ try{ var s=JSON.parse(localStorage.getItem('h265_label')||'null');
