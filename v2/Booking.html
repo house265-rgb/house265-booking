@@ -473,8 +473,9 @@ function resolveVariant(){ var dims=activeDims(), allSel=dims.every(function(d){
 function stockOfSelection(){ return matchedAvail().reduce(function(a,v){return a+Number(v.available);},0); }
 
 function renderStep2(){ var title=document.getElementById('s2title'), body=document.getElementById('s2body');
-  if(isMove()){ title.innerText='ยืนยันบริการขยับปม';
-    body.innerHTML='<div class="note">งานขยับปม '+esc(STATE.technique)+' — ใช้ผมเดิมของลูกค้า ไม่ต้องเลือกผม<br>ราคารวมค่าถอดแล้ว</div>'+priceHintBox(); return; }
+  if(isMove()){ title.innerText='ขยับปม — เลือกจำนวน';
+    body.innerHTML='<div class="note">งานขยับปม '+esc(STATE.technique)+' — ใช้ผมเดิมของลูกค้า ราคารวมค่าถอดแล้ว</div>'+bundleBlock()+priceHintBox();
+    syncBundle(); updatePriceHint(); return; }
   if(isRemoval()){ title.innerText='เลือกงานถอด';
     var rms=CAT.removals||[]; if(!rms.length){ body.innerHTML='<div class="warnbox" style="display:block">ยังไม่มีรายการงานถอดในระบบ</div>'; return; }
     body.innerHTML='<span class="lbl" style="margin-top:0">ชนิดงานถอด</span><div class="opts" id="rmList"></div>'+priceHintBox();
@@ -527,7 +528,7 @@ function bundleBlock(){ return '<span class="lbl" id="bundleLbl">'+lbl('label','
   '<div class="chips" id="bundleQuick"></div>'+
   '<div class="bstep"><button type="button" onclick="bundleStep(-1)">−</button><div class="val"><span id="bundleVal">'+qtyUnit(svc(),STATE.bundle)+'</span></div><button type="button" onclick="bundleStep(1)">+</button></div>'+
   '<div id="bundleHint" style="display:none;margin-top:8px;font-size:12px;color:var(--warn)"></div>'; }
-function bundleMax(){ if(isByob())return 20; if(isNew()){ var st=stockOfSelection(); return st>0?st:20; } return 1; }
+function bundleMax(){ if(isByob()||isMove())return 20; if(isNew()){ var st=stockOfSelection(); return st>0?st:20; } return 1; }
 function syncBundle(){ var s=svc(); var q=document.getElementById('bundleQuick'); if(q){ q.innerHTML=''; [1,2,3,4].forEach(function(n){ var mx=bundleMax();
     var c=document.createElement('div'); c.className='chip'+(STATE.bundle===n?' sel':'')+(n>mx?' dis':''); c.innerText=qtyUnit(s,n);
     if(n<=mx) c.onclick=function(){ STATE.bundle=n; syncBundle(); if(isNew())resolveVariant(); updatePriceHint(); refreshNav(); }; q.appendChild(c); }); }
@@ -554,10 +555,11 @@ function computeEst(){ var s=svc(); EST=null; var qty=Math.max(1,STATE.bundle||1
   if(isRemoval()){ var rm=(CAT.removals||[]).filter(function(r){return String(r.removal_id)===String(STATE.removalId);})[0]; if(!rm)return; var t=Math.round(rm.price);
     EST={total:t,deposit:depositOf(t),base:t,durationMin:Math.round((Number(rm.dur_per_mad)||20)*qty)||30,label:'ถอดผม: '+rm.name}; return; }
   if(!s)return; var pm=Number(s.per_mad_min)||30;
-  if(isMove()){ var t2=Math.round(s.move_price||0); EST={total:t2,deposit:depositOf(t2),base:t2,durationMin:Math.round(Number(s.move_base_min)||45),label:'ขยับปม '+s.acct_name}; return; }
+  if(isMove()){ var mFirst=Math.round(Number(s.move_price)||0), mAdd=Math.round(Number(s.move_add)||0); var t2=mFirst+mAdd*(qty-1);
+    EST={total:t2,deposit:depositOf(t2),base:t2,durationMin:Math.round((Number(s.move_base_min)||45)+pm*(qty-1)),label:'ขยับปม '+s.acct_name+' · '+qtyUnit(s,qty)}; return; }
   if(isByob()){ if(!STATE.size)return; var t3=Math.round((s.byob_base||0)+(s.byob_per_bundle||0)*qty); EST={total:t3,deposit:depositOf(t3),base:t3,durationMin:Math.round(pm*qty),label:s.acct_name+' (นำผมมาเอง) · '+qtyUnit(s,qty)}; return; }
   /* new */ if(!STATE.variantId)return; var v=matchedAvail()[0]; if(!v)return;
-  var unit=sizePrice(v.length_in), base=unit*qty, col=(CAT.colors||[]).filter(function(c){return String(c.name).trim()===String(v.color).trim();})[0], sur=col?Math.round((Number(col.surcharge)||0)*qty):0;
+  var unit=(Number(v.sell_price_per_mad)>0?Number(v.sell_price_per_mad):sizePrice(v.length_in)), base=unit*qty, col=(CAT.colors||[]).filter(function(c){return String(c.name).trim()===String(v.color).trim();})[0], sur=col?Math.round((Number(col.surcharge)||0)*qty):0;
   var t4=base+sur; EST={total:t4,deposit:depositOf(t4),base:base,colorSur:sur,colorName:v.color,durationMin:Math.round(pm*qty),
     label:s.acct_name+' '+v.length_in+'นิ้ว เกรด'+v.grade+' '+v.color+' · '+qtyUnit(s,qty)}; }
 function durText(m){ m=Math.round(m||0); var h=Math.floor(m/60),mm=m%60; return ((h?h+' ชม.':'')+(mm?(' '+mm+' นาที'):'')).trim()||'0 นาที'; }
@@ -602,7 +604,7 @@ function renderLegend(){ document.getElementById('calLegend').innerHTML=
   '<span class="lg"><span class="dotc" style="background:var(--warn)"></span>เหลือน้อย</span>'+
   '<span class="lg"><span class="dotc" style="background:var(--faint)"></span>เต็ม / ปิด</span>'; }
 function selForServer(){ var p={ service_id:STATE.serviceId, technique:STATE.technique, mode:STATE.mode,
-    qty_mad:(isMove()?1:STATE.bundle), tech_id:STATE.techId, date:STATE.date };
+    qty_mad:STATE.bundle, tech_id:STATE.techId, date:STATE.date };
   if(isNew())p.variant_id=STATE.variantId; if(isByob())p.size=STATE.size; if(isRemoval())p.removal_id=STATE.removalId; return p; }
 function loadMonthAvail(){ MONTHAVAIL=null; renderCal(); updateCalFull();
   callApi('bookMonth',Object.assign(selForServer(),{year:calY,month:calM})).then(function(res){ MONTHAVAIL=(res&&res.ok&&res.data.days)?res.data.days:{}; renderCal(); updateCalFull(); })
@@ -681,7 +683,7 @@ function buildSummary(){ computeEst();
 function serviceLabel(){ var s=svc(); var m=({'new':'ซื้อผมใหม่','byob':'นำผมมาเอง','move':'ขยับปม','removal':'ถอดผม'})[STATE.mode];
   return isRemoval()?m:((s?s.acct_name+' · ':'')+m); }
 function detailLabel(){ if(isRemoval()){ var rm=(CAT.removals||[]).filter(function(r){return String(r.removal_id)===String(STATE.removalId);})[0]; return rm?rm.name:'-'; }
-  if(isMove())return 'ใช้ผมเดิม';
+  if(isMove())return 'ใช้ผมเดิม · '+qtyUnit(svc(),STATE.bundle);
   if(isByob())return (STATE.size?(STATE.size+'นิ้ว · '):'')+qtyUnit(svc(),STATE.bundle);
   var v=matchedAvail()[0]||matchedVariants()[0]; return v?(v.length_in+'นิ้ว · เกรด'+v.grade+' · '+v.texture+' · '+v.color+' · '+qtyUnit(svc(),STATE.bundle)):'-'; }
 
@@ -728,7 +730,7 @@ function pickDate(id){ STATE.date=id; STATE.startTime=''; renderCal(); loadAvail
 function ppCfg(){ var s=CAT.shop||{}; var biller=String(s.promptPayBiller||'').replace(/[^0-9]/g,'');
   var type=(String(s.promptPayType||'').toLowerCase()==='biller'&&biller)?'biller':'personal';
   return { type:type, promptPayId:String(s.promptPayId||''), billerId:biller, ref:String(s.promptPayRef||'') }; }
-function renderQR(amount){ renderQRInto('qrRender',ppCfg(),amount,''); }
+function renderQR(amount){ renderQRInto('qrRender',ppCfg(),amount,(v('cPhone')||'').replace(/[^0-9]/g,'')); }
 function renderQRInto(boxId,cfg,amount,ref){ var box=document.getElementById(boxId); if(!box)return; box.innerHTML='';
   var miss=document.getElementById('qrMissing');
   var has=(cfg.type==='biller')?!!cfg.billerId:(String(cfg.promptPayId||'').replace(/[^0-9]/g,'').length>=10);
@@ -740,7 +742,8 @@ function renderQRInto(boxId,cfg,amount,ref){ var box=document.getElementById(box
 function ppPayload(cfg,amount,ref){ function f(t,v){ return t+String(v.length).padStart(2,'0')+v; }
   var amt=Number(amount).toFixed(2), merchant;
   if(cfg.type==='biller'&&cfg.billerId){ var m=f('00','A000000677010112')+f('01',String(cfg.billerId).replace(/[^0-9]/g,''));
-    var r=String(ref||cfg.ref||'').replace(/[^0-9A-Za-z]/g,''); if(r)m+=f('02',r); merchant=f('30',m); }
+    var r=String(ref||cfg.ref||'').replace(/[^0-9A-Za-z]/g,''); if(!r)r='DEP'+Date.now().toString().slice(-8); /* Bill Payment ต้องมี Ref1 เสมอ ไม่งั้นธนาคารปฏิเสธ */
+    m+=f('02',r); merchant=f('30',m); }
   else { var num=String(cfg.promptPayId).replace(/[^0-9]/g,''); var target=num.length>=13?num:('0000000000000'+num.replace(/^0/,'66')).slice(-13);
     var tag=num.length>=15?'03':(num.length>=13?'02':'01'); merchant=f('29',f('00','A000000677010111')+f(tag,target)); }
   var noCrc=f('00','01')+f('01',amount>0?'12':'11')+merchant+f('53','764')+(amount>0?f('54',amt):'')+f('58','TH')+'6304';
