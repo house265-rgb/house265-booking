@@ -505,11 +505,17 @@ function saveProblems(due){ var p=[];
 }
 
 /* PromptPay QR (บุคคล tag29 / ร้านค้า K-Shop tag30 Bill Payment) */
-function posCfg(){ var s=DATA.settings||{}; var biller=String(s.promptPayBiller||'').replace(/[^0-9]/g,'');
-  var type=(String(s.promptPayType||'').toLowerCase()==='biller'&&biller)?'biller':'personal';
-  return { type:type, promptPayId:String(s.promptPayId||''), billerId:biller, ref:String(s.promptPayRef||'') }; }
+function posCfg(){ var s=DATA.settings||{}; var biller=String(s.promptPayBiller||'').replace(/[^0-9]/g,''); var tpl=String(s.promptPayTemplate||'').trim(); var pt=String(s.promptPayType||'').toLowerCase();
+  var type=(pt==='template'&&/^0002/.test(tpl))?'template':((pt==='biller'&&biller)?'biller':'personal');
+  return { type:type, promptPayId:String(s.promptPayId||''), billerId:biller, ref:String(s.promptPayRef||''), template:tpl }; }
+function tlvParse(s){ var i=0,o=[]; while(i+4<=s.length){ var t=s.substr(i,2),l=parseInt(s.substr(i+2,2),10); if(isNaN(l))break; o.push({t:t,v:s.substr(i+4,l)}); i+=4+l; } return o; }
+function tlvBuild(a){ return a.map(function(x){ return x.t+('0'+x.v.length).slice(-2)+x.v; }).join(''); }
+function injectAmount(tpl,amount){ var body=tpl.replace(/63[0-9]{2}[0-9A-Fa-f]{4}$/,''); var arr=tlvParse(body), amt=Number(amount).toFixed(2), found=false;
+  for(var i=0;i<arr.length;i++){ if(arr[i].t==='54'){ arr[i].v=amt; found=true; } }
+  if(!found){ var idx=-1; for(var j=0;j<arr.length;j++){ if(arr[j].t==='58'){ idx=j; break; } } if(idx<0)idx=arr.length; arr.splice(idx,0,{t:'54',v:amt}); }
+  var rb=tlvBuild(arr)+'6304'; return rb+crc16(rb); }
 function drawQR(amt){ var el=document.getElementById('qr'); if(!el)return; var cfg=posCfg();
-  var has=(cfg.type==='biller')?!!cfg.billerId:(String(cfg.promptPayId||'').replace(/[^0-9]/g,'').length>=10);
+  var has=(cfg.type==='template')?!!cfg.template:((cfg.type==='biller')?!!cfg.billerId:(String(cfg.promptPayId||'').replace(/[^0-9]/g,'').length>=10));
   if(!has){ el.innerHTML='<div class="faint">ยังไม่ตั้งพร้อมเพย์</div>'; return; }
   if(window._split){ amt=Math.min(amt, window._p2a||0); }
   if(typeof QRCode==='undefined'){ el.innerHTML='<div class="faint">กำลังเตรียม QR…</div>'; return; }
@@ -517,6 +523,7 @@ function drawQR(amt){ var el=document.getElementById('qr'); if(!el)return; var c
   el.innerHTML=''; try{ new QRCode(el,{text:ppPayload(cfg,amt,pref),width:180,height:180,correctLevel:QRCode.CorrectLevel.M}); }catch(e){ el.innerHTML='<div class="faint">สร้าง QR ไม่ได้</div>'; } }
 function ppF(id,v){ return id+('0'+v.length).slice(-2)+v; }
 function ppPayload(cfg,amount,ref){ var merchant;
+  if(cfg.type==='template'&&cfg.template) return injectAmount(cfg.template, amount);
   if(cfg.type==='biller'&&cfg.billerId){ var m=ppF('00','A000000677010112')+ppF('01',String(cfg.billerId).replace(/[^0-9]/g,''));
     var r=String(ref||cfg.ref||'').replace(/[^0-9A-Za-z]/g,''); if(!r)r='POS'+Date.now().toString().slice(-8); m+=ppF('02',r); merchant=ppF('30',m); }
   else { var id=String(cfg.promptPayId).replace(/[^0-9]/g,''); var tag,target; if(id.length>=15){tag='03';target=id;}else if(id.length===13){tag='02';target=id;}else{tag='01';target='0066'+id.replace(/^0/,'');}

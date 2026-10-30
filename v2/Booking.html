@@ -734,19 +734,28 @@ function renderCal(){ document.getElementById('calTitle').innerText=THM[calM]+' 
 function pickDate(id){ STATE.date=id; STATE.startTime=''; renderCal(); loadAvailability(); refreshNav(); window.scrollTo({top:document.getElementById('timeArea').offsetTop-80,behavior:'smooth'}); }
 
 /* ================= PromptPay QR (บุคคล tag29 / ร้านค้า K-Shop tag30 Bill Payment) ================= */
-function ppCfg(){ var s=CAT.shop||{}; var biller=String(s.promptPayBiller||'').replace(/[^0-9]/g,'');
-  var type=(String(s.promptPayType||'').toLowerCase()==='biller'&&biller)?'biller':'personal';
-  return { type:type, promptPayId:String(s.promptPayId||''), billerId:biller, ref:String(s.promptPayRef||'') }; }
+function ppCfg(){ var s=CAT.shop||{}; var biller=String(s.promptPayBiller||'').replace(/[^0-9]/g,''); var tpl=String(s.promptPayTemplate||'').trim();
+  var pt=String(s.promptPayType||'').toLowerCase();
+  var type=(pt==='template'&&/^0002/.test(tpl))?'template':((pt==='biller'&&biller)?'biller':'personal');
+  return { type:type, promptPayId:String(s.promptPayId||''), billerId:biller, ref:String(s.promptPayRef||''), template:tpl }; }
+/* ฉีดยอดเงินใหม่เข้า QR แม่แบบ K-Shop (คงข้อมูลร้านค้า/biller/ref เดิมไว้ → สแกนได้ + แจ้งเตือน K-Shop) */
+function tlvParse(s){ var i=0,o=[]; while(i+4<=s.length){ var t=s.substr(i,2),l=parseInt(s.substr(i+2,2),10); if(isNaN(l))break; o.push({t:t,v:s.substr(i+4,l)}); i+=4+l; } return o; }
+function tlvBuild(a){ return a.map(function(x){ return x.t+('0'+x.v.length).slice(-2)+x.v; }).join(''); }
+function injectAmount(tpl,amount){ var body=tpl.replace(/63[0-9]{2}[0-9A-Fa-f]{4}$/,''); var arr=tlvParse(body), amt=Number(amount).toFixed(2), found=false;
+  for(var i=0;i<arr.length;i++){ if(arr[i].t==='54'){ arr[i].v=amt; found=true; } }
+  if(!found){ var idx=-1; for(var j=0;j<arr.length;j++){ if(arr[j].t==='58'){ idx=j; break; } } if(idx<0)idx=arr.length; arr.splice(idx,0,{t:'54',v:amt}); }
+  var rb=tlvBuild(arr)+'6304'; return rb+crc16(rb); }
 function renderQR(amount){ renderQRInto('qrRender',ppCfg(),amount,(v('cPhone')||'').replace(/[^0-9]/g,'')); }
 function renderQRInto(boxId,cfg,amount,ref){ var box=document.getElementById(boxId); if(!box)return; box.innerHTML='';
   var miss=document.getElementById('qrMissing');
-  var has=(cfg.type==='biller')?!!cfg.billerId:(String(cfg.promptPayId||'').replace(/[^0-9]/g,'').length>=10);
+  var has=(cfg.type==='template')?!!cfg.template:((cfg.type==='biller')?!!cfg.billerId:(String(cfg.promptPayId||'').replace(/[^0-9]/g,'').length>=10));
   if(!has||!amount||amount<=0){ if(miss&&boxId==='qrRender')miss.style.display='block'; box.innerHTML='<div style="color:var(--faint);font-size:12px">—</div>'; return; }
   if(miss&&boxId==='qrRender')miss.style.display='none';
   if(typeof QRCode==='undefined'){ box.innerHTML='<div style="color:var(--faint);font-size:12px">'+esc(cfg.type==='biller'?('ร้านค้า '+cfg.billerId):('พร้อมเพย์ '+cfg.promptPayId))+'</div>'; return; }
   try{ new QRCode(box,{text:ppPayload(cfg,amount,ref),width:210,height:210,colorDark:'#000',colorLight:'#fff',correctLevel:(window.QRCode&&QRCode.CorrectLevel)?QRCode.CorrectLevel.M:1}); }
   catch(e){ box.innerHTML='<div style="color:var(--crit);font-size:12px">สร้าง QR ไม่สำเร็จ</div>'; } }
 function ppPayload(cfg,amount,ref){ function f(t,v){ return t+String(v.length).padStart(2,'0')+v; }
+  if(cfg.type==='template'&&cfg.template) return injectAmount(cfg.template, amount);
   var amt=Number(amount).toFixed(2), merchant;
   if(cfg.type==='biller'&&cfg.billerId){ var m=f('00','A000000677010112')+f('01',String(cfg.billerId).replace(/[^0-9]/g,''));
     var r=String(ref||cfg.ref||'').replace(/[^0-9A-Za-z]/g,''); if(!r)r='DEP'+Date.now().toString().slice(-8); /* Bill Payment ต้องมี Ref1 เสมอ ไม่งั้นธนาคารปฏิเสธ */
