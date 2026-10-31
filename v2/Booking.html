@@ -98,6 +98,21 @@
   .chosen .r{display:flex;justify-content:space-between;padding:2px 0}
   .chosen .r b{color:var(--gold-soft)}
 
+  /* ซื้อผมที่ร้านเพิ่ม (addon) */
+  .addon-wrap{margin-top:22px;border:1px solid var(--line-soft);border-radius:var(--radius);background:var(--panel);overflow:hidden}
+  .addon-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;cursor:pointer}
+  .addon-head .ti{font-size:15px;color:var(--fg)}
+  .addon-head .en{font-size:12px;color:var(--faint)}
+  .addon-head .s{font-size:12px;color:var(--muted);margin-top:3px}
+  .switch{position:relative;width:50px;height:28px;flex:0 0 auto}
+  .switch input{position:absolute;opacity:0;width:0;height:0;margin:0}
+  .switch .sl{position:absolute;inset:0;background:var(--panel-2);border:1px solid var(--line);border-radius:999px;transition:all .2s}
+  .switch .sl:before{content:"";position:absolute;width:20px;height:20px;left:3px;top:3px;border-radius:50%;background:var(--faint);transition:all .2s}
+  .switch input:checked + .sl{background:linear-gradient(100deg,var(--gold-dim),var(--gold-soft));border-color:var(--gold)}
+  .switch input:checked + .sl:before{transform:translateX(22px);background:#1a1a1a}
+  .addon-body{padding:4px 16px 16px;border-top:1px solid var(--line-soft)}
+  .addon-body .lbl{margin-top:16px}
+
   .datefield{display:flex;justify-content:space-between;align-items:center;padding:15px;border:1px solid var(--line-soft);
     background:var(--panel);border-radius:10px;cursor:pointer;font-size:16px}
   .cal{background:var(--panel);border:1px solid var(--line-soft);border-radius:12px;padding:14px;margin-top:10px}
@@ -356,7 +371,7 @@ function applyLineProfile(p){ var ln=document.getElementById('cLine'); if(ln&&!l
 
 /* ================= STATE ================= */
 var CAT=null;
-var STATE={ serviceId:'', technique:'', mode:'new', grade:'', texture:'', color:'', size:'', bundle:1, variantId:'', removalId:'', techId:'any', techName:'', date:'', startTime:'', endTime:'' };
+var STATE={ serviceId:'', technique:'', mode:'new', grade:'', texture:'', color:'', size:'', bundle:1, variantId:'', removalId:'', techId:'any', techName:'', date:'', startTime:'', endTime:'', addon:{on:false,grade:'',texture:'',color:'',size:'',variantId:'',qty:1} };
 var STEP=1, MAXSTEP=4, LASTAVAIL=null, EST=null, calY, calM, TODAY='', MONTHAVAIL=null;
 var STEP_NAMES=['เลือกบริการ','เลือกผม','ช่าง · วัน · เวลา','สรุป & ชำระมัดจำ'];
 /* 4 รูปแบบบริการมาตรฐาน (fix ในโค้ด เพราะผูกกับวิธีคิดเงิน) · ราคาอยู่ในชีตตามตารางที่ให้ไว้
@@ -436,7 +451,8 @@ function setMode(m){ STATE.mode=m; resetHair();
   syncModeUI(); refreshNav(); }
 /* ซ่อนส่วนเลือกเทคนิคเมื่อเป็นงานถอดอย่างเดียว (ไม่ต้องใช้เทคนิค) */
 function syncModeUI(){ var ts=document.getElementById('techSection'); if(ts)ts.style.display=isRemoval()?'none':'block'; }
-function resetHair(){ STATE.grade=''; STATE.texture=''; STATE.color=''; STATE.size=''; STATE.variantId=''; STATE.bundle=(STATE.mode==='move'||STATE.mode==='removal')?1:1; STATE.removalId=''; }
+function resetHair(){ STATE.grade=''; STATE.texture=''; STATE.color=''; STATE.size=''; STATE.variantId=''; STATE.bundle=(STATE.mode==='move'||STATE.mode==='removal')?1:1; STATE.removalId=''; resetAddon(); }
+function resetAddon(){ STATE.addon={on:false,grade:'',texture:'',color:'',size:'',variantId:'',qty:1}; }
 
 /* ================= STEP 1 staff ================= */
 function buildStaff(){ var box=document.getElementById('techStaffList'); box.innerHTML='';
@@ -480,10 +496,78 @@ function resolveVariant(){ var dims=activeDims(), allSel=dims.every(function(d){
   STATE.variantId=''; return 0; }
 function stockOfSelection(){ return matchedAvail().reduce(function(a,v){return a+Number(v.available);},0); }
 
+/* ---- ซื้อผมที่ร้านเพิ่ม (addon) · ใช้รุ่นของเทคนิคเดียวกับที่เลือก · สต็อกแยกจากตัวหลัก ---- */
+function aStKey(k){ return STATE.addon[k]; }
+function aMatchExcept(v,exceptK){ for(var i=0;i<DIMS.length;i++){ var d=DIMS[i]; if(d.k===exceptK)continue; var sv=aStKey(d.k); if(sv&&!fieldEq(d,v[d.f],sv))return false; } return true; }
+function aOptAvail(dim,val){ return variantsAvail().some(function(v){ return aMatchExcept(v,dim.k) && fieldEq(dim,v[dim.f],val); }); }
+function aMatchedVariants(){ return variantsForTech().filter(function(v){ for(var i=0;i<DIMS.length;i++){ var d=DIMS[i]; var sv=aStKey(d.k); if(sv&&!fieldEq(d,v[d.f],sv))return false; } return true; }); }
+function aMatchedAvail(){ return aMatchedVariants().filter(function(v){ return Number(v.available)>0; }); }
+function aResolveVariant(){ var dims=activeDims(), allSel=dims.every(function(d){return !!aStKey(d.k);}); var ma=aMatchedAvail();
+  if(allSel && ma.length){ STATE.addon.variantId=String(ma[0].variant_id); return ma.reduce(function(a,v){return a+Number(v.available);},0); }
+  STATE.addon.variantId=''; return 0; }
+function aStock(){ return aMatchedAvail().reduce(function(a,v){return a+Number(v.available);},0); }
+function addonEligible(){ return (isByob()||isMove()) && variantsAvail().length>0; }
+
+function addonSection(){ if(!addonEligible())return '';
+  var on=STATE.addon.on;
+  return '<div class="addon-wrap"><div class="addon-head" id="addonHead">'+
+    '<div><span class="ti">ซื้อผมที่ร้านเพิ่มมั้ย?</span> <span class="en">(Add shop hair)</span>'+
+    '<div class="s">เทคนิค'+esc(STATE.technique)+' · เลือกเกรด/ลักษณะ/สี/ขนาด แล้วระบุจำนวน</div></div>'+
+    '<label class="switch" onclick="event.stopPropagation()"><input type="checkbox" id="addonToggle"'+(on?' checked':'')+'><span class="sl"></span></label>'+
+    '</div><div class="addon-body" id="addonBody" style="display:'+(on?'block':'none')+'"></div></div>'; }
+
+function wireAddon(){ if(!addonEligible())return;
+  var tg=document.getElementById('addonToggle'), hd=document.getElementById('addonHead');
+  if(hd) hd.onclick=function(e){ if(e.target.closest('.switch'))return; tg.checked=!tg.checked; onAddonToggle(); };
+  if(tg) tg.onchange=onAddonToggle;
+  if(STATE.addon.on) renderAddonBody(); }
+function onAddonToggle(){ var tg=document.getElementById('addonToggle'); STATE.addon.on=!!(tg&&tg.checked);
+  var body=document.getElementById('addonBody'); if(body)body.style.display=STATE.addon.on?'block':'none';
+  if(STATE.addon.on){ renderAddonBody(); } else { resetAddonSel(); }
+  updatePriceHint(); refreshNav(); }
+function resetAddonSel(){ STATE.addon.grade=''; STATE.addon.texture=''; STATE.addon.color=''; STATE.addon.size=''; STATE.addon.variantId=''; STATE.addon.qty=1; }
+function renderAddonBody(){ var body=document.getElementById('addonBody'); if(!body)return;
+  var html='';
+  activeDims().forEach(function(d){ html+='<span class="lbl">'+lbl('label','a_'+d.k,d.label,d.en)+'</span>'+(d.k==='color'?('<div class="swatches" id="adim_'+d.k+'"></div>'):('<div class="chips" id="adim_'+d.k+'"></div>')); });
+  html+='<span class="lbl">'+lbl('label','a_qty','จำนวนที่ซื้อเพิ่ม','Add qty')+' <span class="en">('+esc(svcSellUnit(svc()))+')</span></span>'+
+    '<div class="bstep"><button type="button" onclick="aQtyStep(-1)">−</button><div class="val"><span id="aQtyVal">'+qtyUnit(svc(),STATE.addon.qty)+'</span></div><button type="button" onclick="aQtyStep(1)">+</button></div>'+
+    '<div id="aQtyHint" style="display:none;margin-top:8px;font-size:12px"></div>';
+  body.innerHTML=html; renderAddonDims(); syncAddonQty(); }
+function renderAddonDims(){ activeDims().forEach(function(d){ var box=document.getElementById('adim_'+d.k); if(!box)return; box.innerHTML='';
+    var vals=dimVals(d);
+    if(d.k==='color'){ vals.forEach(function(val){ var meta=(CAT.colors||[]).filter(function(c){return String(c.name).trim()===String(val).trim();})[0]||{};
+        var av=aOptAvail(d,val), sel=(STATE.addon.color===val);
+        var w=document.createElement('div'); w.className='sw'+(sel?' sel':'')+(av?'':' dis');
+        var sur=Number(meta.surcharge)||0, surtxt=sur>0?('<br><span style="color:var(--gold-soft);font-size:10px">+'+fmt(sur)+'/'+unitLabel()+'</span>'):'';
+        var cen=meta.name_en?('<br><span style="font-size:9.5px;color:var(--faint)">'+esc(meta.name_en)+'</span>'):'';
+        var out=av?'':'<br><span style="font-size:9px;color:var(--crit)">หมด</span>';
+        w.innerHTML='<div class="dot" style="background:'+esc(colorHex(meta,val))+'"></div><div class="nm">'+esc(val)+cen+surtxt+out+'</div>';
+        if(av) w.onclick=function(){ STATE.addon.color=(STATE.addon.color===val?'':val); afterAddonDim(); }; box.appendChild(w); });
+    } else { vals.forEach(function(val){ var av=aOptAvail(d,val), sel=(aStKey(d.k)===val);
+        var c=document.createElement('div'); c.className='chip'+(sel?' sel':'')+(av?'':' dis');
+        var sub=av?((d.k==='size')?'นิ้ว':(d.k==='texture'?texEn(val):'')):'หมด';
+        c.innerHTML=esc(val)+(sub?('<span class="sm"'+(av?'':' style="color:var(--crit)"')+'>'+esc(sub)+'</span>'):'');
+        if(av) c.onclick=function(){ STATE.addon[d.k]=(aStKey(d.k)===val?'':val); afterAddonDim(); }; box.appendChild(c); }); }
+  }); }
+function afterAddonDim(){ aResolveVariant(); renderAddonDims(); syncAddonQty(); updatePriceHint(); refreshNav(); }
+function aQtyMax(){ var st=aStock(); return st>0?st:1; }
+function aQtyStep(d){ var mx=aQtyMax(); STATE.addon.qty=Math.max(1,Math.min(mx,(STATE.addon.qty||1)+d)); syncAddonQty(); updatePriceHint(); refreshNav(); }
+function syncAddonQty(){ var s=svc(); var mx=aQtyMax(); if(STATE.addon.qty>mx)STATE.addon.qty=mx>0?mx:1; if(STATE.addon.qty<1)STATE.addon.qty=1;
+  var v=document.getElementById('aQtyVal'); if(v)v.innerText=qtyUnit(s,STATE.addon.qty);
+  var h=document.getElementById('aQtyHint'); if(h){ if(STATE.addon.variantId){ var st=aStock(); h.style.display='block'; h.style.color=(st>=STATE.addon.qty?'var(--muted)':'var(--crit)'); h.innerText='คงเหลือในสต็อก '+qtyUnit(s,st)+(st<STATE.addon.qty?' · ไม่พอ':''); } else { h.style.display='block'; h.style.color='var(--faint)'; h.innerText='เลือกเกรด/ลักษณะ/สี/ขนาด ให้ครบเพื่อระบุจำนวน'; } } }
+/* ราคาผมที่ซื้อเพิ่ม (พรีวิวฝั่งลูกค้า · เซิร์ฟเวอร์คิดจริง) */
+function addonEst(){ if(!STATE.addon.on||!STATE.addon.variantId)return null; var v=aMatchedAvail()[0]; if(!v)return null;
+  var s=svc(); var qty=Math.max(1,STATE.addon.qty||1);
+  var unit=(Number(v.sell_price_per_mad)>0?Number(v.sell_price_per_mad):sizePrice(v.length_in));
+  var col=(CAT.colors||[]).filter(function(c){return String(c.name).trim()===String(v.color).trim();})[0], sur=col?Math.round((Number(col.surcharge)||0)*qty):0;
+  var total=Math.round(unit*qty)+sur; var pm=Number(s&&s.per_mad_min)||30;
+  return { total:total, durationMin:Math.round(pm*qty), variant:v, qty:qty,
+    label:'ซื้อผม '+s.acct_name+' '+v.length_in+'นิ้ว เกรด'+v.grade+' '+v.color+' · '+qtyUnit(s,qty) }; }
+
 function renderStep2(){ var title=document.getElementById('s2title'), body=document.getElementById('s2body');
   if(isMove()){ title.innerText='ขยับปม — เลือกจำนวน';
-    body.innerHTML='<div class="note">งานขยับปม '+esc(STATE.technique)+' — ใช้ผมเดิมของลูกค้า ราคารวมค่าถอดแล้ว</div>'+bundleBlock()+priceHintBox();
-    syncBundle(); updatePriceHint(); return; }
+    body.innerHTML='<div class="note">งานขยับปม '+esc(STATE.technique)+' — ใช้ผมเดิมของลูกค้า ราคารวมค่าถอดแล้ว</div>'+bundleBlock()+addonSection()+priceHintBox();
+    syncBundle(); wireAddon(); updatePriceHint(); return; }
   if(isRemoval()){ title.innerText='เลือกงานถอด';
     var rms=CAT.removals||[]; if(!rms.length){ body.innerHTML='<div class="warnbox" style="display:block">ยังไม่มีรายการงานถอดในระบบ</div>'; return; }
     body.innerHTML='<span class="lbl" style="margin-top:0">ชนิดงานถอด</span><div class="opts" id="rmList"></div>'+priceHintBox();
@@ -496,8 +580,8 @@ function renderStep2(){ var title=document.getElementById('s2title'), body=docum
   if(isByob()){ title.innerText='นำผมมาเอง — เลือกจำนวน';
     var h='<div class="warnbox" style="display:block;text-align:left;line-height:1.7">⚠️ '+esc((CAT.shop&&CAT.shop.byobNote)||'ผมที่นำมาต้องเป็นช่อพร้อมต่อแล้ว')+'</div>';
     h+='<div class="note">ระบุจำนวนผมที่นำมา (ไม่ต้องเลือกขนาด)</div>';
-    h+=bundleBlock(); h+=priceHintBox();
-    body.innerHTML=h; syncBundle(); updatePriceHint(); return; }
+    h+=bundleBlock(); h+=addonSection(); h+=priceHintBox();
+    body.innerHTML=h; syncBundle(); wireAddon(); updatePriceHint(); return; }
   /* new */
   title.innerText='เลือกผม (จากสต็อกร้าน)';
   if(!variantsForTech().length){ body.innerHTML='<div class="warnbox" style="display:block">ขออภัย ยังไม่มีข้อมูลผม '+esc(STATE.technique)+' ในระบบ<br>กรุณาเลือก "นำผมมาเอง" หรือเทคนิคอื่น</div>'; return; }
@@ -563,12 +647,17 @@ function computeEst(){ var s=svc(); EST=null; var qty=Math.max(1,STATE.bundle||1
     EST={total:t,deposit:depositOf(t),base:t,durationMin:Math.round((Number(rm.dur_per_mad)||20)*qty)||30,label:'ถอดผม: '+rm.name}; return; }
   if(!s)return; var pm=Number(s.per_mad_min)||30;
   if(isMove()){ var mFirst=Math.round(Number(s.move_price)||0), mAdd=Math.round(Number(s.move_add)||0); var t2=mFirst+mAdd*(qty-1);
-    EST={total:t2,deposit:depositOf(t2),base:t2,durationMin:Math.round((Number(s.move_base_min)||45)+pm*(qty-1)),label:'ขยับปม '+s.acct_name+' · '+qtyUnit(s,qty)}; return; }
-  if(isByob()){ var t3=Math.round((s.byob_base||0)+(s.byob_per_bundle||0)*qty); EST={total:t3,deposit:depositOf(t3),base:t3,durationMin:Math.round(pm*qty),label:s.acct_name+' (นำผมมาเอง) · '+qtyUnit(s,qty)}; return; }
+    EST={total:t2,deposit:depositOf(t2),base:t2,durationMin:Math.round((Number(s.move_base_min)||45)+pm*(qty-1)),label:'ขยับปม '+s.acct_name+' · '+qtyUnit(s,qty)}; applyAddon(); return; }
+  if(isByob()){ var t3=Math.round((s.byob_base||0)+(s.byob_per_bundle||0)*qty); EST={total:t3,deposit:depositOf(t3),base:t3,durationMin:Math.round(pm*qty),label:s.acct_name+' (นำผมมาเอง) · '+qtyUnit(s,qty)}; applyAddon(); return; }
   /* new */ if(!STATE.variantId)return; var v=matchedAvail()[0]; if(!v)return;
   var unit=(Number(v.sell_price_per_mad)>0?Number(v.sell_price_per_mad):sizePrice(v.length_in)), base=unit*qty, col=(CAT.colors||[]).filter(function(c){return String(c.name).trim()===String(v.color).trim();})[0], sur=col?Math.round((Number(col.surcharge)||0)*qty):0;
   var t4=base+sur; EST={total:t4,deposit:depositOf(t4),base:base,colorSur:sur,colorName:v.color,durationMin:Math.round(pm*qty),
     label:s.acct_name+' '+v.length_in+'นิ้ว เกรด'+v.grade+' '+v.color+' · '+qtyUnit(s,qty)}; }
+/* รวมผมที่ซื้อเพิ่มเข้า EST (ราคา+เวลา) · มัดจำคิดจากยอดรวมหลังรวม addon (ตรง backend) */
+function applyAddon(){ if(!EST)return; var a=addonEst(); EST.addon=null;
+  if(!a)return; EST.addonTotal=a.total; EST.addon=a;
+  EST.total=Number(EST.total)+a.total; EST.durationMin=Number(EST.durationMin)+a.durationMin;
+  EST.deposit=depositOf(EST.total); EST.label=(EST.label||'')+' + '+a.label; }
 function durText(m){ m=Math.round(m||0); var h=Math.floor(m/60),mm=m%60; return ((h?h+' ชม.':'')+(mm?(' '+mm+' นาที'):'')).trim()||'0 นาที'; }
 function estDuration(){ return (LASTAVAIL&&LASTAVAIL.durationMin)||((EST&&EST.durationMin)||0); }
 
@@ -588,12 +677,15 @@ function refreshNav(){ var ok=stepValid(), btn=document.getElementById('nextBtn'
   if((STEP===1||STEP===2)){ computeEst(); if(EST) hint.innerHTML='รวมโดยประมาณ <b>'+fmt(EST.total)+' ฿</b> · มัดจำ <b>'+fmt(EST.deposit)+' ฿</b>'; } }
 function stepValid(){ switch(STEP){
     case 1: if(isRemoval()) return !!STATE.mode; return !!STATE.serviceId && !!STATE.mode;
-    case 2: if(isMove())return true; if(isRemoval())return !!STATE.removalId;
-            if(isByob())return STATE.bundle>=1;
+    case 2: if(isRemoval())return !!STATE.removalId;
+            if(isMove())return addonValid();
+            if(isByob())return STATE.bundle>=1 && addonValid();
             return !!STATE.variantId && STATE.bundle>=1 && stockOfSelection()>=STATE.bundle;
     case 3: return !!STATE.techId && !!STATE.date && !!STATE.startTime;
     case 4: return !!v('cName') && !!v('cPhone') && !!(document.getElementById('slip')&&document.getElementById('slip').files[0]);
   } return false; }
+/* addon ถูกต้องเมื่อ: ไม่ได้เปิด หรือ เปิดแล้วเลือกครบ+มีสต็อกพอ */
+function addonValid(){ if(!STATE.addon.on)return true; return !!STATE.addon.variantId && STATE.addon.qty>=1 && aStock()>=STATE.addon.qty; }
 function goNext(){ if(!stepValid())return; if(STEP===MAXSTEP){ return doSubmit(); } STEP++; renderStep(); }
 function goBack(){ if(STEP>1){ STEP--; renderStep(); } }
 
@@ -612,7 +704,8 @@ function renderLegend(){ document.getElementById('calLegend').innerHTML=
   '<span class="lg"><span class="dotc" style="background:var(--faint)"></span>เต็ม / ปิด</span>'; }
 function selForServer(){ var p={ service_id:STATE.serviceId, technique:STATE.technique, mode:STATE.mode,
     qty_mad:STATE.bundle, tech_id:STATE.techId, date:STATE.date };
-  if(isNew())p.variant_id=STATE.variantId; if(isByob())p.size=STATE.size; if(isRemoval())p.removal_id=STATE.removalId; return p; }
+  if(isNew())p.variant_id=STATE.variantId; if(isByob())p.size=STATE.size; if(isRemoval())p.removal_id=STATE.removalId;
+  if(STATE.addon.on && STATE.addon.variantId){ p.addon_variant_id=STATE.addon.variantId; p.addon_qty=STATE.addon.qty; } return p; }
 function loadMonthAvail(){ MONTHAVAIL=null; renderCal(); updateCalFull();
   callApi('bookMonth',Object.assign(selForServer(),{year:calY,month:calM})).then(function(res){ MONTHAVAIL=(res&&res.ok&&res.data.days)?res.data.days:{}; renderCal(); updateCalFull(); })
     .catch(function(){ MONTHAVAIL={}; renderCal(); updateCalFull(); }); }
@@ -668,14 +761,17 @@ function matchingPromos(){ return (CAT.promos||[]).filter(function(p){return p.s
 function buildSummary(){ computeEst();
   var lc=document.getElementById('lblCustomer'); if(lc)lc.innerHTML=lbl('label','customer','ข้อมูลผู้จอง','Your Details');
   var total=(LASTAVAIL&&LASTAVAIL.total)||((EST&&EST.total)||0), deposit=(LASTAVAIL&&LASTAVAIL.deposit)||((EST&&EST.deposit)||0), remain=Math.max(0,total-deposit);
-  var lines=[ ['บริการ', serviceLabel()], ['รายละเอียด', detailLabel()],
+  var lines=[ ['บริการ', serviceLabel()], ['รายละเอียด', detailLabel()] ];
+  if(EST&&EST.addon){ lines.push(['ซื้อผมเพิ่ม', addonDetailLabel()]); }
+  lines=lines.concat([
     ['ช่าง', STATE.techId==='any'?'ร้านจัดช่างให้':STATE.techName],
     ['วันที่', toDMY(STATE.date)], ['เวลา', STATE.startTime+(STATE.endTime?(' - '+STATE.endTime):'')],
-    ['ระยะเวลา', durText(estDuration())] ];
+    ['ระยะเวลา', durText(estDuration())] ]);
   document.getElementById('sumCard').innerHTML=lines.map(function(l){ return '<div class="srow"><span>'+l[0]+'</span><b>'+esc(l[1])+'</b></div>'; }).join('');
   var ph='';
   if(EST&&EST.base!=null) ph+='<div class="pr"><span>ค่าบริการ</span><b>'+fmt(EST.base)+' ฿</b></div>';
   if(EST&&EST.colorSur>0) ph+='<div class="pr"><span>ค่าสีเพิ่ม'+(EST.colorName?(' ('+esc(EST.colorName)+')'):'')+'</span><b>+'+fmt(EST.colorSur)+' ฿</b></div>';
+  if(EST&&EST.addon) ph+='<div class="pr"><span>ค่าผมที่ซื้อเพิ่ม</span><b>+'+fmt(EST.addonTotal)+' ฿</b></div>';
   ph+='<div class="pr" style="border-top:1px solid var(--line-soft);margin-top:4px;padding-top:8px"><span>มูลค่างานรวม</span><b>'+fmt(total)+' ฿</b></div>'+
     '<div class="pr dep"><span>มัดจำ (จ่ายตอนนี้)</span><b style="color:var(--gold-soft)">'+fmt(deposit)+' ฿</b></div>'+
     '<div class="pr total"><span>ยอดคงเหลือจ่ายหน้าร้าน</span><b>'+fmt(remain)+' ฿</b></div>';
@@ -693,6 +789,7 @@ function detailLabel(){ if(isRemoval()){ var rm=(CAT.removals||[]).filter(functi
   if(isMove())return 'ใช้ผมเดิม · '+qtyUnit(svc(),STATE.bundle);
   if(isByob())return (STATE.size?(STATE.size+'นิ้ว · '):'')+qtyUnit(svc(),STATE.bundle);
   var v=matchedAvail()[0]||matchedVariants()[0]; return v?(v.length_in+'นิ้ว · เกรด'+v.grade+' · '+v.texture+' · '+v.color+' · '+qtyUnit(svc(),STATE.bundle)):'-'; }
+function addonDetailLabel(){ var v=aMatchedAvail()[0]; if(!v)return '-'; return v.length_in+'นิ้ว · เกรด'+v.grade+' · '+v.texture+' · '+v.color+' · '+qtyUnit(svc(),STATE.addon.qty); }
 
 /* ================= SUBMIT ================= */
 function fileDataUrl(file){ return new Promise(function(res,rej){ var r=new FileReader(); r.onload=function(){res(r.result);}; r.onerror=rej; r.readAsDataURL(file); }); }

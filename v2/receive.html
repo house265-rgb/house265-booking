@@ -1,5 +1,5 @@
 <!doctype html><html lang="th"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <title>House265 · รับผมเข้า</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
@@ -7,7 +7,7 @@
 <style>
 :root{--bg:#111010;--surface:#1a1816;--surface2:#211f1c;--bg2:#161412;--elev:#262320;--line:#322e29;--fg:#efe9df;--muted:#b3aa9c;--faint:#7c7265;--gold:#c8a75a;--gold-soft:#e6cc7e;--gold-dim:#9c7f3f;--gold-ghost:rgba(200,167,90,.12);--ok:#79c08a;--crit:#d98a8a;--r:13px;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;background:var(--bg);color:var(--fg);font-family:'Kanit',sans-serif;font-weight:300;font-variant-numeric:tabular-nums}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:'Kanit',sans-serif;font-weight:300;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .mono{font-family:'IBM Plex Mono',monospace}
 header.top{position:sticky;top:0;z-index:20;background:rgba(17,16,16,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
 .brand b{font-weight:600;font-size:18px}.brand b .n{color:var(--gold-soft)}.brand .tag{font-family:'IBM Plex Mono';font-size:10px;letter-spacing:.3em;color:var(--gold);text-transform:uppercase;margin-left:8px}
@@ -53,6 +53,11 @@ td.r,th.r{text-align:right}
 .tabbtn{flex:1;background:var(--surface2);border:1px solid var(--line);color:var(--muted);border-radius:11px;padding:11px 6px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit}
 .tabbtn.on{border-color:var(--gold);color:#231b08;background:linear-gradient(135deg,var(--gold-dim),var(--gold-soft))}
 .tabpane.hide{display:none}
+.stkchips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.stkchip{background:var(--bg2);border:1px solid var(--line);color:var(--muted);border-radius:999px;padding:6px 13px;font-size:13px;cursor:pointer;font-family:inherit}
+.stkchip.on{border-color:var(--gold);color:var(--gold-soft);background:var(--gold-ghost)}
+.grphead{display:flex;justify-content:space-between;align-items:center;margin:14px 0 2px;padding-bottom:5px;border-bottom:1px solid var(--gold-dim)}
+.grphead b{color:var(--gold-soft);font-size:14px}.grphead .gq{font-size:12px;color:var(--faint);font-family:'IBM Plex Mono'}
 .srow{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line)}
 .srow:last-child{border-bottom:none}
 .srow .si{flex:1;min-width:0}
@@ -184,6 +189,7 @@ td.r,th.r{text-align:right}
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><h2 style="margin:0">📊 สต็อกคงเหลือ</h2><button class="lo" onclick="loadStock()">↻ รีเฟรช</button></div>
         <input id="stockSearch" class="in" placeholder="ค้นหา ประเภท / สี / เกรด / ลักษณะ / ความยาว" oninput="renderStock()" style="margin-bottom:10px">
+        <div id="stockTypes" class="stkchips"></div>
         <div id="stockSum" class="mini" style="margin:0 0 8px"></div>
         <div id="stockBox"><div class="mini">กำลังโหลด…</div></div>
       </div>
@@ -227,7 +233,8 @@ td.r,th.r{text-align:right}
 </div>
 <div class="modal" id="varModal"><div class="mbox" style="max-width:540px"><div class="mh">เลือกรุ่นสินค้า</div><div class="mc">
   <input id="varSearch" class="in" placeholder="ค้นหา ประเภท / สี / เกรด / ลักษณะ / ความยาว" oninput="renderVariantList()">
-  <div id="varList" style="max-height:62vh;overflow:auto;margin-top:10px"></div>
+  <div id="varTypes" class="stkchips" style="margin-top:10px"></div>
+  <div id="varList" style="max-height:58vh;overflow:auto;margin-top:4px"></div>
   <button class="btn sec" style="margin-top:12px" onclick="closeVarPicker()">ปิด</button>
 </div></div></div>
 <div class="toast" id="toast"></div>
@@ -269,6 +276,11 @@ function boot(){ api('bootstrap',{}).then(function(r){
     fillTypes(); fillColors(); fillTextures(); loadVariants(); loadSuppliers();  // สต็อก/batch โหลดตอนเปิดแท็บ (เพจเบา)
   }).catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
 
+/* หน่วยขาย: 1 QR = 50g = หน่วยเล็กสุด · แสดง ช่อ/มัด ตามเทค (เหมือนหน้าจอง) */
+function svcByType(ht){ ht=String(ht||'').trim(); var ss=DATA.services||[]; return ss.filter(function(s){return String(s.acct_name).trim()===ht;})[0]||ss.filter(function(s){var a=String(s.acct_name).trim();return a&&(a.indexOf(ht)>=0||ht.indexOf(a)>=0);})[0]; }
+function sellUnitOf(ht){ var s=svcByType(ht); var su=String((s&&s.sell_unit)||'').trim(); if(su==='ช่อ'||su==='มัด')return su; return (Number(s&&s.strands_per_mad)>0)?'ช่อ':'มัด'; }
+function amtPerQrOf(ht){ var s=svcByType(ht); return (sellUnitOf(ht)==='ช่อ')?(Number(s&&s.strands_per_mad)||100):0.5; }
+function qtyTag(ht,qr){ var n=Math.round(amtPerQrOf(ht)*(Number(qr)||0)*100)/100; return n+' '+sellUnitOf(ht); }
 function fillTypes(){ var sel=document.getElementById('nvType'); var svc=DATA.services||[];
   sel.innerHTML=svc.map(function(s){return '<option value="'+esc(s.acct_name)+'">'+esc(s.acct_name)+'</option>';}).join(''); onTypeSel(); }
 function fillColors(){ var dl=document.getElementById('colorList'); if(!dl)return;
@@ -291,17 +303,32 @@ function onTypeSel(){ var t=document.getElementById('nvType').value; var s=(DATA
 function loadVariants(){ api('variantsList',{}).then(function(r){ if(!r||!r.ok)return; DATA.variants=r.data.variants||[]; updateVarBtn(); fillTextures(); }); }
 function onVariantSel(){ document.getElementById('newVariant').classList.toggle('hide', document.getElementById('vSel').value!=='__NEW__'); applyProduceDefaults(); }
 /* ---- variant picker (การ์ด · ค้นหา · แสดงเกรด/ลักษณะ/สี/สต็อก · กันเลือกผิด) ---- */
-function openVariantPicker(){ document.getElementById('varModal').classList.add('show'); document.getElementById('varSearch').value=''; renderVariantList(); setTimeout(function(){ try{document.getElementById('varSearch').focus();}catch(e){} },60); }
+var VARTYPE='';
+function openVariantPicker(){ document.getElementById('varModal').classList.add('show'); document.getElementById('varSearch').value=''; VARTYPE=''; renderVariantList(); setTimeout(function(){ try{document.getElementById('varSearch').focus();}catch(e){} },60); }
 function closeVarPicker(){ document.getElementById('varModal').classList.remove('show'); }
 function varChips_(v){ var c=[]; if(v.grade)c.push('<span class="vchip g">เกรด '+esc(v.grade)+'</span>'); if(v.texture)c.push('<span class="vchip">'+esc(v.texture)+'</span>'); if(v.color)c.push('<span class="vchip">'+esc(v.color)+'</span>'); return c.join(''); }
-function renderVariantList(){ var box=document.getElementById('varList'); if(!box)return; var q=(document.getElementById('varSearch').value||'').trim().toLowerCase();
-  var vs=(DATA.variants||[]).filter(function(v){ if(!q)return true; var hay=(v.hair_type+' '+v.length_in+' '+v.color+' '+(v.grade||'')+' '+(v.texture||'')+' '+v.name).toLowerCase(); return hay.indexOf(q)>=0; });
+function renderVarTypes(){ var box=document.getElementById('varTypes'); if(!box)return; var types=[];
+  (DATA.variants||[]).forEach(function(v){ var t=String(v.hair_type||'').trim(); if(t&&types.indexOf(t)<0)types.push(t); });
+  if(VARTYPE&&types.indexOf(VARTYPE)<0)VARTYPE='';
+  var chips=['<button type="button" class="stkchip'+(VARTYPE===''?' on':'')+'" onclick="setVarType(\'\')">ทุกประเภท</button>'];
+  types.forEach(function(t){ chips.push('<button type="button" class="stkchip'+(VARTYPE===t?' on':'')+'" onclick="setVarType(\''+esc(t)+'\')">'+esc(t)+'</button>'); });
+  box.innerHTML=chips.join(''); }
+function setVarType(t){ VARTYPE=t; renderVariantList(); }
+function renderVariantList(){ var box=document.getElementById('varList'); if(!box)return; renderVarTypes();
+  var q=(document.getElementById('varSearch').value||'').trim().toLowerCase();
+  var vs=(DATA.variants||[]).filter(function(v){ if(VARTYPE && String(v.hair_type||'').trim()!==VARTYPE)return false;
+    if(!q)return true; var hay=(v.hair_type+' '+v.length_in+' '+v.color+' '+(v.grade||'')+' '+(v.texture||'')+' '+v.name).toLowerCase(); return hay.indexOf(q)>=0; });
   var h='<button type="button" class="varcard newv" onclick="pickVariant(\'__NEW__\')">➕ สร้างรุ่นใหม่…</button>';
-  h+=vs.map(function(v){ var stock=Number(v.available)||0, sc=stock<=0?'var(--crit)':(stock<5?'var(--gold-soft)':'var(--ok)');
+  /* จัดกลุ่มตามประเภท เรียงความยาว → ดูง่าย กันเลือกผิด (ประเภท > เกรด/ลักษณะ/สี > ขนาด) */
+  var groups={}, order=[]; vs.forEach(function(v){ var t=String(v.hair_type||'อื่นๆ').trim(); if(!groups[t]){groups[t]=[];order.push(t);} groups[t].push(v); });
+  var card=function(v){ var stock=Number(v.available)||0, sc=stock<=0?'var(--crit)':(stock<5?'var(--gold-soft)':'var(--ok)');
     return '<button type="button" class="varcard" onclick="pickVariant(\''+esc(v.variant_id)+'\')">'+
-      '<div class="vmain"><b>'+esc(v.hair_type)+' '+esc(v.length_in)+'นิ้ว</b><span class="vstock" style="color:'+sc+'">เหลือ '+fmt(stock)+'</span></div>'+
-      (varChips_(v)?('<div class="vchips">'+varChips_(v)+'</div>'):'')+'</button>'; }).join('');
-  if(!vs.length) h+='<div class="mini" style="padding:10px 2px">ไม่พบรุ่นที่ตรงกับคำค้น</div>';
+      '<div class="vmain"><b>'+esc(v.hair_type)+' '+esc(v.length_in)+'นิ้ว</b><span class="vstock" style="color:'+sc+'">เหลือ '+fmt(stock)+' QR</span></div>'+
+      (varChips_(v)?('<div class="vchips">'+varChips_(v)+'</div>'):'')+'</button>'; };
+  h+=order.map(function(t){ var g=groups[t].sort(function(a,b){return (parseInt(a.length_in,10)||0)-(parseInt(b.length_in,10)||0);});
+    var head=(order.length>1)?('<div class="grphead"><b>'+esc(t)+'</b><span class="gq">'+g.length+' รุ่น</span></div>'):'';
+    return head+g.map(card).join(''); }).join('');
+  if(!vs.length) h+='<div class="mini" style="padding:10px 2px">ไม่พบรุ่นที่ตรงเงื่อนไข</div>';
   box.innerHTML=h; }
 function pickVariant(id){ document.getElementById('vSel').value=id; closeVarPicker(); onVariantSel(); updateVarBtn(); }
 function updateVarBtn(){ var id=(document.getElementById('vSel')||{}).value||'', btn=document.getElementById('vSelBtn'); if(!btn)return;
@@ -451,15 +478,30 @@ function sChips_(x){ var c=[]; if(x.grade)c.push('<span class="vchip g">เก�
 function loadStock(){ document.getElementById('stockBox').innerHTML='<div class="mini">กำลังโหลด…</div>';
   api('stockSummary',{}).then(function(r){ if(!r||!r.ok){ document.getElementById('stockBox').innerHTML='<div class="mini">โหลดไม่สำเร็จ</div>'; return; }
     STOCKDATA=r.data.variants||[]; renderStock(); }).catch(function(){ document.getElementById('stockBox').innerHTML='<div class="mini">เชื่อมต่อไม่สำเร็จ</div>'; }); }
-function renderStock(){ var box=document.getElementById('stockBox'); if(!box||!STOCKDATA)return;
+var STOCKTYPE='';
+function renderStockTypes(){ var box=document.getElementById('stockTypes'); if(!box||!STOCKDATA)return;
+  var types=[]; STOCKDATA.forEach(function(x){ var t=String(x.hair_type||'').trim(); if(t&&types.indexOf(t)<0)types.push(t); });
+  if(STOCKTYPE&&types.indexOf(STOCKTYPE)<0)STOCKTYPE='';
+  var chips=['<button class="stkchip'+(STOCKTYPE===''?' on':'')+'" onclick="setStockType(\'\')">ทั้งหมด</button>'];
+  types.forEach(function(t){ chips.push('<button class="stkchip'+(STOCKTYPE===t?' on':'')+'" onclick="setStockType(\''+esc(t)+'\')">'+esc(t)+'</button>'); });
+  box.innerHTML=chips.join(''); }
+function setStockType(t){ STOCKTYPE=t; renderStockTypes(); renderStock(); }
+function renderStock(){ var box=document.getElementById('stockBox'); if(!box||!STOCKDATA)return; renderStockTypes();
   var q=((document.getElementById('stockSearch')||{}).value||'').trim().toLowerCase();
-  var vs=STOCKDATA.filter(function(x){ if(!q)return true; var hay=(x.name+' '+x.hair_type+' '+x.length_in+' '+x.color+' '+(x.grade||'')+' '+(x.texture||'')).toLowerCase(); return hay.indexOf(q)>=0; });
+  var vs=STOCKDATA.filter(function(x){ if(STOCKTYPE && String(x.hair_type||'').trim()!==STOCKTYPE)return false;
+    if(!q)return true; var hay=(x.name+' '+x.hair_type+' '+x.length_in+' '+x.color+' '+(x.grade||'')+' '+(x.texture||'')).toLowerCase(); return hay.indexOf(q)>=0; });
   var tAv=vs.reduce(function(a,x){return a+Number(x.available||0);},0), tRe=vs.reduce(function(a,x){return a+Number(x.remaining||0);},0);
-  document.getElementById('stockSum').innerHTML='พบ <b>'+vs.length+'</b> รุ่น · พร้อมขายรวม <b style="color:var(--gold-soft)">'+fmt(tAv)+'</b> · คงเหลือรวม <b>'+fmt(tRe)+'</b> มัด';
-  if(!vs.length){ box.innerHTML='<div class="mini" style="padding:8px 0">ไม่พบรุ่นที่ตรงคำค้น</div>'; return; }
-  box.innerHTML=vs.map(function(x){ var av=Number(x.available||0), sc=av<=0?'var(--crit)':(av<5?'var(--gold-soft)':'var(--ok)');
+  document.getElementById('stockSum').innerHTML='พบ <b>'+vs.length+'</b> รุ่น · พร้อมขายรวม <b style="color:var(--gold-soft)">'+fmt(tAv)+'</b> QR · คงเหลือรวม <b>'+fmt(tRe)+'</b> QR <span class="faint" style="font-size:11px">(1 QR = 50g)</span>';
+  if(!vs.length){ box.innerHTML='<div class="mini" style="padding:8px 0">ไม่พบรุ่นที่ตรงเงื่อนไข</div>'; return; }
+  /* จัดกลุ่มตามประเภท · เรียงความยาวในแต่ละกลุ่ม */
+  var groups={}, order=[]; vs.forEach(function(x){ var t=String(x.hair_type||x.name||'อื่นๆ').trim(); if(!groups[t]){groups[t]=[];order.push(t);} groups[t].push(x); });
+  var rowHtml=function(x){ var av=Number(x.available||0), sc=av<=0?'var(--crit)':(av<5?'var(--gold-soft)':'var(--ok)');
     return '<div class="srow"><div class="si"><b>'+esc(x.hair_type||x.name)+(x.length_in?(' '+esc(x.length_in)+'นิ้ว'):'')+'</b><div class="chips">'+sChips_(x)+'</div></div>'+
-      '<div class="snum"><div class="big" style="color:'+sc+'">'+fmt(av)+'</div><div class="sub">พร้อมขาย · เหลือ '+fmt(x.remaining)+' · จอง '+fmt(x.reserved)+' · ขาย '+fmt(x.sold)+'</div></div></div>'; }).join(''); }
+      '<div class="snum"><div class="big" style="color:'+sc+'">'+fmt(av)+' <span class="sub" style="font-size:11px">QR</span></div><div class="sub">= '+qtyTag(x.hair_type,av)+' · เหลือ '+fmt(x.remaining)+' · จอง '+fmt(x.reserved)+' · ขาย '+fmt(x.sold)+'</div></div></div>'; };
+  box.innerHTML=order.map(function(t){ var g=groups[t].sort(function(a,b){return (parseInt(a.length_in,10)||0)-(parseInt(b.length_in,10)||0);});
+    var gAv=g.reduce(function(a,x){return a+Number(x.available||0);},0);
+    var head=(order.length>1||STOCKTYPE==='')?('<div class="grphead"><b>'+esc(t)+'</b><span class="gq">'+g.length+' รุ่น · '+fmt(gAv)+' QR</span></div>'):'';
+    return head+g.map(rowHtml).join(''); }).join(''); }
 /* ---- Batch (กระชับ · ค้นหา · พิมพ์ซ้ำ) ---- */
 function loadBatches(){ document.getElementById('batchBox').innerHTML='<div class="mini">กำลังโหลด…</div>';
   api('batchesList',{}).then(function(r){ if(!r||!r.ok){ document.getElementById('batchBox').innerHTML='<div class="mini">โหลดไม่สำเร็จ</div>'; return; }
@@ -472,7 +514,7 @@ function renderBatches(){ var box=document.getElementById('batchBox'); if(!box||
     return '<div class="srow"><div class="si"><b class="mono">'+esc(x.batch_id)+'</b> <span class="faint" style="font-size:12px">'+esc(d)+'</span>'+
       '<div style="font-size:13px;margin-top:2px">'+esc(x.hair_type||x.variant_name)+(x.length_in?(' '+esc(x.length_in)+'นิ้ว'):'')+'</div>'+
       (sChips_(x)?('<div class="chips">'+sChips_(x)+'</div>'):'')+
-      '<div class="sub" style="font-size:11px;color:var(--faint);margin-top:3px">รับ '+fmt(x.qty_received)+' · เหลือ '+fmt(x.remaining)+' · ต้นทุน '+fmt(x.cost_per_mad)+'/มัด</div></div>'+
+      '<div class="sub" style="font-size:11px;color:var(--faint);margin-top:3px">รับ '+fmt(x.qty_received)+' QR · เหลือ '+fmt(x.remaining)+' · ต้นทุน '+fmt(x.cost_per_mad)+'/QR</div></div>'+
       '<button class="breprint" onclick="reprintBatch(\''+esc(x.batch_id)+'\')">🖨️ พิมพ์ซ้ำ</button></div>'; }).join('');
   if(!bs.length) h='<div class="mini" style="padding:8px 0">ไม่พบ Batch ที่ตรงคำค้น</div>';
   else if(bs.length>show.length) h+='<button class="btn sec" style="margin-top:10px" onclick="BATCH_SHOW+=30;renderBatches()">ดูเพิ่ม ('+(bs.length-show.length)+')</button>';
