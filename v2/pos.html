@@ -510,7 +510,8 @@ function saveProblems(due){ var p=[];
 
 /* PromptPay QR (บุคคล tag29 / ร้านค้า K-Shop tag30 Bill Payment) */
 function posCfg(){ var s=DATA.settings||{}; var biller=String(s.promptPayBiller||'').replace(/[^0-9]/g,''); var tpl=String(s.promptPayTemplate||'').trim(); var pt=String(s.promptPayType||'').toLowerCase();
-  var type=(pt==='template'&&/^0002/.test(tpl))?'template':((pt==='biller'&&biller)?'biller':'personal');
+  var tplOk=/^0002/.test(tpl)&&tpl.length>=60; /* มี QR แม่แบบ K-Shop → ใช้เสมอ */
+  var type=tplOk?'template':((pt==='biller'&&biller)?'biller':'personal');
   return { type:type, promptPayId:String(s.promptPayId||''), billerId:biller, ref:String(s.promptPayRef||''), template:tpl }; }
 function tlvParse(s){ var i=0,o=[]; while(i+4<=s.length){ var t=s.substr(i,2),l=parseInt(s.substr(i+2,2),10); if(isNaN(l))break; o.push({t:t,v:s.substr(i+4,l)}); i+=4+l; } return o; }
 function tlvBuild(a){ return a.map(function(x){ return x.t+('0'+x.v.length).slice(-2)+x.v; }).join(''); }
