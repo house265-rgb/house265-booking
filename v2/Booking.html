@@ -519,8 +519,9 @@ function aResolveVariant(){ var dims=aActiveDims(), allSel=dims.length>0&&dims.e
   if(allSel && ma.length){ STATE.addon.variantId=String(ma[0].variant_id); return ma.reduce(function(a,v){return a+Number(v.available);},0); }
   STATE.addon.variantId=''; return 0; }
 function aStock(){ return aMatchedAvail().reduce(function(a,v){return a+Number(v.available);},0); }
-/* เทคนิคที่มีผมในสต็อก (ใช้ให้ลูกค้าเลือกตอนถอด+ซื้อใหม่) */
-function aTechOptions(){ return (CAT.services||[]).filter(function(s){ return (CAT.variants||[]).some(function(v){ return String(v.hair_type).trim()===String(s.acct_name).trim() && Number(v.available)>0; }); }); }
+/* ทุกเทคนิคที่มีรุ่นผมในระบบ (โชว์ครบ · ของหมดทำจาง) */
+function aTechOptions(){ return (CAT.services||[]).filter(function(s){ return (CAT.variants||[]).some(function(v){ return String(v.hair_type).trim()===String(s.acct_name).trim(); }); }); }
+function aTechHasStock(acct){ return (CAT.variants||[]).some(function(v){ return String(v.hair_type).trim()===String(acct).trim() && Number(v.available)>0; }); }
 function addonEligible(){ if(isRemoval()) return aTechOptions().length>0; return (isByob()||isMove()) && variantsAvail().length>0; }
 
 function addonSection(){ if(!addonEligible())return '';
@@ -552,9 +553,10 @@ function renderAddonBody(){ var body=document.getElementById('addonBody'); if(!b
     '<div id="aQtyHint" style="display:none;margin-top:8px;font-size:12px"></div>';
   body.innerHTML=html; if(isRemoval())renderATechChips(); renderAddonDims(); syncAddonQty(); }
 function renderATechChips(){ var box=document.getElementById('aTechChips'); if(!box)return; box.innerHTML='';
-  aTechOptions().forEach(function(s){ var sel=(STATE.addon.technique===s.acct_name); var c=document.createElement('div'); c.className='chip'+(sel?' sel':'');
-    c.innerHTML=esc(s.name||s.acct_name)+(s.name_en?('<span class="sm">'+esc(s.name_en)+'</span>'):'');
-    c.onclick=function(){ pickATech(s.acct_name); }; box.appendChild(c); }); }
+  aTechOptions().forEach(function(s){ var sel=(STATE.addon.technique===s.acct_name), has=aTechHasStock(s.acct_name);
+    var c=document.createElement('div'); c.className='chip'+(sel?' sel':'')+(has?'':' dis');
+    c.innerHTML=esc(s.name||s.acct_name)+(s.name_en?('<span class="sm"'+(has?'':' style="color:var(--crit)"')+'>'+(has?esc(s.name_en):'หมด')+'</span>'):(has?'':'<span class="sm" style="color:var(--crit)">หมด</span>'));
+    if(has) c.onclick=function(){ pickATech(s.acct_name); }; box.appendChild(c); }); }
 function renderAddonDims(){ aActiveDims().forEach(function(d){ var box=document.getElementById('adim_'+d.k); if(!box)return; box.innerHTML='';
     var vals=aDimVals(d);
     if(d.k==='color'){ vals.forEach(function(val){ var meta=(CAT.colors||[]).filter(function(c){return String(c.name).trim()===String(val).trim();})[0]||{};

@@ -254,7 +254,7 @@ function renderMenu(){ var box=document.getElementById('menuBody');
       '<div style="display:flex;gap:8px"><input class="in" id="manualCode" placeholder="เช่น H000001AB" onkeydown="if(event.key===\'Enter\')addManual()" style="flex:1"><button class="btn" style="width:auto;padding:0 18px" onclick="addManual()">เพิ่ม</button></div>'+
       '</div>';
     h+='<div style="margin:6px 2px 8px"><b style="font-weight:500;font-size:14px">✂️ บริการต่อผม — ลูกค้าเอาผมมาเอง</b><div class="mini">ไม่ใช้สต็อกร้าน · ไม่ต้องสแกน · คิดค่าบริการ + ค่ามือช่าง</div></div>';
-    h+='<div class="grid">'+acctList().map(function(a){ var zs=sizesFor(a); var p0=zs[0]?zs[0].price:0; return tile('✂️', a, 'เริ่ม '+fmt(p0)+'/QR', '1 QR = '+qtyTag(a,1), "openLine('service','"+esc(a)+"')"); }).join('')+'</div>';
+    h+='<div class="grid">'+acctList().map(function(a){ var sv=svcByAcct(a); var p0=Math.round((Number(sv&&sv.byob_base)||0)+(Number(sv&&sv.byob_per_bundle)||0)); return tile('✂️', a, 'เริ่ม '+fmt(p0), '1 ชุด = '+qtyTag(a,1), "openLine('service','"+esc(a)+"')"); }).join('')+'</div>';
     box.innerHTML=h; return;
   }
   if(CAT==='สินค้าอื่นๆ'){ box.innerHTML='<div class="grid">'+tile('➕','รายการกำหนดเอง','ตั้งราคาเอง','',"openLine('custom','')")+'</div>'+
@@ -343,30 +343,41 @@ function confirmProduct(){ var l=LD; var price=pdTotal(); if(!(price>0)){ toast(
  * =================================================================== */
 function openLine(kind,key,editIndex){ LEDIT=(editIndex==null?null:editIndex);
   if(LEDIT!=null){ LD=JSON.parse(JSON.stringify(CART[editIndex])); if(!LD.techs||!LD.techs.length)LD.techs=[{name:USERTECH||'',split:100}]; }
-  else { var base={kind:kind,qty:1,price:0,unit:0,techs:[{name:USERTECH||'',split:100}],size:''};
-    if(kind==='service'){ base.item=key; var z=sizesFor(key); base.size=z[0]?z[0].size:''; base.unit=z[0]?z[0].price:0; base.price=base.unit; }
-    else if(kind==='move'){ var sv=svcByAcct(key); base.item='ขยับปม'+key; base.price=Number(sv&&sv.move_price)||0; }
-    else if(kind==='removal'){ var rm=(DATA.removals||[]).filter(function(x){return String(x.removal_id)===key;})[0]||{name:'ถอดผม',price:0}; base.item=String(rm.name); base.price=Number(rm.price)||0; }
+  else { var base={kind:kind,qty:1,price:0,unit:0,techs:[{name:USERTECH||'',split:100}],size:'',technique:''};
+    if(kind==='service'){ /* นำผมมาเอง (byob) — ตรงระบบจอง: byob_base + byob_per_bundle×qty · ไม่มีขนาด ไม่คิดค่าผม */
+      var sv=svcByAcct(key); base.item=key; base.technique=key; base.byobBase=Number(sv&&sv.byob_base)||0; base.byobPer=Number(sv&&sv.byob_per_bundle)||0; base.price=Math.round(base.byobBase+base.byobPer); }
+    else if(kind==='move'){ /* ขยับปม — move_price + move_add×(qty−1) (รวมถอดแล้ว) */
+      var sm=svcByAcct(key); base.item='ขยับปม'+key; base.technique=key; base.movePrice=Number(sm&&sm.move_price)||0; base.moveAdd=Number(sm&&sm.move_add)||0; base.price=base.movePrice; }
+    else if(kind==='removal'){ /* ถอดผม — ราคาเหมา ไม่มีจำนวน */
+      var rm=(DATA.removals||[]).filter(function(x){return String(x.removal_id)===key;})[0]||{name:'ถอดผม',price:0}; base.item=String(rm.name); base.price=Number(rm.price)||0; base.qty=1; }
     else { base.item=''; }
     LD=base; }
   renderLine(); openModal(); }
-function lmSizeSvc(sz,price){ LD.size=sz; LD.unit=price; LD.price=Math.round(price*(LD.qty||1)); renderLine(); }
-function lmStep(d){ LD.qty=Math.max(1,Math.round((Number(LD.qty)||1)+d)); if(LD.kind==='service'&&LD.unit)LD.price=Math.round(LD.unit*LD.qty); renderLine(); }
+function lmRecalc(){ var l=LD; if(l.kind==='service')l.price=Math.round((l.byobBase||0)+(l.byobPer||0)*(l.qty||1));
+  else if(l.kind==='move')l.price=Math.round((l.movePrice||0)+(l.moveAdd||0)*((l.qty||1)-1)); }
+function lmStep(d){ if(LD.kind==='removal')return; LD.qty=Math.max(1,Math.round((Number(LD.qty)||1)+d)); lmRecalc(); renderLine(); }
 function lmSum(){ return LD.techs.reduce(function(a,t){return a+(Number(t.split)||0);},0); }
 function lmAddTech(){ LD.techs.push({name:'',split:0}); lmEven(); renderLine(); }
 function lmRmTech(i){ LD.techs.splice(i,1); if(!LD.techs.length)LD.techs=[{name:'',split:100}]; lmEven(); renderLine(); }
 function lmName(i,v){ LD.techs[i].name=v; }
 function lmSplit(i,v){ LD.techs[i].split=v; renderLine(); }
 function lmEven(){ var n=LD.techs.length; if(n<=1){if(n)LD.techs[0].split=100;return;} var b=Math.floor(100/n); LD.techs.forEach(function(t,k){t.split=b+(k===0?(100-b*n):0);}); }
-function renderLine(){ var l=LD, multi=l.techs.length>1, sum=lmSum(), unit=(l.kind==='custom'?'ชิ้น':'QR'); var h='';
+function lineComm(item,type,qty){ if(!FULL)return 0; qty=Math.max(1,qty||1);
+  if(type==='removal') return (RMAP[String(item).trim()]||{comm:0}).comm||0; /* เหมาต่อหัว */
+  if(type==='move'){ var t=String(item).replace('ขยับปม',''); var a=RMAP[t]||{comm:0}, b=RMAP['ถอด'+t]||{comm:0}; return (a.comm||0)*qty + (b.comm||0); /* ต่อ=ต่อ QR · ถอด=เหมา */ }
+  return ((RMAP[String(item).trim()]||{comm:0}).comm||0)*qty; }
+function renderLine(){ var l=LD, multi=l.techs.length>1, sum=lmSum(); var h='';
   if(l.kind==='custom'){ h+='<label class="lbl">ชื่อรายการ</label><input class="in" value="'+esc(l.item)+'" oninput="LD.item=this.value" placeholder="เช่น แชมพู / ทรีตเมนต์" style="margin-bottom:11px">'; }
-  if(l.kind==='service'){ var zs=sizesFor(l.item); if(zs.length){ h+='<label class="lbl">ขนาด</label><div class="chips" style="margin-bottom:11px">'+zs.map(function(x){return '<button class="sc'+(l.size===x.size?' on':'')+'" onclick="lmSizeSvc(\''+esc(x.size)+'\','+x.price+')">'+esc(x.size)+' <span class="faint">'+fmt(x.price)+'</span></button>';}).join('')+'</div>'; } }
-  h+='<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:11px"><div><label class="lbl">จำนวน ('+unit+')'+(l.kind!=='custom'?(' <span class="faint" style="font-size:11px">= '+qtyTag(l.item,l.qty)+'</span>'):'')+'</label><div class="stp"><button onclick="lmStep(-1)">−</button><span class="v">'+l.qty+'</span><button onclick="lmStep(1)">＋</button></div></div><div style="flex:1"><label class="lbl">ราคารวม (฿)</label><input class="in" type="number" style="text-align:right;font-size:17px" value="'+l.price+'" oninput="LD.price=parseFloat(this.value)||0"></div></div>';
+  var qtyBlock='';
+  if(l.kind==='removal'){ qtyBlock='<div style="flex:0 0 auto"><label class="lbl">งานถอด</label><div class="lockpill" style="margin:0">🧴 ราคาเหมา (ไม่คิดตามจำนวน)</div></div>'; }
+  else { var disp=(l.kind==='custom')?(l.qty+' ชิ้น'):qtyTag(l.technique||l.item,l.qty);
+    qtyBlock='<div><label class="lbl">จำนวน'+(l.kind!=='custom'?' <span class="faint" style="font-size:11px">('+esc(sellUnitOf(l.technique||l.item))+' · กด±1 ชุด)</span>':'')+'</label><div class="stp"><button onclick="lmStep(-1)">−</button><span class="v" style="min-width:76px">'+esc(disp)+'</span><button onclick="lmStep(1)">＋</button></div></div>'; }
+  h+='<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:11px">'+qtyBlock+'<div style="flex:1"><label class="lbl">ราคารวม (฿)</label><input class="in" type="number" style="text-align:right;font-size:17px" value="'+l.price+'" oninput="LD.price=parseFloat(this.value)||0"></div></div>';
   h+='<label class="lbl">ช่างที่ทำ'+(multi?(' · รวม '+sum+'%'+(Math.round(sum)!==100?' ⚠':'')):'')+'</label>';
   h+=l.techs.map(function(t,i){ return '<div class="tw"><select class="in" style="flex:1" onchange="lmName('+i+',this.value)">'+techOpts(t.name)+'</select>'+(multi?('<input class="in" type="number" style="width:56px;text-align:center" value="'+(t.split||0)+'" onchange="lmSplit('+i+',parseFloat(this.value)||0)"><span class="faint">%</span><button class="x" onclick="lmRmTech('+i+')">✕</button>'):'')+'</div>'; }).join('');
   h+='<button class="btn sec" style="width:auto;padding:6px 12px;font-size:12px;margin:2px 0 10px" onclick="lmAddTech()">+ เพิ่มช่างร่วม</button>';
-  if(FULL){ var comm=Math.round(lineCommPer(l.item,l.kind)*(l.qty||0)); var profit=(l.price||0)-comm;
-    h+='<div class="mini"><b>ค่ามือช่าง:</b> '+fmt(comm)+(l.kind==='move'?' <span class="faint">(ถอด+ต่อ)</span>':'')+' &nbsp;<b>กำไรบริการ:</b> <span style="color:'+(profit>=0?'var(--ok)':'var(--crit)')+'">'+fmt(profit)+'</span></div>'; }
+  if(FULL){ var comm=Math.round(lineComm(l.item,l.kind,l.qty)); var profit=(l.price||0)-comm;
+    h+='<div class="mini"><b>ค่ามือช่าง:</b> '+fmt(comm)+(l.kind==='move'?' <span class="faint">(ต่อ×จำนวน + ถอดเหมา)</span>':(l.kind==='removal'?' <span class="faint">(เหมา)</span>':''))+' &nbsp;<b>กำไรบริการ:</b> <span style="color:'+(profit>=0?'var(--ok)':'var(--crit)')+'">'+fmt(profit)+'</span></div>'; }
   h+='<div class="row2" style="margin-top:16px"><button class="btn sec" onclick="closeLine()">ยกเลิก</button><button class="btn" onclick="confirmLine()">'+(LEDIT!=null?'บันทึก':'＋ เพิ่มลงบิล')+'</button></div>';
   document.getElementById('lmBody').innerHTML=h; document.getElementById('lmTitle').innerText=(LEDIT!=null?'แก้ไขรายการ':esc(l.item||'รายการ')); }
 function confirmLine(){ var l=LD; if(!l.item){ toast('กรอกชื่อรายการ',1); return; } if(!(Number(l.price)>0)){ toast('ใส่ราคา',1); return; }
@@ -423,7 +434,7 @@ function renderCart(){ var box=document.getElementById('cartBody');
     if(l.kind==='product'){ if(l.hair_type)det.push(l.hair_type); if(l.length_in)det.push(l.length_in+'นิ้ว'); if(l.color)det.push('สี '+l.color); if(prodQty(l)>1)det.push(prodQty(l)+' QR ('+qtyTag(l.hair_type,prodQty(l))+')'); if(l.barcode)det.push(l.barcode);
       if(l.mode==='ext'){ tag='<span style="color:var(--gold-soft);font-size:11px;background:var(--gold-ghost);border:1px solid var(--gold-dim);border-radius:6px;padding:1px 6px;margin-left:4px">✂️ ต่อผม'+(lineTechNames(l)?(' · '+esc(lineTechNames(l))):'')+'</span>'; }
       else { tag='<span style="color:var(--faint);font-size:11px;margin-left:4px">· ขายเปล่า</span>'; }
-    } else { if(l.size)det.push(l.size); det.push(l.kind==='custom'?((l.qty||1)+' ชิ้น'):((l.qty||1)+' QR ('+qtyTag(l.item,l.qty||1)+')')); var tn=lineTechNames(l); if(tn)det.push(tn); }
+    } else { if(l.kind==='custom')det.push((l.qty||1)+' ชิ้น'); else if(l.kind==='removal')det.push('เหมา'); else det.push(qtyTag(l.technique||l.item,l.qty||1)); var tn=lineTechNames(l); if(tn)det.push(tn); }
     return '<div style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)"><div style="flex:1;min-width:0;cursor:pointer" onclick="editLine('+i+')"><b style="font-weight:500">'+esc(l.kind==='product'?l.name:l.item)+'</b>'+tag+' <span style="color:var(--gold);font-size:12px">✎</span><div class="mini" style="margin-top:2px">'+esc(det.join(' · '))+'</div></div><div class="mono" style="color:var(--gold-soft)">'+fmt(lineTotal(l))+'</div><button class="x" onclick="delLine('+i+')">✕</button></div>';
   }).join('');
   var sub=cartSub(), disc=window._disc||0, dep=cartDeposit(), due=cartDue();
