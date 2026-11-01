@@ -706,6 +706,9 @@ function checkoutToCart(bk,v){ if(!bk)return;
     CART.push({ kind:'product', variant_id:bk.addon_variant_id, barcode:'', name:(av.name||('ผมซื้อเพิ่ม '+aht)),
       hair_type:aht, length_in:alen, color:av.color||'', grade:av.grade||'', texture:av.texture||'', plainPrice:aprice, extPrice:aprice, cost:null,
       mode:'plain', technique:atech, size:sizeLabelFor(atech,alen), techs:[{name:USERTECH||'',split:100}], qty_mad:aq }); }
+  /* ถอดผมเก่าจากตอนจอง → เพิ่มเป็นบรรทัดถอด */
+  if(bk.rm_addon_id){ var rma=bk.rm_addon||{}, rmrow=(DATA.removals||[]).filter(function(x){return String(x.removal_id)===String(bk.rm_addon_id);})[0]||{};
+    CART.push({ kind:'removal', item:String(rma.name||rmrow.name||'ถอดผม'), qty:1, price:Math.round(Number(rma.price!=null?rma.price:rmrow.price)||0), techs:[{name:USERTECH||'',split:100}], size:'' }); }
   window._bookingId=bk.booking_id; window._bookingName=(bk.name||'')+(bk.phone?(' · '+bk.phone):''); window._deposit=Math.round(Number(bk.deposit)||0);
   window._disc=0; window._recv=0; window._split=false; window._p2a=0; window._slips=[]; PAY='เงินสด';
   closeLine(); setPage('Sale'); renderCart();
