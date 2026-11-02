@@ -263,7 +263,7 @@ function api(action,payload){ return fetch(API_URL,{method:'POST',redirect:'foll
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(m){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m];}); }
 function digits(s){ var m=String(s||'').match(/\d+/); return m?m[0]:''; }
 /* ================= faceted filter (ใช้ร่วม: สต็อก/เลือกรุ่น/Batch) ================= */
-var VFACETS=[{k:'hair_type',label:'ประเภท'},{k:'grade',label:'เกรด'},{k:'texture',label:'ลักษณะ'},{k:'color',label:'สี'},{k:'length_in',label:'ความยาว',num:true}];
+var VFACETS=[{k:'hair_type',label:'ประเภท',always:true},{k:'grade',label:'เกรด'},{k:'texture',label:'ลักษณะ'},{k:'color',label:'สี'},{k:'length_in',label:'ความยาว',num:true}];
 function fnorm(f,v){ return f&&f.num?digits(v):String(v==null?'':v).trim(); }
 function facetDistinct(data,facets,state,forK){ var f=null; for(var i=0;i<facets.length;i++)if(facets[i].k===forK)f=facets[i];
   var sub=data.filter(function(r){ return facets.every(function(x){ if(x.k===forK)return true; return !state[x.k] || fnorm(x,r[x.k])===state[x.k]; }); });
@@ -271,7 +271,10 @@ function facetDistinct(data,facets,state,forK){ var f=null; for(var i=0;i<facets
   out.sort((f&&f.num)?function(a,b){return (parseInt(a,10)||0)-(parseInt(b,10)||0);}:function(a,b){return a<b?-1:1;});
   return out; }
 function renderFacetBar(boxId,data,facets,state,fn){ var box=document.getElementById(boxId); if(!box)return; var h='';
-  facets.forEach(function(f){ var vals=facetDistinct(data,facets,state,f.k); if(vals.length<2 && !state[f.k])return; var cur=state[f.k]||'';
+  facets.forEach(function(f){ var vals=facetDistinct(data,facets,state,f.k);
+    /* ประเภท (มิติหลัก) แสดงเสมอถ้ามี ≥1 ค่า · มิติอื่นซ่อนเมื่อมีค่าเดียวและยังไม่ถูกเลือก */
+    if(f.k==='hair_type'){ if(vals.length<1 && !state[f.k])return; } else if(vals.length<2 && !state[f.k])return;
+    var cur=state[f.k]||'';
     h+='<div class="facet"><select class="'+(cur?'act':'')+'" onchange="'+fn+'(\''+f.k+'\',this.value)">'+
        '<option value="">'+esc(f.label)+'</option>'+
        vals.map(function(v){ return '<option value="'+esc(v)+'"'+(cur===v?' selected':'')+'>'+esc(v)+(f.num?' นิ้ว':'')+'</option>'; }).join('')+'</select></div>'; });
