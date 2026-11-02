@@ -51,8 +51,9 @@ textarea.in{min-height:70px;resize:vertical;font-size:12px;font-family:'IBM Plex
 .qbtn.on{border-color:var(--gold);color:var(--gold-soft)}
 /* KPI */
 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(min-width:640px){.kpis{grid-template-columns:repeat(4,1fr)}}
-.kpi{background:var(--bg2);border:1px solid var(--line);border-radius:11px;padding:13px}
-.kpi .k{font-size:12px;color:var(--faint)}.kpi .v{font-size:21px;font-weight:600;color:var(--gold-soft);margin-top:3px;font-family:'IBM Plex Mono'}
+.kpi{background:linear-gradient(145deg,var(--bg2),rgba(230,204,126,.04));border:1px solid var(--line);border-radius:14px;padding:15px 14px;position:relative;overflow:hidden}
+.kpi::before{content:"";position:absolute;top:0;left:0;width:3px;height:100%;background:linear-gradient(var(--gold-soft),var(--gold-dim))}
+.kpi .k{font-size:11.5px;color:var(--faint)}.kpi .v{font-size:25px;font-weight:700;color:var(--gold-soft);margin-top:4px;font-family:'IBM Plex Mono';letter-spacing:-.5px}
 .kpi .v.sm{font-size:16px}.kpi .s{font-size:11px;color:var(--faint);margin-top:2px}
 .delta{font-size:10px;font-weight:600;border-radius:999px;padding:0 5px;margin-left:3px}
 .delta.up{color:var(--ok);background:rgba(121,192,138,.12)}.delta.down{color:var(--crit);background:rgba(217,138,138,.12)}
@@ -101,6 +102,12 @@ textarea.in{min-height:70px;resize:vertical;font-size:12px;font-family:'IBM Plex
 .x{background:none;border:none;color:var(--crit);font-size:16px;cursor:pointer}
 .empty{text-align:center;color:var(--faint);padding:18px;font-size:14px}
 /* queue — date strip + prep */
+.fbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.fbar .fl{font-size:11px;color:var(--faint);min-width:42px}
+.fchip{background:var(--surface2);border:1px solid var(--line);color:var(--muted);border-radius:999px;padding:5px 12px;font-size:12.5px;cursor:pointer;font-family:inherit}
+.fchip.on{border-color:var(--gold);color:#231b08;background:linear-gradient(135deg,var(--gold-dim),var(--gold-soft))}
+.chkline{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--muted);cursor:pointer}
+.statchip{display:inline-block;background:var(--surface2);border:1px solid var(--line);border-radius:999px;padding:3px 11px;font-size:12.5px;margin:2px 4px 2px 0}
 .strip{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 8px;-webkit-overflow-scrolling:touch}
 .daychip{flex:0 0 auto;position:relative;width:62px;text-align:center;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:9px 4px 7px;cursor:pointer}
 .daychip.on{border-color:var(--gold);background:var(--gold-ghost)}
@@ -317,7 +324,7 @@ function deltaBadge(cur,prev){ if(prev==null)return ''; var diff=cur-prev; if(!p
 function renderDash(){ var d=DASHDATA; var p=d.prev||{}; var h='';
   h+='<div class="card"><div class="kpis">'+
     kpi('ยอดขาย','฿'+fmt(d.revenue),d.count+' บิล · เฉลี่ย ฿'+fmt(d.avg)+' '+deltaBadge(d.revenue,p.revenue))+
-    kpi('กำไรขั้นต้น','฿'+fmt(d.grossProfit),'margin '+d.margin+'% '+deltaBadge(d.grossProfit,p.grossProfit))+
+    kpi('กำไรสุทธิ','฿'+fmt(d.net!=null?d.net:d.grossProfit),'margin '+d.margin+'% '+deltaBadge(d.grossProfit,p.grossProfit))+
     kpi('จำนวนบิล',fmt(d.count),'งวดก่อน '+fmt(p.count||0)+' '+deltaBadge(d.count,p.count))+
     kpi('มูลค่าสต็อก','฿'+fmt(d.stockValue),fmt(d.stockQR)+' QR')+'</div>'+
     '<div class="mini" style="margin-top:8px">เทียบงวดก่อนหน้า ('+esc((p.range&&p.range.from)||'')+' → '+esc((p.range&&p.range.to)||'')+')</div></div>';
@@ -329,12 +336,15 @@ function renderDash(){ var d=DASHDATA; var p=d.prev||{}; var h='';
     '<div id="trendBox"></div></div>';
   /* breakdown */
   h+='<div class="card"><h2>แยกประเภทยอดขาย</h2>'+barRows(d.byType,'',true)+'</div>';
-  h+='<div class="card"><h2>ยอดกำไรขั้นต้น (รายละเอียด)</h2>'+
+  h+='<div class="card"><h2>💰 งบกำไรขาดทุน (P&L)</h2>'+
     '<div class="pnl"><span>ยอดขายรวม</span><b>฿'+fmt(d.serviceRev+d.productRev)+'</b></div>'+
     '<div class="pnl neg"><span>− ต้นทุนผม</span><b>฿'+fmt(d.hairCost)+'</b></div>'+
     '<div class="pnl neg"><span>− ค่ามือช่าง</span><b>฿'+fmt(d.commission)+'</b></div>'+
     '<div class="pnl neg"><span>− ค่าอุปกรณ์</span><b>฿'+fmt(d.equip)+'</b></div>'+
-    '<div class="pnl tot pos"><span>กำไรขั้นต้น</span><b>฿'+fmt(d.grossProfit)+'</b></div></div>';
+    ((d.discount>0)?('<div class="pnl neg"><span>− ส่วนลด/โปรโมชัน</span><b>฿'+fmt(d.discount)+'</b></div>'):'')+
+    '<div class="pnl tot"><span>กำไรขั้นต้น</span><b>฿'+fmt(d.grossProfit)+'</b></div>'+
+    ((d.expenses>0)?('<div class="pnl neg"><span>− ค่าใช้จ่ายอื่น</span><b>฿'+fmt(d.expenses)+'</b></div>'):'')+
+    '<div class="pnl tot pos"><span>กำไรสุทธิ</span><b>฿'+fmt(d.net!=null?d.net:d.grossProfit)+'</b></div></div>';
   h+='<div class="card"><h2>🏆 ขายดี (ตามยอดเงิน)</h2>'+barRows((d.topItems||[]).reduce(function(o,x){o[x.name]=x.amount;return o;},{}),'',true)+'</div>';
   h+='<div class="card"><h2>ช่องทางรับเงิน</h2>'+barRows(d.byMethod,'',true)+'</div>';
   h+='<div class="card"><h2>ค่ามือช่างรายคน</h2>'+barRows(d.commByTech,'',true)+'</div>';
@@ -363,7 +373,7 @@ function openTarget(ym,rev,cnt){ var r=prompt('เป้ายอดขาย (�
   api('setTarget',{ym:ym,revenue:Number(r)||0,count:Number(c)||0}).then(function(x){ if(x&&x.ok){ toast('บันทึกเป้าแล้ว'); loadDash(); } else toast('บันทึกไม่สำเร็จ',1); }); }
 
 /* ===================== QUEUE (ดีไซน์ date strip + สรุปเตรียมผม) ===================== */
-var QUEUE=null, QSELDAY='', QTAB='day';
+var QUEUE=null, QSELDAY='', QTAB='day', QFTECH='', QFTQ='', QFCANCEL=false;
 var MON=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 function loadQueue(){ var box=document.getElementById('queueBody'); box.innerHTML='<div class="empty">กำลังโหลด…</div>';
   api('reportQueue',{}).then(function(r){ if(!r||!r.ok){ box.innerHTML='<div class="empty">'+esc((r&&r.message)||'โหลดไม่สำเร็จ')+'</div>'; return; } QUEUE=r.data; renderQueue();
@@ -390,19 +400,37 @@ function qBk(b){ var spec=b.needs_hair?('<b>'+esc(b.size)+'นิ้ว · '+esc
     '<div class="info"><b>'+esc(b.name||'ลูกค้า')+'</b>'+statusBadge(b.status)+'<span class="badge tech">✂ '+esc(b.tech_name||'—')+'</span>'+
     '<div class="bd">'+spec+'</div>'+
     '<div class="bd">📞 '+esc(b.phone||'-')+' · มัดจำ '+fmt(b.deposit)+' ฿ · ยอด '+fmt(b.suggest_total)+' ฿</div></div></div>'; }
+function qSetFTech(v){ QFTECH=v; renderQueue(); }
+function qSetFTQ(v){ QFTQ=v; renderQueue(); }
+function qToggleCancel(){ QFCANCEL=!QFCANCEL; renderQueue(); }
+function qFiltered(){ var up=(QUEUE&&QUEUE.upcoming)||[]; return up.filter(function(b){
+  if(!QFCANCEL && b.status==='ยกเลิก') return false;
+  if(QFTECH && b.tech_name!==QFTECH) return false;
+  if(QFTQ && b.technique!==QFTQ) return false; return true; }); }
 function renderQueue(){ var d=QUEUE; if(!d){document.getElementById('queueBody').innerHTML='<div class="empty">—</div>';return;}
-  var up=d.upcoming||[]; var today=iso(new Date()), tm=iso(new Date(Date.now()+86400000));
+  var today=iso(new Date()), tm=iso(new Date(Date.now()+86400000));
+  var up=qFiltered();
   var map={}; up.forEach(function(b){ (map[b.date]=map[b.date]||[]).push(b); });
   var days=Object.keys(map).sort();
   if(!QSELDAY||days.indexOf(QSELDAY)<0) QSELDAY=days.indexOf(today)>=0?today:(days[0]||'');
   var h='';
-  /* สรุปสถานะ */
-  h+='<div class="card"><h2>ภาพรวมคิว <span class="mini" style="margin:0">วันนี้เป็นต้นไป</span></h2><div>';
-  var bs=d.byStatus||{}; Object.keys(bs).forEach(function(k){ h+='<span class="statchip">'+esc(k)+' <b>'+fmt(bs[k])+'</b></span>'; });
-  if(!Object.keys(bs).length)h+='<div class="mini">ไม่มีคิว</div>'; h+='</div></div>';
+  /* KPI */
+  var depToday=d.depositToday||0;
+  h+='<div class="kpis" style="margin-bottom:12px">'+
+    '<div class="kpi"><div class="k">คิววันนี้</div><div class="v">'+fmt(d.todayCount||0)+'</div></div>'+
+    '<div class="kpi"><div class="k">คิวทั้งหมด (วันนี้เป็นต้นไป)</div><div class="v">'+fmt(d.total||0)+'</div></div>'+
+    '<div class="kpi"><div class="k">มัดจำวันนี้ (฿)</div><div class="v">'+fmt(depToday)+'</div></div></div>';
+  /* ฟิลเตอร์เทคนิค */
+  var tqs=[]; ((QUEUE.upcoming)||[]).forEach(function(b){ if(b.technique && tqs.indexOf(b.technique)<0)tqs.push(b.technique); });
+  h+='<div class="fbar"><span class="fl">เทคนิค</span><button class="fchip'+(QFTQ===''?' on':'')+'" onclick="qSetFTQ(\'\')">ทั้งหมด</button>'+tqs.map(function(t){return '<button class="fchip'+(QFTQ===t?' on':'')+'" onclick="qSetFTQ(\''+esc(t)+'\')">'+esc(t)+'</button>';}).join('')+'</div>';
+  /* ฟิลเตอร์ช่าง */
+  var techs=(d.techList||[]).slice();
+  h+='<div class="fbar"><span class="fl">ช่าง</span><button class="fchip'+(QFTECH===''?' on':'')+'" onclick="qSetFTech(\'\')">ทุกช่าง</button>'+techs.map(function(t){return '<button class="fchip'+(QFTECH===t?' on':'')+'" onclick="qSetFTech(\''+esc(t)+'\')">'+esc(t)+'</button>';}).join('')+'</div>';
+  /* toggle ยกเลิก */
+  h+='<label class="chkline" style="margin:4px 0 10px"><input type="checkbox" '+(QFCANCEL?'checked':'')+' onclick="qToggleCancel()"> แสดงคิวที่ยกเลิกด้วย</label>';
   /* แท็บ */
-  h+='<div class="seg" style="display:flex;gap:6px;margin-bottom:10px"><button class="tabbtn'+(QTAB==='day'?' on':'')+'" style="flex:1" onclick="qSetTab(\'day\')">📅 คิวรายวัน</button><button class="tabbtn'+(QTAB==='prep'?' on':'')+'" style="flex:1" onclick="qSetTab(\'prep\')">📦 สรุปเตรียมผมทั้งหมด</button></div>';
-  if(!days.length){ h+='<div class="empty">ไม่มีคิวที่กำลังจะถึง</div>'; document.getElementById('queueBody').innerHTML=h; return; }
+  h+='<div class="seg" style="display:flex;gap:6px;margin-bottom:10px"><button class="tabbtn'+(QTAB==='day'?' on':'')+'" style="flex:1" onclick="qSetTab(\'day\')">📅 ตารางคิวรายวัน</button><button class="tabbtn'+(QTAB==='prep'?' on':'')+'" style="flex:1" onclick="qSetTab(\'prep\')">📦 สรุปเตรียมผม</button></div>';
+  if(!days.length){ h+='<div class="empty">ไม่มีคิวตามเงื่อนไข</div>'; document.getElementById('queueBody').innerHTML=h; return; }
   if(QTAB==='prep'){ h+='<div class="card">'+prepSummary(up,'ผมที่ต้องเตรียม — ทุกคิวที่จะถึง')+'</div>'; document.getElementById('queueBody').innerHTML=h; return; }
   /* date strip */
   h+='<div class="strip">'+days.map(function(k){ var dt=kDate(k), on=k===QSELDAY, tag=(k===today)?'วันนี้':((k===tm)?'พรุ่งนี้':'');
@@ -427,12 +455,14 @@ function renderTech(){ var s=SCHED, box=document.getElementById('techBody');
     '<button class="btn" style="margin-top:12px" onclick="saveShop()">บันทึกเวลาทำการ</button></div></div>';
   /* สถานะช่าง + เวลา (ยุบได้ต่อคน) */
   h+='<div class="card" style="margin-bottom:6px"><h2>👩‍🔧 ช่าง ('+s.techs.length+' คน)</h2><div class="mini" style="margin:0">เปิด/ปิดสถานะรับคิว · ตั้งวัน–เวลาทำงานรายคน</div></div>';
-  s.techs.forEach(function(t){ var byDay={}; s.hours.filter(function(x){return x.tech_id===t.tech_id;}).forEach(function(x){byDay[x.day_of_week]=x;});
+  s.techs.forEach(function(t){
+    var mopts='<option value="0">ทุกเดือน (ค่าเริ่มต้น)</option>'+MON.map(function(m,i){return '<option value="'+(i+1)+'">'+m+'</option>';}).join('');
     h+='<div class="sect" data-tid="'+t.tech_id+'"><div class="sect-h" onclick="toggleSect(this)"><span class="sect-t"><span class="ic">'+(t.active?'🟢':'⚪')+'</span>'+esc(t.name)+'<span class="sub">'+(t.active?'รับคิว':'ปิดรับคิว')+'</span></span><span class="chev">▾</span></div><div class="sect-b">'+
-      '<div class="statusline" style="margin:8px 0 4px"><span style="flex:1;font-size:13px;color:var(--muted)">สถานะรับคิว</span><label class="sw"><input type="checkbox" class="tactive"'+(t.active?' checked':'')+' onchange="toggleTechActive(\''+t.tech_id+'\',this.checked)"><span class="sl"></span></label></div>';
-    var rows=''; for(var i=0;i<7;i++){ var hh=byDay[i]||{}, on=!!byDay[i];
-      rows+='<div class="dayrow" data-d="'+i+'"><span class="dn">'+THD[i]+'</span><label class="sw"><input type="checkbox" class="dto"'+(on?' checked':'')+'><span class="sl"></span></label><div class="tmz"><input type="time" class="ds" value="'+(hh.start||'10:00')+'"><input type="time" class="de" value="'+(hh.end||'19:00')+'"></div></div>'; }
-    h+='<label class="lbl">วัน–เวลาทำงาน</label>'+rows+'<button class="btn sec sm" style="margin-top:10px" onclick="saveTech(\''+t.tech_id+'\',this)">บันทึกเวลา</button></div></div>';
+      '<div class="statusline" style="margin:8px 0 4px"><span style="flex:1;font-size:13px;color:var(--muted)">สถานะรับคิว</span><label class="sw"><input type="checkbox" class="tactive"'+(t.active?' checked':'')+' onchange="toggleTechActive(\''+t.tech_id+'\',this.checked)"><span class="sl"></span></label></div>'+
+      '<label class="lbl">เดือน (ตั้งต่างกันรายเดือน · ใช้ซ้ำทุกปี)</label><select class="in" id="mon-'+t.tech_id+'" onchange="renderTechMonth(\''+t.tech_id+'\')">'+mopts+'</select>'+
+      '<div class="mini" id="monhint-'+t.tech_id+'" style="margin-top:4px"></div>'+
+      '<label class="lbl" style="margin-top:8px">วัน–เวลาทำงาน</label><div id="rows-'+t.tech_id+'">'+techDayRows(t.tech_id,0)+'</div>'+
+      '<button class="btn sec sm" style="margin-top:10px" onclick="saveTech(\''+t.tech_id+'\',this)">บันทึกเวลาเดือนนี้</button></div></div>';
   });
   /* วันลา (ยุบได้) */
   var byId={}; s.techs.forEach(function(t){byId[t.tech_id]=t.name;});
@@ -447,9 +477,21 @@ function renderTech(){ var s=SCHED, box=document.getElementById('techBody');
 function toggleTechActive(tid,on){ api('setTechActive',{tech_id:tid,active:on}).then(function(r){ if(r&&r.ok){ toast(on?'เปิดรับคิวแล้ว':'ปิดรับคิวแล้ว'); var sec=document.querySelector('.sect[data-tid="'+tid+'"]'); if(sec){ var ic=sec.querySelector('.ic'),sub=sec.querySelector('.sub'); if(ic)ic.innerText=on?'🟢':'⚪'; if(sub)sub.innerText=on?'รับคิว':'ปิดรับคิว'; } } else toast('ไม่สำเร็จ',1); }); }
 function saveShop(){ var off=[]; [].forEach.call(document.getElementById('shWeekly').children,function(c){ if(c.classList.contains('on'))off.push(c.dataset.d); });
   api('saveShopHours',{openTime:document.getElementById('shOpen').value,closeTime:document.getElementById('shClose').value,weeklyOff:off.join(','),holidayDates:document.getElementById('shHoliday').value.trim()}).then(function(r){ toast(r&&r.ok?'บันทึกเวลาทำการแล้ว':'บันทึกไม่สำเร็จ',!(r&&r.ok)); }); }
-function saveTech(tid,btn){ var card=btn.closest('.sect-b'); var rows=[];
+function techDayRows(tid,month){ var hrs=((SCHED&&SCHED.hours)||[]).filter(function(x){return x.tech_id===tid;});
+  var mRows=hrs.filter(function(x){return Number(x.month||0)===Number(month);});
+  var use=mRows.length?mRows:hrs.filter(function(x){return Number(x.month||0)===0;});
+  var byDay={}; use.forEach(function(x){byDay[x.day_of_week]=x;});
+  var rows=''; for(var i=0;i<7;i++){ var hh=byDay[i]||{}, on=!!byDay[i];
+    rows+='<div class="dayrow" data-d="'+i+'"><span class="dn">'+THD[i]+'</span><label class="sw"><input type="checkbox" class="dto"'+(on?' checked':'')+'><span class="sl"></span></label><div class="tmz"><input type="time" class="ds" value="'+(hh.start||'11:00')+'"><input type="time" class="de" value="'+(hh.end||'23:00')+'"></div></div>'; }
+  return rows; }
+function renderTechMonth(tid){ var mSel=document.getElementById('mon-'+tid); var m=Number(mSel.value)||0;
+  document.getElementById('rows-'+tid).innerHTML=techDayRows(tid,m);
+  var hrs=((SCHED&&SCHED.hours)||[]).filter(function(x){return x.tech_id===tid && Number(x.month||0)===m;});
+  var hint=document.getElementById('monhint-'+tid);
+  if(hint)hint.innerHTML=(m===0)?'ตารางเริ่มต้น ใช้กับทุกเดือนที่ไม่ได้ตั้งเฉพาะ':(hrs.length?'มีตารางเฉพาะเดือนนี้แล้ว':'ยังไม่มีตารางเฉพาะเดือนนี้ — แสดงค่าจาก "ทุกเดือน" (บันทึกเพื่อตั้งเฉพาะเดือนนี้)'); }
+function saveTech(tid,btn){ var card=btn.closest('.sect-b'); var rows=[]; var m=Number((document.getElementById('mon-'+tid)||{}).value)||0;
   [].forEach.call(card.querySelectorAll('.dayrow'),function(dr){ if(dr.querySelector('.dto').checked)rows.push({day_of_week:Number(dr.dataset.d),start:dr.querySelector('.ds').value,end:dr.querySelector('.de').value}); });
-  btn.disabled=true; api('saveTechHours',{tech_id:tid,rows:rows}).then(function(r){ btn.disabled=false; toast(r&&r.ok?('บันทึกเวลาช่างแล้ว ('+r.data.saved+' วัน)'):'บันทึกไม่สำเร็จ',!(r&&r.ok)); }).catch(function(){ btn.disabled=false; toast('เชื่อมต่อไม่สำเร็จ',1); }); }
+  btn.disabled=true; api('saveTechHours',{tech_id:tid,month:m,rows:rows}).then(function(r){ btn.disabled=false; if(r&&r.ok){ toast('บันทึกเวลา'+(m?MON[m-1]:'ทุกเดือน')+'แล้ว ('+r.data.saved+' วัน)'); loadTech(); } else toast('บันทึกไม่สำเร็จ',1); }).catch(function(){ btn.disabled=false; toast('เชื่อมต่อไม่สำเร็จ',1); }); }
 function addOff(){ var tid=document.getElementById('offTech').value, date=document.getElementById('offDate').value; if(!date){ toast('เลือกวันที่',1); return; }
   api('addTechOff',{tech_id:tid,date:date,start:document.getElementById('offStart').value,end:document.getElementById('offEnd').value,note:document.getElementById('offNote').value.trim()}).then(function(r){ if(!r||!r.ok){ toast((r&&r.message)||'เพิ่มไม่สำเร็จ',1); return; } loadTech(); toast('เพิ่มวันลาแล้ว'); }); }
 function rmOff(row){ api('removeTechOff',{row:row}).then(function(r){ if(r&&r.ok){ loadTech(); toast('ลบแล้ว'); } else toast('ลบไม่สำเร็จ',1); }); }
