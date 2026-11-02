@@ -232,7 +232,7 @@ textarea.in{min-height:70px;resize:vertical;font-size:12px;font-family:'IBM Plex
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var TOKEN='', SCHED=null, SETTINGS=null, TAB='dash';
+var TOKEN='', SCHED=null, SETTINGS=null, TAB='dash', FULL=false, ROLE='', MYTECH='';
 var THD=['อา','จ','อ','พ','พฤ','ศ','ส'];
 function api(a,p){ return fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:a,token:TOKEN||'',payload:p||{}})}).then(function(r){return r.json();}); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(m){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m];}); }
@@ -252,13 +252,42 @@ function doLogin(){ var u=document.getElementById('luser').value.trim(), p=docum
   }).catch(function(){ document.getElementById('loginErr').innerText='เชื่อมต่อไม่สำเร็จ'; }); }
 function doLogout(){ api('logout',{}); TOKEN=''; setTok(''); location.reload(); }
 function boot(){ api('bootstrap',{}).then(function(r){ if(!r||!r.ok){ if(r&&r.code==='AUTH'){ setTok(''); location.reload(); return; } toast((r&&r.message)||'โหลดไม่สำเร็จ',1); return; }
-    var u=r.data.user; if(!u.full){ document.body.innerHTML='<div style="padding:46px 20px;text-align:center;color:#b3aa9c">หน้านี้สำหรับผู้จัดการ/เจ้าของเท่านั้น</div>'; return; }
-    document.getElementById('uInfo').innerText=(u.name||'')+' · '+(u.role==='owner'?'เจ้าของ':'ผู้จัดการ');
+    var u=r.data.user; FULL=!!u.full; ROLE=u.role||''; MYTECH=u.tech_id||'';
+    document.getElementById('uInfo').innerText=(u.name||'')+' · '+({owner:'เจ้าของ',manager:'ผู้จัดการ',staff:'พนักงาน'}[u.role]||u.role||'');
     document.getElementById('app').classList.remove('hide');
+    if(!FULL){ applyStaffMode(); return; }
     buildQuick('dQuick',setDashRange); buildQuick('aQuick',setAcctRange);
     setRangeThisMonth('dFrom','dTo'); setRangeThisMonth('aFrom','aTo'); document.getElementById('exDate').value=iso(new Date());
     setTab('dash');
   }).catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
+/* โหมดพนักงาน: เห็นคิวงาน (ดูอย่างเดียว) + ลางานของตัวเอง · ส่วนสำคัญต้องเข้าโหมดผู้จัดการ */
+function applyStaffMode(){
+  ['dash','acct','settings','tech'].forEach(function(t){ var b=document.querySelector('.tabbtn[data-t="'+t+'"]'); if(b)b.style.display='none'; });
+  // ปุ่มลางาน + เข้าโหมดผู้จัดการ
+  var bar=document.querySelector('.tabbar')||document.querySelector('.tabbtn').parentNode;
+  if(!document.getElementById('tabLeave')){ var lb=document.createElement('button'); lb.className='tabbtn'; lb.id='tabLeave'; lb.innerHTML='🌴 ลางาน'; lb.onclick=function(){ staffTab('leave'); }; bar.appendChild(lb); }
+  var who=document.querySelector('.who');
+  if(who && !document.getElementById('elevBtn')){ var eb=document.createElement('button'); eb.className='lo'; eb.id='elevBtn'; eb.style.marginRight='6px'; eb.innerHTML='🔒 โหมดผู้จัดการ'; eb.onclick=elevateManager; who.insertBefore(eb, who.firstChild); }
+  // สร้าง pane ลางาน ถ้ายังไม่มี
+  if(!document.getElementById('paneLeave')){ var pane=document.createElement('div'); pane.id='paneLeave'; pane.className='tabpane hide';
+    pane.innerHTML='<div class="card"><h2>🌴 แจ้งลางาน / วันหยุดของฉัน</h2><div class="mini" style="margin-top:2px">แจ้งวันที่หยุด ระบบจะไม่จัดคิวให้วันนั้น · ลบได้ถ้าเปลี่ยนใจ</div>'+
+      '<div class="row2" style="margin-top:10px"><div><label class="lbl">วันที่หยุด</label><input type="date" class="in" id="lvDate"></div><div><label class="lbl">หมายเหตุ (ไม่บังคับ)</label><input class="in" id="lvNote" placeholder="เช่น ลากิจ"></div></div>'+
+      '<div class="row2" style="margin-top:8px"><div><label class="lbl">เริ่ม (เว้นว่าง=ทั้งวัน)</label><input class="in" id="lvStart" placeholder="11:00"></div><div><label class="lbl">ถึง</label><input class="in" id="lvEnd" placeholder="15:00"></div></div>'+
+      '<button class="btn" style="margin-top:12px" onclick="addMyLeave()">บันทึกวันลา</button><div id="lvList" style="margin-top:14px"></div></div>';
+    document.getElementById('app').appendChild(pane); }
+  staffTab('queue');
+}
+function staffTab(t){ ['queue','leave'].forEach(function(x){ var p=document.getElementById('pane'+cap(x)); if(p)p.classList.toggle('hide',x!==t); });
+  [].forEach.call(document.querySelectorAll('.tabbtn'),function(b){ b.classList.toggle('on', (b.dataset.t===t)||(t==='leave'&&b.id==='tabLeave')); });
+  if(t==='queue')loadQueue(); if(t==='leave'){ var d=document.getElementById('lvDate'); if(d&&!d.value)d.value=iso(new Date()); loadMyLeave(); } window.scrollTo(0,0); }
+function elevateManager(){ document.getElementById('loginErr').innerText='เข้าสู่ระบบด้วยบัญชีผู้จัดการ/เจ้าของ'; document.getElementById('loginModal').classList.add('show'); }
+function loadMyLeave(){ var box=document.getElementById('lvList'); api('techSchedule',{}).then(function(r){ if(!r||!r.ok){ box.innerHTML=''; return; }
+  var mine=(r.data.off||[]).filter(function(o){ return String(o.tech_id)===String(MYTECH); });
+  box.innerHTML='<div class="lbl" style="margin:0 0 6px">วันลาของฉัน</div>'+(mine.length?mine.sort(function(a,b){return a.date<b.date?1:-1;}).map(function(o){ var tm=(o.start&&o.end)?(' '+o.start+'–'+o.end):' (ทั้งวัน)'; return '<div class="offrow"><div><b>'+esc(o.date)+'</b>'+tm+(o.note?(' <span class="mini" style="margin:0">· '+esc(o.note)+'</span>'):'')+'</div><button class="x" onclick="rmMyLeave('+o.row+')">✕</button></div>'; }).join(''):'<div class="empty">ยังไม่มีวันลา</div>'); }); }
+function addMyLeave(){ var date=document.getElementById('lvDate').value; if(!date){ toast('เลือกวันที่',1); return; }
+  if(!MYTECH){ toast('บัญชีนี้ไม่ได้ผูกกับช่าง',1); return; }
+  api('addTechOff',{date:date,start:document.getElementById('lvStart').value.trim(),end:document.getElementById('lvEnd').value.trim(),note:document.getElementById('lvNote').value.trim()}).then(function(r){ if(r&&r.ok){ toast('บันทึกวันลาแล้ว'); document.getElementById('lvNote').value=''; loadMyLeave(); } else toast((r&&r.message)||'ไม่สำเร็จ',1); }); }
+function rmMyLeave(row){ api('removeTechOff',{row:row}).then(function(r){ if(r&&r.ok){ toast('ลบแล้ว'); loadMyLeave(); } else toast((r&&r.message)||'ลบไม่สำเร็จ',1); }); }
 function setTab(t){ TAB=t; ['dash','queue','tech','acct','settings'].forEach(function(x){ document.getElementById('pane'+cap(x)).classList.toggle('hide',x!==t); });
   [].forEach.call(document.querySelectorAll('.tabbtn'),function(b){ b.classList.toggle('on',b.dataset.t===t); });
   if(t==='dash')loadDash(); if(t==='queue')loadQueue(); if(t==='tech'){ loadTech(); var cy=document.getElementById('cmYm'); if(cy&&!cy.value)cy.value=iso(new Date()).slice(0,7); loadCommissions(); }
