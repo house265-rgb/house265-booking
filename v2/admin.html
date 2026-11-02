@@ -94,6 +94,10 @@ textarea.in{min-height:70px;resize:vertical;font-size:12px;font-family:'IBM Plex
 .wk{display:flex;gap:5px;flex-wrap:wrap}.wkd{border:1px solid var(--line);border-radius:9px;padding:7px 11px;font-size:13px;cursor:pointer;background:var(--bg2);color:var(--muted);font-family:inherit}
 .wkd.on{border-color:var(--crit);color:var(--crit);background:rgba(217,138,138,.1)}
 .offrow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.cmwait{font-size:10px;font-weight:600;border-radius:999px;padding:0 6px;margin-left:3px;color:#d9b45a;background:rgba(217,180,90,.14)}
+.cmbtn{border:1px solid var(--line);background:var(--bg2);color:var(--fg);border-radius:8px;padding:5px 11px;font-size:12.5px;font-weight:600;margin-left:6px;cursor:pointer}
+.cmbtn.ok{border-color:rgba(121,192,138,.5);color:var(--ok)}.cmbtn.no{border-color:rgba(217,138,138,.5);color:var(--crit)}
+.cmbtn:active{transform:scale(.96)}
 .x{background:none;border:none;color:var(--crit);font-size:16px;cursor:pointer}
 .empty{text-align:center;color:var(--faint);padding:18px;font-size:14px}
 /* queue — date strip + prep */
@@ -146,7 +150,18 @@ textarea.in{min-height:70px;resize:vertical;font-size:12px;font-family:'IBM Plex
   <div id="paneQueue" class="tabpane hide"><div id="queueBody"><div class="empty">กำลังโหลด…</div></div></div>
 
   <!-- ===== TECH ===== -->
-  <div id="paneTech" class="tabpane hide"><div id="techBody"><div class="empty">กำลังโหลด…</div></div></div>
+  <div id="paneTech" class="tabpane hide"><div id="techBody"><div class="empty">กำลังโหลด…</div></div>
+    <div class="card" style="margin-top:14px">
+      <h2>✅ อนุมัติค่ามือช่าง</h2>
+      <div class="mini" style="margin-top:2px">ยืนยันค่ามือก่อนจ่ายเงินช่าง · สถานะนี้ใช้สำหรับการจ่ายเงินเท่านั้น ไม่กระทบงบกำไรขาดทุน</div>
+      <div class="row2" style="margin-top:10px">
+        <div><label class="lbl">เดือน</label><input type="month" class="in" id="cmYm" onchange="loadCommissions()"></div>
+        <div><label class="lbl">สถานะ</label><select class="in" id="cmStatus" onchange="loadCommissions()"><option value="รอยืนยัน">รอยืนยัน</option><option value="">ทั้งหมด</option><option value="ยืนยันแล้ว">ยืนยันแล้ว</option><option value="ปฏิเสธ">ปฏิเสธ</option></select></div>
+      </div>
+      <div id="commSum" style="margin-top:12px"></div>
+      <div id="commList" style="margin-top:6px"><div class="empty">กำลังโหลด…</div></div>
+    </div>
+  </div>
 
   <!-- ===== ACCOUNTING ===== -->
   <div id="paneAcct" class="tabpane hide">
@@ -197,7 +212,14 @@ textarea.in{min-height:70px;resize:vertical;font-size:12px;font-family:'IBM Plex
   </div>
 
   <!-- ===== SETTINGS ===== -->
-  <div id="paneSettings" class="tabpane hide"><div id="setBody"><div class="empty">กำลังโหลด…</div></div></div>
+  <div id="paneSettings" class="tabpane hide"><div id="setBody"><div class="empty">กำลังโหลด…</div></div>
+    <div class="card" style="margin-top:14px">
+      <h2>👤 จัดการผู้ใช้</h2>
+      <div class="mini" style="margin-top:2px">เปลี่ยนรหัสผ่าน / เพิ่มผู้ใช้ / เปิด-ปิดการใช้งาน · <b>เพิ่มผู้ใช้ + เปิด-ปิด = เฉพาะเจ้าของ</b></div>
+      <div id="userList" style="margin-top:12px"><div class="empty">กำลังโหลด…</div></div>
+      <div id="addUserBox" style="margin-top:12px"></div>
+    </div>
+  </div>
 </div>
 
 <div class="modal" id="loginModal"><div class="mbox"><div class="mh">เข้าสู่ระบบ · House265 ผู้จัดการ</div><div class="mc">
@@ -239,10 +261,10 @@ function boot(){ api('bootstrap',{}).then(function(r){ if(!r||!r.ok){ if(r&&r.co
   }).catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
 function setTab(t){ TAB=t; ['dash','queue','tech','acct','settings'].forEach(function(x){ document.getElementById('pane'+cap(x)).classList.toggle('hide',x!==t); });
   [].forEach.call(document.querySelectorAll('.tabbtn'),function(b){ b.classList.toggle('on',b.dataset.t===t); });
-  if(t==='dash')loadDash(); if(t==='queue')loadQueue(); if(t==='tech')loadTech();
+  if(t==='dash')loadDash(); if(t==='queue')loadQueue(); if(t==='tech'){ loadTech(); var cy=document.getElementById('cmYm'); if(cy&&!cy.value)cy.value=iso(new Date()).slice(0,7); loadCommissions(); }
   if(t==='acct'){ var ym=iso(new Date()).slice(0,7); var by=document.getElementById('bkYm'),sy=document.getElementById('stYm'),wd=document.getElementById('wgDate'); if(by&&!by.value)by.value=ym; if(sy&&!sy.value)sy.value=ym; if(wd&&!wd.value)wd.value=iso(new Date());
     loadAcct();loadExpenses();loadWages();loadBank();loadStockTake();loadMonthly(); }
-  if(t==='settings')loadSettings(); window.scrollTo(0,0); }
+  if(t==='settings'){ loadSettings(); loadUsers(); } window.scrollTo(0,0); }
 function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
 
 /* ---- date range ---- */
@@ -263,7 +285,7 @@ function kpi(k,v,s,sm){ return '<div class="kpi"><div class="k">'+k+'</div><div 
 function barRows(obj,unit,money){ var keys=Object.keys(obj||{}); if(!keys.length)return '<div class="mini">— ไม่มีข้อมูล —</div>';
   var max=Math.max.apply(null,keys.map(function(k){return Math.abs(obj[k]);}))||1;
   return keys.sort(function(a,b){return obj[b]-obj[a];}).map(function(k){ return '<div class="bar"><span class="nm">'+esc(k)+'</span><span class="tr"><span class="fl" style="width:'+Math.round(Math.abs(obj[k])/max*100)+'%"></span></span><span class="vl">'+(money?'฿':'')+fmt(obj[k])+(unit||'')+'</span></div>'; }).join(''); }
-var DASHDATA=null, TRENDG='month', TRENDDATA=null;
+var DASHDATA=null, TRENDG='month', TRENDDATA=null, CM=[];
 function loadDash(){ var box=document.getElementById('dashBody'); box.innerHTML='<div class="empty">กำลังโหลด…</div>';
   var from=document.getElementById('dFrom').value, to=document.getElementById('dTo').value;
   api('reportDashboard',{from:from,to:to}).then(function(r){
@@ -417,6 +439,46 @@ function addOff(){ var tid=document.getElementById('offTech').value, date=docume
   api('addTechOff',{tech_id:tid,date:date,start:document.getElementById('offStart').value,end:document.getElementById('offEnd').value,note:document.getElementById('offNote').value.trim()}).then(function(r){ if(!r||!r.ok){ toast((r&&r.message)||'เพิ่มไม่สำเร็จ',1); return; } loadTech(); toast('เพิ่มวันลาแล้ว'); }); }
 function rmOff(row){ api('removeTechOff',{row:row}).then(function(r){ if(r&&r.ok){ loadTech(); toast('ลบแล้ว'); } else toast('ลบไม่สำเร็จ',1); }); }
 
+/* ---- อนุมัติค่ามือช่าง ---- */
+function cmRange(){ var ym=document.getElementById('cmYm').value||iso(new Date()).slice(0,7); return {from:ym+'-01',to:ym+'-31'}; }
+function cmBadge(st){ var c=(st==='ยืนยันแล้ว')?'delta up':(st==='ปฏิเสธ'?'delta down':'cmwait'); return '<span class="'+c+'">'+esc(st)+'</span>'; }
+function loadCommissions(){ var r=cmRange(), st=document.getElementById('cmStatus').value;
+  var sum=document.getElementById('commSum'), box=document.getElementById('commList'); box.innerHTML='<div class="empty">กำลังโหลด…</div>';
+  api('listCommissions',{from:r.from,to:r.to,status:st}).then(function(res){ if(!res||!res.ok){ box.innerHTML='<div class="empty">'+esc((res&&res.message)||'โหลดไม่สำเร็จ')+'</div>'; return; }
+    var d=res.data; var emp=Object.keys(d.byTech||{}).map(function(k){return esc(k)+' ฿'+fmt(d.byTech[k]);}).join(' · ');
+    sum.innerHTML='<div class="pnl"><span>รอยืนยัน</span><b>฿'+fmt(d.pending)+' · '+d.pendingCount+' รายการ</b></div>'+
+      (emp?('<div class="mini" style="margin:2px 0 0">รวมต่อช่าง (ไม่รวมที่ปฏิเสธ): '+emp+'</div>'):'')+
+      (d.pendingCount?('<button class="btn" style="margin-top:10px" onclick="cmApproveAll()">✓ ยืนยันทั้งหมดที่รอ ('+d.pendingCount+')</button>'):'');
+    if(!d.rows.length){ box.innerHTML='<div class="empty">ไม่มีรายการ</div>'; return; }
+    CM=d.rows;
+    box.innerHTML=d.rows.map(function(c){
+      var act=(c.status==='รอยืนยัน')
+        ? '<button class="cmbtn ok" onclick="cmSet(\''+c.commission_id+'\',\'ยืนยันแล้ว\')">ยืนยัน</button><button class="cmbtn no" onclick="cmSet(\''+c.commission_id+'\',\'ปฏิเสธ\')">ปฏิเสธ</button>'
+        : (c.status==='ยกเลิก' ? '' : '<button class="cmbtn" onclick="cmSet(\''+c.commission_id+'\',\'รอยืนยัน\')">คืนเป็นรอ</button>');
+      if(c.status!=='ยกเลิก') act+='<button class="cmbtn" onclick="cmEdit(\''+c.commission_id+'\')">✎ แก้</button><button class="cmbtn no" onclick="voidSaleFlow(\''+esc(c.sale_id)+'\')">ยกเลิกบิล</button>';
+      return '<div class="offrow" id="cmrow-'+c.commission_id+'"><div><b>฿'+fmt(c.amount)+'</b> · '+esc(c.tech)+' · '+esc(c.item)+(c.qty_mad>1?(' ×'+fmt(c.qty_mad)):'')+
+        ' <span class="mini" style="margin:0">'+esc(c.date)+' · บิล '+esc(c.sale_id)+'</span> '+cmBadge(c.status)+'</div><div style="white-space:normal;text-align:right">'+act+'</div></div>';
+    }).join(''); }).catch(function(){ box.innerHTML='<div class="empty">เชื่อมต่อไม่สำเร็จ</div>'; }); }
+function cmEdit(id){ var c=(CM||[]).filter(function(x){return x.commission_id===id;})[0]; if(!c)return;
+  var el=document.getElementById('cmrow-'+id); if(!el)return;
+  var techs=(SCHED&&SCHED.techs)?SCHED.techs:[];
+  var opts=techs.length?techs.map(function(t){return '<option'+(t.name===c.tech?' selected':'')+'>'+esc(t.name)+'</option>';}).join(''):('<option>'+esc(c.tech)+'</option>');
+  el.innerHTML='<div style="flex:1"><div class="mini" style="margin:0 0 6px">แก้ค่ามือ · บิล '+esc(c.sale_id)+' · '+esc(c.item)+'</div>'+
+    '<div class="row2"><div><label class="lbl">ช่าง</label><select class="in" id="ce-t-'+id+'">'+opts+'</select></div><div><label class="lbl">ค่ามือ (฿)</label><input type="number" class="in" id="ce-a-'+id+'" value="'+c.amount+'"></div></div>'+
+    '<div style="margin-top:8px"><button class="cmbtn ok" onclick="cmEditSave(\''+id+'\')">บันทึก</button><button class="cmbtn" onclick="loadCommissions()">ยกเลิก</button></div></div>'; }
+function cmEditSave(id){ var t=document.getElementById('ce-t-'+id).value, a=document.getElementById('ce-a-'+id).value;
+  api('editCommission',{id:id,tech:t,amount:Number(a)||0}).then(function(r){ if(r&&r.ok){ toast('แก้ค่ามือแล้ว'); loadCommissions(); } else toast((r&&r.message)||'ไม่สำเร็จ',1); }); }
+function voidSaleFlow(sid){ api('saleDetail',{sale_id:sid}).then(function(r){ if(!r||!r.ok){ toast((r&&r.message)||'ไม่พบบิล',1); return; }
+  var d=r.data, s=d.sale;
+  var lines=(d.items||[]).map(function(it){return '• '+it.name+(it.size?(' '+it.size):'')+' ×'+fmt(it.qty)+' = ฿'+fmt(it.amount);}).join('\n');
+  if(!confirm('ยกเลิกบิล '+sid+' ?\n'+(s.customer?('ลูกค้า: '+s.customer+'\n'):'')+'\n'+lines+'\n\nยอดบิล ฿'+fmt(s.total)+' · รับเงิน ฿'+fmt(s.received)+'\n\n⚠ บิลจะหลุดจากบัญชี/ยอดขาย\n⚠ คืนสต๊อกที่ตัดไป\n⚠ ยกเลิกค่ามือของบิลนี้')) return;
+  var ref=prompt('คืนเงินลูกค้าเท่าไหร่?\n• 0 = บันทึกผิดแต่เงินถูก (ไม่คืน)\n• ใส่ยอดจริง ถ้าต้องคืนเงิน', String(s.received||0));
+  if(ref===null) return;
+  api('voidSale',{sale_id:sid,refund:Number(ref)||0,reason:'ยกเลิกจากหน้าค่ามือ'}).then(function(res){ if(res&&res.ok){ toast('ยกเลิกบิล '+sid+' · คืนสต๊อก '+res.data.restocked+' · ค่ามือ '+res.data.voidedComm); loadCommissions(); } else toast((res&&res.message)||'ไม่สำเร็จ',1); }); }); }
+function cmSet(id,status){ api('setCommStatus',{id:id,status:status}).then(function(r){ if(r&&r.ok){ toast(status==='ปฏิเสธ'?'ปฏิเสธแล้ว':(status==='ยืนยันแล้ว'?'ยืนยันแล้ว':'คืนเป็นรอแล้ว')); loadCommissions(); } else toast((r&&r.message)||'ไม่สำเร็จ',1); }); }
+function cmApproveAll(){ var r=cmRange(); if(!confirm('ยืนยันค่ามือช่างที่รออยู่ทั้งหมดในเดือนนี้?'))return;
+  api('setCommStatus',{from:r.from,to:r.to,allPending:true,status:'ยืนยันแล้ว'}).then(function(res){ if(res&&res.ok){ toast('ยืนยันแล้ว '+res.data.updated+' รายการ'); loadCommissions(); } else toast((res&&res.message)||'ไม่สำเร็จ',1); }); }
+
 /* ===================== SETTINGS ===================== */
 function loadSettings(){ var box=document.getElementById('setBody'); box.innerHTML='<div class="empty">กำลังโหลด…</div>';
   api('getSettings',{}).then(function(r){ if(!r||!r.ok){ box.innerHTML='<div class="empty">'+esc((r&&r.message)||'โหลดไม่สำเร็จ')+'</div>'; return; } SETTINGS=r.data; renderSettings();
@@ -436,6 +498,32 @@ function renderSettings(){ var box=document.getElementById('setBody'); var gs={}
   box.innerHTML=h; }
 function saveSettings(){ var vals={}; [].forEach.call(document.querySelectorAll('#setBody [data-key]'),function(el){ if(el.readOnly)return; vals[el.getAttribute('data-key')]=el.value; });
   api('saveSettings',{values:vals}).then(function(r){ if(r&&r.ok){ toast('บันทึกการตั้งค่าแล้ว ('+r.data.saved+' รายการ)'); } else toast((r&&r.message)||'บันทึกไม่สำเร็จ',1); }); }
+
+/* ---- จัดการผู้ใช้ ---- */
+var USERME='', USEROWNER=false;
+function roleTH(r){ return r==='owner'?'เจ้าของ':(r==='manager'?'ผู้จัดการ':'พนักงาน'); }
+function loadUsers(){ var box=document.getElementById('userList'); api('listUsers',{}).then(function(r){ if(!r||!r.ok){ box.innerHTML='<div class="empty">'+esc((r&&r.message)||'โหลดไม่สำเร็จ')+'</div>'; return; }
+  USERME=r.data.me; USEROWNER=!!r.data.isOwner;
+  box.innerHTML=r.data.users.map(function(u){ var canTog=USEROWNER && u.username!==USERME;
+    var canPass=USEROWNER || u.username===USERME;
+    return '<div class="offrow"><div><b>'+esc(u.name||u.username)+'</b> <span class="mini" style="margin:0">@'+esc(u.username)+' · '+roleTH(u.role)+(u.active?'':' · <span class="delta down">ปิดใช้งาน</span>')+'</span></div>'+
+      '<div style="white-space:normal;text-align:right">'+
+      (canPass?'<button class="cmbtn" onclick="chgPass(\''+esc(u.username)+'\')">เปลี่ยนรหัส</button>':'')+
+      (canTog?('<button class="cmbtn '+(u.active?'no':'ok')+'" onclick="togUser(\''+esc(u.username)+'\','+(u.active?'false':'true')+')">'+(u.active?'ปิด':'เปิด')+'</button>'):'')+
+      '</div></div>'; }).join('');
+  renderAddUser(); }).catch(function(){ box.innerHTML='<div class="empty">เชื่อมต่อไม่สำเร็จ</div>'; }); }
+function renderAddUser(){ var box=document.getElementById('addUserBox'); if(!USEROWNER){ box.innerHTML=''; return; }
+  box.innerHTML='<div class="sect" data-open="0"><div class="sect-h" onclick="toggleSect(this)"><span class="sect-t"><span class="ic">➕</span>เพิ่มผู้ใช้ใหม่</span><span class="chev">▾</span></div>'+
+    '<div class="sect-b"><div class="row2" style="margin-top:8px"><div><label class="lbl">ชื่อผู้ใช้ (ล็อกอิน)</label><input class="in" id="nuUser" placeholder="เช่น fiw" autocomplete="off"></div><div><label class="lbl">รหัสผ่าน</label><input class="in" id="nuPass" placeholder="4 ตัวขึ้นไป" autocomplete="new-password"></div></div>'+
+    '<div class="row2" style="margin-top:8px"><div><label class="lbl">ชื่อจริง</label><input class="in" id="nuName" placeholder="ชื่อ-สกุล"></div><div><label class="lbl">สิทธิ์</label><select class="in" id="nuRole"><option value="staff">พนักงาน</option><option value="manager">ผู้จัดการ</option><option value="owner">เจ้าของ</option></select></div></div>'+
+    '<button class="btn" style="margin-top:12px" onclick="addUserUI()">เพิ่มผู้ใช้</button></div></div>'; }
+function addUserUI(){ var un=document.getElementById('nuUser').value.trim(), pw=document.getElementById('nuPass').value, nm=document.getElementById('nuName').value.trim(), role=document.getElementById('nuRole').value;
+  if(!un||!pw){ toast('ใส่ชื่อผู้ใช้และรหัสผ่าน',1); return; }
+  api('addUser',{username:un,password:pw,name:nm,role:role}).then(function(r){ if(r&&r.ok){ toast('เพิ่มผู้ใช้ '+un+' แล้ว'); document.getElementById('nuUser').value=''; document.getElementById('nuPass').value=''; document.getElementById('nuName').value=''; loadUsers(); } else toast((r&&r.message)||'ไม่สำเร็จ',1); }); }
+function chgPass(un){ var pw=prompt('ตั้งรหัสผ่านใหม่ของ @'+un+' (4 ตัวขึ้นไป)',''); if(pw===null)return; if(String(pw).length<4){ toast('รหัสผ่าน 4 ตัวขึ้นไป',1); return; }
+  api('setUserPass',{username:un,password:pw}).then(function(r){ if(r&&r.ok){ toast('เปลี่ยนรหัสผ่าน @'+un+' แล้ว'); } else toast((r&&r.message)||'ไม่สำเร็จ',1); }); }
+function togUser(un,on){ if(!confirm((on?'เปิด':'ปิด')+'การใช้งาน @'+un+' ?'))return;
+  api('setUserActive',{username:un,active:on}).then(function(r){ if(r&&r.ok){ toast('อัปเดตแล้ว'); loadUsers(); } else toast((r&&r.message)||'ไม่สำเร็จ',1); }); }
 
 /* ===================== ACCOUNTING ===================== */
 function loadAcct(){ var box=document.getElementById('acctBody'); box.innerHTML='<div class="empty">กำลังโหลด…</div>';

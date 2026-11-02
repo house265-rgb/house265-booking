@@ -259,7 +259,7 @@ function renderMenu(){ var box=document.getElementById('menuBody');
       '<div style="display:flex;gap:8px"><input class="in" id="manualCode" placeholder="เช่น H000001AB" onkeydown="if(event.key===\'Enter\')addManual()" style="flex:1"><button class="btn" style="width:auto;padding:0 18px" onclick="addManual()">เพิ่ม</button></div>'+
       '</div>';
     h+='<div style="margin:6px 2px 8px"><b style="font-weight:500;font-size:14px">✂️ บริการต่อผม — ลูกค้าเอาผมมาเอง</b><div class="mini">ไม่ใช้สต็อกร้าน · ไม่ต้องสแกน · คิดค่าบริการ + ค่ามือช่าง</div></div>';
-    h+='<div class="grid">'+acctList().map(function(a){ var sv=svcByAcct(a); var p0=Math.round((Number(sv&&sv.byob_base)||0)+(Number(sv&&sv.byob_per_bundle)||0)); return tile('✂️', a, 'เริ่ม '+fmt(p0), '1 ชุด = '+qtyTag(a,1), "openLine('service','"+esc(a)+"')"); }).join('')+'</div>';
+    h+='<div class="grid">'+(acctList().length?acctList().map(function(a){ var sv=svcByAcct(a); var p0=Math.round((Number(sv&&sv.byob_base)||0)+(Number(sv&&sv.byob_per_bundle)||0)); return tile('✂️', a, 'เริ่ม '+fmt(p0), '1 ชุด = '+qtyTag(a,1), "openLine('service','"+esc(a)+"')"); }).join(''):'<div class="empty" style="grid-column:1/-1">ยังไม่มีเทคนิคบริการ — ตรวจชีต Services คอลัมน์ active ต้องเป็น TRUE (หรือรัน fixActiveBlank ในตัวแก้ไข)</div>')+'</div>';
     box.innerHTML=h; return;
   }
   if(CAT==='สินค้าอื่นๆ'){ box.innerHTML='<div class="grid">'+tile('➕','รายการกำหนดเอง','ตั้งราคาเอง','',"openLine('custom','')")+'</div>'+
