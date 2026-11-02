@@ -446,6 +446,7 @@ function renderAcct(d){ var sv=d.service||{revenue:0,cost:0,profit:0}, hp=d.hair
   '<div class="pnl"><span style="color:var(--gold-soft)">▸ ต่อผม/บริการ</span><b></b></div>'+
   '<div class="pnl"><span style="padding-left:12px">รายได้</span><b>฿'+fmt(sv.revenue)+'</b></div>'+
   '<div class="pnl neg"><span style="padding-left:12px">− ต้นทุน (ผม+อุปกรณ์+ค่าช่าง)</span><b>฿'+fmt(sv.cost)+'</b></div>'+
+  ((sv.discount>0)?('<div class="pnl neg"><span style="padding-left:12px">− ส่วนลด/โปรโมชัน</span><b>฿'+fmt(sv.discount)+'</b></div>'):'')+
   '<div class="pnl '+(sv.profit>=0?'pos':'neg')+'"><span style="padding-left:12px">กำไร-ต่อผม</span><b>฿'+fmt(sv.profit)+'</b></div>'+
   '<div class="pnl" style="margin-top:4px"><span style="color:var(--gold-soft)">▸ ขายผม</span><b></b></div>'+
   '<div class="pnl"><span style="padding-left:12px">รายได้</span><b>฿'+fmt(hp.revenue)+'</b></div>'+
