@@ -123,7 +123,9 @@ textarea.in{min-height:70px;resize:vertical;font-size:12px;font-family:'IBM Plex
 .sbadge.ok{color:var(--ok);border-color:rgba(121,192,138,.4)}.sbadge.wait{color:var(--gold-soft);border-color:var(--gold-dim)}.sbadge.cancel{color:var(--crit);border-color:rgba(217,138,138,.4)}
 .statchip{display:inline-flex;gap:6px;align-items:center;background:var(--bg2);border:1px solid var(--line);border-radius:999px;padding:7px 13px;font-size:13px;margin:0 6px 6px 0}
 .statchip b{color:var(--gold-soft)}
-</style></head>
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
 <body>
 <header class="top"><div class="brand"><b>House<span class="n">265</span></b><span class="tag">Manager</span></div>
   <div class="who"><span class="chip" id="uInfo">—</span><button class="lo" onclick="doLogout()">ออก</button></div></header>
@@ -179,36 +181,20 @@ textarea.in{min-height:70px;resize:vertical;font-size:12px;font-family:'IBM Plex
         <button class="btn" style="margin-top:12px" onclick="addExp()">บันทึกค่าใช้จ่าย</button>
         <div id="expList" style="margin-top:14px"></div>
       </div></div>
-    <!-- บันทึกค่าจ้าง -->
-    <div class="sect" data-open="0"><div class="sect-h" onclick="toggleSect(this)"><span class="sect-t"><span class="ic">👛</span>บันทึกค่าจ้าง (ค่าแรงจ่ายจริง)</span><span class="chev">▾</span></div>
+    <!-- Export Excel บัญชี -->
+    <div class="sect" data-open="0"><div class="sect-h" onclick="toggleSect(this)"><span class="sect-t"><span class="ic">📥</span>Export ไฟล์ Excel บัญชี</span><span class="chev">▾</span></div>
       <div class="sect-b">
-        <div class="mini" style="margin-top:4px">ค่าแรงที่จ่ายช่าง/พนักงานจริง (กระแสเงินสด) · ค่าช่างต่องานคิดอยู่ในต้นทุนขายแล้ว ส่วนนี้ไว้กระทบเงินสดปิดเดือน</div>
-        <div class="row2" style="margin-top:8px"><div><label class="lbl">วันที่</label><input type="date" class="in" id="wgDate"></div><div><label class="lbl">พนักงาน</label><input class="in" id="wgEmp" placeholder="ฟิว/ยิ้ม/ครีม"></div></div>
-        <div class="row2" style="margin-top:8px"><div><label class="lbl">งาน</label><input class="in" id="wgWork" placeholder="ปั้น+ต่อ+ถอด"></div><div><label class="lbl">ค่าแรง (฿)</label><input type="number" class="in" id="wgAmt" placeholder="0"></div></div>
-        <button class="btn" style="margin-top:12px" onclick="addWage()">บันทึกค่าจ้าง</button>
-        <div id="wgList" style="margin-top:14px"></div>
-      </div></div>
-    <!-- ปิดเดือนธนาคาร -->
-    <div class="sect" data-open="0"><div class="sect-h" onclick="toggleSect(this)"><span class="sect-t"><span class="ic">🏦</span>ปิดเดือน · เงินสด-ธนาคาร</span><span class="chev">▾</span></div>
-      <div class="sect-b">
-        <div class="mini" style="margin-top:4px">บันทึกยอดบัญชีร้านสิ้นเดือน + เงินสดจ่าย → คำนวณเงินร้านสุทธิ (หักมัดจำลูกค้า)</div>
-        <label class="lbl">เดือน</label><input type="month" class="in" id="bkYm" onchange="loadBank()">
-        <div class="row2" style="margin-top:8px"><div><label class="lbl">เงินสดจ่ายซื้อผม</label><input type="number" class="in" id="bkHair" oninput="bankCalc()"></div><div><label class="lbl">เงินสดจ่ายอุปกรณ์</label><input type="number" class="in" id="bkEquip" oninput="bankCalc()"></div></div>
-        <div class="row2" style="margin-top:8px"><div><label class="lbl">ค่าแรงจ่าย</label><input type="number" class="in" id="bkWage" oninput="bankCalc()"></div><div><label class="lbl">ยอดบัญชีร้าน (สิ้นเดือน)</label><input type="number" class="in" id="bkBal" oninput="bankCalc()"></div></div>
-        <div class="row2" style="margin-top:8px"><div><label class="lbl">มัดจำลูกค้า (คงค้าง)</label><input type="number" class="in" id="bkDep" oninput="bankCalc()"></div><div><label class="lbl">หมายเหตุ</label><input class="in" id="bkNote"></div></div>
-        <div id="bkCalc" class="prepcard" style="margin-top:10px"></div>
-        <button class="btn" style="margin-top:4px" onclick="saveBank()">บันทึกปิดเดือน</button>
+        <div class="mini" style="margin-top:4px">ดึงข้อมูลบัญชีตามช่วงวันที่ด้านบน (ตั้งแต่–ถึง) เป็นไฟล์ Excel · มี สรุป P&L + รายการขายรายบิล + ค่าใช้จ่าย</div>
+        <button class="btn" style="margin-top:12px" onclick="exportAcctExcel()">📥 ดาวน์โหลด Excel (ช่วงที่เลือก)</button>
       </div></div>
     <!-- stock take -->
     <div class="sect" data-open="0"><div class="sect-h" onclick="toggleSect(this)"><span class="sect-t"><span class="ic">📦</span>Stock take (มูลค่าสต๊อกสิ้นเดือน)</span><span class="chev">▾</span></div>
       <div class="sect-b">
-        <div class="mini" style="margin-top:4px">บันทึกมูลค่าสต๊อกคงเหลือ ณ สิ้นเดือน (เป็นทรัพย์สิน) · กด "ดึงจากระบบ" เพื่อสแน็ปช็อตสต๊อกจริงอัตโนมัติ</div>
+        <div class="mini" style="margin-top:4px">บันทึกมูลค่าสต๊อกคงเหลือ ณ สิ้นเดือน (เป็นทรัพย์สิน) · กด "ดึงจากระบบ" เพื่อสแน็ปช็อตสต๊อกจริง · Export Count Sheet ไปนับเทียบ QR จริงได้</div>
         <div class="row2" style="margin-top:8px;align-items:end"><div><label class="lbl">เดือน</label><input type="month" class="in" id="stYm" onchange="loadStockTake()"></div><div><button class="btn sec" onclick="snapStock()">📸 ดึงจากระบบ</button></div></div>
+        <button class="btn sec" style="margin-top:8px" onclick="exportCountSheet()">📄 Export Count Sheet (นับสต๊อกจริง)</button>
         <div id="stList" style="margin-top:12px"></div>
       </div></div>
-    <!-- สรุปรายเดือน -->
-    <div class="sect" data-open="0"><div class="sect-h" onclick="toggleSect(this)"><span class="sect-t"><span class="ic">📊</span>สรุปรายเดือน</span><span class="chev">▾</span></div>
-      <div class="sect-b"><div id="monthlyBox"><div class="mini">กำลังโหลด…</div></div></div></div>
   </div>
 
   <!-- ===== SETTINGS ===== -->
@@ -291,8 +277,8 @@ function rmMyLeave(row){ api('removeTechOff',{row:row}).then(function(r){ if(r&&
 function setTab(t){ TAB=t; ['dash','queue','tech','acct','settings'].forEach(function(x){ document.getElementById('pane'+cap(x)).classList.toggle('hide',x!==t); });
   [].forEach.call(document.querySelectorAll('.tabbtn'),function(b){ b.classList.toggle('on',b.dataset.t===t); });
   if(t==='dash')loadDash(); if(t==='queue')loadQueue(); if(t==='tech'){ loadTech(); var cy=document.getElementById('cmYm'); if(cy&&!cy.value)cy.value=iso(new Date()).slice(0,7); loadCommissions(); }
-  if(t==='acct'){ var ym=iso(new Date()).slice(0,7); var by=document.getElementById('bkYm'),sy=document.getElementById('stYm'),wd=document.getElementById('wgDate'); if(by&&!by.value)by.value=ym; if(sy&&!sy.value)sy.value=ym; if(wd&&!wd.value)wd.value=iso(new Date());
-    loadAcct();loadExpenses();loadWages();loadBank();loadStockTake();loadMonthly(); }
+  if(t==='acct'){ var sy=document.getElementById('stYm'); if(sy&&!sy.value)sy.value=iso(new Date()).slice(0,7);
+    loadAcct();loadExpenses();loadStockTake(); }
   if(t==='settings'){ loadSettings(); loadUsers(); } window.scrollTo(0,0); }
 function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
 
@@ -307,7 +293,7 @@ function rangeOf(k){ var d=new Date(),y=d.getFullYear(),m=d.getMonth();
 function markQuick(box,k){ [].forEach.call(document.getElementById(box).children,function(c){c.classList.toggle('on',c.dataset.k===k);}); }
 function dClearQuick(){markQuick('dQuick','');} function aClearQuick(){markQuick('aQuick','');}
 function setDashRange(k){ var r=rangeOf(k); document.getElementById('dFrom').value=r[0]; document.getElementById('dTo').value=r[1]; markQuick('dQuick',k); loadDash(); }
-function setAcctRange(k){ var r=rangeOf(k); document.getElementById('aFrom').value=r[0]; document.getElementById('aTo').value=r[1]; markQuick('aQuick',k); loadAcct(); loadExpenses(); loadWages(); }
+function setAcctRange(k){ var r=rangeOf(k); document.getElementById('aFrom').value=r[0]; document.getElementById('aTo').value=r[1]; markQuick('aQuick',k); loadAcct(); loadExpenses(); }
 
 /* ===================== DASHBOARD ===================== */
 function kpi(k,v,s,sm){ return '<div class="kpi"><div class="k">'+k+'</div><div class="v'+(sm?' sm':'')+'">'+v+'</div>'+(s?'<div class="s">'+s+'</div>':'')+'</div>'; }
@@ -596,6 +582,38 @@ function loadStockTake(){ var ym=document.getElementById('stYm').value; if(!ym)r
 function snapStock(){ var ym=document.getElementById('stYm').value; if(!ym){ toast('เลือกเดือน',1); return; } toast('กำลังดึงสต๊อก…');
   api('snapshotStockTake',{ym:ym}).then(function(r){ if(r&&r.ok){ toast('ดึงสต๊อก '+r.data.count+' รุ่น · ฿'+fmt(r.data.total)); loadStockTake(); loadMonthly(); } else toast('ไม่สำเร็จ',1); }); }
 function rmStock(row){ api('removeStockTake',{row:row}).then(function(r){ if(r&&r.ok){ loadStockTake(); } }); }
+/* ---- Export Excel บัญชี (ช่วงวันที่) ---- */
+function exportAcctExcel(){ if(typeof XLSX==='undefined'){ toast('ยังโหลดตัวช่วย Excel ไม่เสร็จ ลองใหม่',1); return; }
+  var from=document.getElementById('aFrom').value, to=document.getElementById('aTo').value; if(!from||!to){ toast('เลือกช่วงวันที่',1); return; }
+  toast('กำลังดึงข้อมูล…');
+  Promise.all([ api('reportAccounting',{from:from,to:to}), api('salesHistory',{dateFrom:from,dateTo:to,limit:500}), api('listExpenses',{from:from,to:to}) ]).then(function(res){
+    var a=(res[0]&&res[0].data)||{}, sales=((res[1]&&res[1].data)||{}).sales||[], exps=((res[2]&&res[2].data)||{}).expenses||[];
+    var wb=XLSX.utils.book_new();
+    var sv=a.service||{}, hp=a.hairSale||{};
+    var pnl=[['งบกำไรขาดทุน House265',''],['ช่วง',from+' ถึง '+to],[''],
+      ['ต่อผม/บริการ','รายได้',sv.revenue||0],['','ต้นทุน',sv.cost||0],['','ส่วนลด',sv.discount||0],['','กำไร',sv.profit||0],[''],
+      ['ขายผม','รายได้',hp.revenue||0],['','ต้นทุน',hp.cost||0],['','กำไร',hp.profit||0],[''],
+      ['กำไรขั้นต้น','',a.grossProfit||0],['ค่าใช้จ่ายอื่น','',a.expenses||0],['กำไรสุทธิ','',a.net||0],
+      ['margin %','',a.margin||0],['จำนวนบิล','',a.saleCount||0]];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(pnl), 'สรุป P&L');
+    var sh=[['วันที่','เลขบิล','ลูกค้า','เบอร์','ยอดรวม','ส่วนลด','รับเงิน','ช่องทาง','หมายเหตุ']];
+    sales.forEach(function(s){ sh.push([s.date,s.sale_id,s.customer,s.phone,s.total,s.discount,s.received,s.pay_method,s.note]); });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sh), 'รายการขาย');
+    var ex=[['วันที่','ประเภท','รายการ','จำนวน','ราคารวม']];
+    exps.forEach(function(e){ ex.push([e.date,e.type,e.item,e.qty,e.total]); });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ex), 'ค่าใช้จ่าย');
+    XLSX.writeFile(wb, 'House265-บัญชี_'+from+'_ถึง_'+to+'.xlsx'); toast('ดาวน์โหลด Excel แล้ว');
+  }).catch(function(){ toast('ดึงข้อมูลไม่สำเร็จ',1); }); }
+/* ---- Export Count Sheet (นับสต๊อกจริงเทียบ QR) ---- */
+function exportCountSheet(){ if(typeof XLSX==='undefined'){ toast('ยังโหลดตัวช่วย Excel ไม่เสร็จ ลองใหม่',1); return; }
+  var ym=document.getElementById('stYm').value||iso(new Date()).slice(0,7);
+  api('listStockTake',{ym:ym}).then(function(r){ var rows=((r&&r.data)||{}).rows||[];
+    if(!rows.length){ toast('ยังไม่มีข้อมูลสต๊อก กด "ดึงจากระบบ" ก่อน',1); return; }
+    var aoa=[['Count Sheet นับสต๊อกจริง — '+ym,'','','','',''],['รายการ','ขนาด(นิ้ว)','คงเหลือระบบ','ต้นทุน/หน่วย','นับจริง','ส่วนต่าง']];
+    rows.forEach(function(s){ aoa.push([s.item,s.size,s.qty,s.unit_cost,'','']); });
+    var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), 'Count Sheet');
+    XLSX.writeFile(wb, 'House265-CountSheet_'+ym+'.xlsx'); toast('ดาวน์โหลด Count Sheet แล้ว · ช่อง "นับจริง" เว้นไว้กรอกหน้างาน');
+  }).catch(function(){ toast('ดึงข้อมูลไม่สำเร็จ',1); }); }
 /* ---- สรุปรายเดือน ---- */
 function loadMonthly(){ api('reportMonthly',{months:6}).then(function(r){ if(!r||!r.ok)return; var box=document.getElementById('monthlyBox'); var ms=(r.data.months||[]).slice().reverse();
   if(!ms.length){ box.innerHTML='<div class="empty">ยังไม่มีข้อมูล</div>'; return; }

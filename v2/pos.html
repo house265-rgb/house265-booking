@@ -329,9 +329,8 @@ function renderProduct(){ var l=LD, ext=(l.mode==='ext'), multi=l.techs.length>1
     h+='<button class="btn sec" style="width:auto;padding:6px 12px;font-size:12px;margin:2px 0 10px" onclick="pdAddTech()">+ เพิ่มช่างร่วม</button>';
   }
   h+='<div class="tot grand" style="font-size:15px"><span>'+(ext?'ราคาขายต่อผม':'ราคาขายเปล่า')+(pdQ()>1?(' <span class="faint" style="font-size:12px">× '+pdQ()+' QR ('+qtyTag(l.technique||l.hair_type,pdQ())+')</span>'):'')+'</span><b id="pdTot" style="font-size:20px">'+fmt(pdTotal())+'</b></div>';
-  if(FULL && ext){ var comm=Math.round(commPerMad(l.technique)); var prof=(l.cost!=null)?(l.extPrice-l.cost-comm):null;
-    h+='<div class="mini"><b>ค่ามือช่าง:</b> '+fmt(comm)+(prof!=null?(' &nbsp;<b>กำไร:</b> <span style="color:'+(prof>=0?'var(--ok)':'var(--crit)')+'">'+fmt(prof)+'</span>'):'')+'</div>'; }
-  else if(FULL && !ext && l.cost!=null){ h+='<div class="mini"><b>กำไร:</b> <span style="color:var(--ok)">'+fmt(l.plainPrice-l.cost)+'</span></div>'; }
+  if(FULL && ext){ var comm=Math.round(commPerMad(l.technique));
+    h+='<div class="mini"><b>ค่ามือช่าง:</b> '+fmt(comm)+'</div>'; }
   h+='<div class="row2" style="margin-top:16px"><button class="btn sec" onclick="closeLine()">ยกเลิก</button><button class="btn" onclick="confirmProduct()">'+(LEDIT!=null?'บันทึก':'＋ เพิ่มลงบิล')+'</button></div>';
   document.getElementById('lmBody').innerHTML=h;
   document.getElementById('lmTitle').innerText=(LEDIT!=null?'แก้ไขรายการ':esc(l.name||'ขายผม'));
@@ -381,8 +380,8 @@ function renderLine(){ var l=LD, multi=l.techs.length>1, sum=lmSum(); var h='';
   h+='<label class="lbl">ช่างที่ทำ'+(multi?(' · รวม '+sum+'%'+(Math.round(sum)!==100?' ⚠':'')):'')+'</label>';
   h+=l.techs.map(function(t,i){ return '<div class="tw"><select class="in" style="flex:1" onchange="lmName('+i+',this.value)">'+techOpts(t.name)+'</select>'+(multi?('<input class="in" type="number" style="width:56px;text-align:center" value="'+(t.split||0)+'" onchange="lmSplit('+i+',parseFloat(this.value)||0)"><span class="faint">%</span><button class="x" onclick="lmRmTech('+i+')">✕</button>'):'')+'</div>'; }).join('');
   h+='<button class="btn sec" style="width:auto;padding:6px 12px;font-size:12px;margin:2px 0 10px" onclick="lmAddTech()">+ เพิ่มช่างร่วม</button>';
-  if(FULL){ var comm=Math.round(lineComm(l.item,l.kind,l.qty)); var profit=(l.price||0)-comm;
-    h+='<div class="mini"><b>ค่ามือช่าง:</b> '+fmt(comm)+(l.kind==='move'?' <span class="faint">(ต่อ×จำนวน + ถอดเหมา)</span>':(l.kind==='removal'?' <span class="faint">(เหมา)</span>':''))+' &nbsp;<b>กำไรบริการ:</b> <span style="color:'+(profit>=0?'var(--ok)':'var(--crit)')+'">'+fmt(profit)+'</span></div>'; }
+  if(FULL){ var comm=Math.round(lineComm(l.item,l.kind,l.qty));
+    h+='<div class="mini"><b>ค่ามือช่าง:</b> '+fmt(comm)+(l.kind==='move'?' <span class="faint">(ต่อ×จำนวน + ถอดเหมา)</span>':(l.kind==='removal'?' <span class="faint">(เหมา)</span>':''))+'</div>'; }
   h+='<div class="row2" style="margin-top:16px"><button class="btn sec" onclick="closeLine()">ยกเลิก</button><button class="btn" onclick="confirmLine()">'+(LEDIT!=null?'บันทึก':'＋ เพิ่มลงบิล')+'</button></div>';
   document.getElementById('lmBody').innerHTML=h; document.getElementById('lmTitle').innerText=(LEDIT!=null?'แก้ไขรายการ':esc(l.item||'รายการ')); }
 function confirmLine(){ var l=LD; if(!l.item){ toast('กรอกชื่อรายการ',1); return; } if(!(Number(l.price)>0)){ toast('ใส่ราคา',1); return; }
@@ -439,7 +438,7 @@ function renderCart(){ var box=document.getElementById('cartBody');
     if(l.kind==='product'){ if(l.hair_type)det.push(l.hair_type); if(l.length_in)det.push(l.length_in+'นิ้ว'); if(l.grade)det.push('เกรด '+l.grade); if(l.texture)det.push(l.texture); if(l.color)det.push('สี '+l.color); det.push(qtyTag(l.hair_type,prodQty(l))); if(l.barcode)det.push(l.barcode);
       if(l.mode==='ext'){ tag='<span style="color:var(--gold-soft);font-size:11px;background:var(--gold-ghost);border:1px solid var(--gold-dim);border-radius:6px;padding:1px 6px;margin-left:4px">✂️ ต่อผม'+(lineTechNames(l)?(' · '+esc(lineTechNames(l))):'')+'</span>'; }
       else { tag='<span style="color:var(--faint);font-size:11px;margin-left:4px">· ขายเปล่า</span>'; }
-    } else { if(l.kind==='custom')det.push((l.qty||1)+' ชิ้น'); else if(l.kind==='removal')det.push('เหมา'); else det.push(qtyTag(l.technique||l.item,l.qty||1)); var tn=lineTechNames(l); if(tn)det.push(tn); }
+    } else { if(l.kind==='custom')det.push((l.qty||1)+' ชิ้น'); else if(l.kind==='removal')det.push('เหมา'); else { if(l.size)det.push(l.size); if(l.color)det.push('สี '+l.color); det.push('นำผมมาเอง'); det.push(qtyTag(l.technique||l.item,l.qty||1)); } var tn=lineTechNames(l); if(tn)det.push('ช่าง '+tn); }
     return '<div style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)"><div style="flex:1;min-width:0;cursor:pointer" onclick="editLine('+i+')"><b style="font-weight:500">'+esc(l.kind==='product'?l.name:l.item)+'</b>'+tag+' <span style="color:var(--gold);font-size:12px">✎</span><div class="mini" style="margin-top:2px">'+esc(det.join(' · '))+'</div></div><div class="mono" style="color:var(--gold-soft)">'+fmt(lineTotal(l))+'</div><button class="x" onclick="delLine('+i+')">✕</button></div>';
   }).join('');
   var sub=cartSub(), disc=window._disc||0, dep=cartDeposit(), due=cartDue();
@@ -671,6 +670,7 @@ function closeImg(){ document.getElementById('imgModal').classList.remove('show'
  * =================================================================== */
 var QBK=null, QBV=null, QCANCEL=false, QGUIDE=[], QGTECH='';
 function svcById(id){ return (DATA.services||[]).filter(function(s){return String(s.service_id)===String(id);})[0]; }
+function colorNm(id){ if(!id)return ''; var c=(DATA.colors||[]).filter(function(x){return String(x.color_id)===String(id)||String(x.name)===String(id);})[0]; return c?String(c.name):String(id); }
 function initQueueDate(){ var d=document.getElementById('qDate'); if(d&&!d.value)d.value=todayStr(); }
 function qPreset(n){ var d=document.getElementById('qDate'); if(n==='all'){ d.value=''; } else { var x=new Date(); x.setDate(x.getDate()+n); d.value=ymd_(x); } loadQueue(); }
 function qStatusBadge(s){ if(s==='เช็คเอาต์')return '<span class="badge ok">✓ เช็คเอาต์</span>'; if(s==='ยกเลิก')return '<span class="badge bad">ยกเลิก</span>'; if(s==='ยืนยัน')return '<span class="badge ok">✓ ยืนยัน</span>'; return '<span class="badge warn">⏳ รอ</span>'; }
@@ -737,7 +737,7 @@ function checkoutToCart(bk,v){ if(!bk)return;
       hair_type:ht, length_in:len, color:(v&&v.color)||'', grade:(v&&v.grade)||'', texture:(v&&v.texture)||'', plainPrice:perMad, extPrice:perMad, cost:null,
       mode:'ext', technique:technique, size:sizeLabelFor(technique,len), techs:defTech.slice(), qty_mad:qty } });
   } else { var svc=svcById(bk.service_id)||{}; var it=svc.acct_name||bk.service_id||'บริการต่อผม';
-    QGUIDE.push({ type:'บริการต่อผม (นำผมมาเอง/ไม่ตัดสต็อก)', scan:false, line:{ kind:'service', item:it, size:String(bk.size||''), qty:qty, unit:0, price:Math.round(Number(bk.suggest_total)||0), technique:it, techs:defTech.slice() } }); }
+    QGUIDE.push({ type:'byob', scan:false, line:{ kind:'service', item:it, size:String(bk.size||''), color:colorNm(bk.color_id), qty:qty, unit:0, price:Math.round(Number(bk.suggest_total)||0), technique:it, techs:defTech.slice() } }); }
   /* ซื้อผมเพิ่ม */
   if(bk.addon_variant_id){ var av=bk.addon_variant||{}, aq=Math.max(1,Math.round(Number(bk.addon_qty)||1)), aht=av.hair_type||'', alen=String(av.length_in||''), atech=techniqueFor(aht);
     var aprice=laborFor(atech,alen)||0;
@@ -753,16 +753,26 @@ function checkoutToCart(bk,v){ if(!bk)return;
   var cn=document.getElementById('cName'); if(cn)cn.value=bk.name||''; var cp=document.getElementById('cPhone'); if(cp)cp.value=bk.phone||'';
   toast('ดึงคิวแล้ว · หยิบของจริง/สแกน QR ตามไกด์ไลน์ แล้วเลือกช่าง'); }
 /* ไกด์ไลน์ตามจอง (อ้างอิง) — โชว์เหนือบิล · กด "เพิ่ม" เพื่อนำลงบิล แล้วแก้/สแกนทับได้ */
+function guideSpec(g){ var l=g.line, p=[];
+  if(l.kind==='product'){ p.push(l.hair_type||l.name); p.push(g.scan?'ตัดสต็อก':'');
+    if(l.length_in)p.push(l.length_in+'นิ้ว'); if(l.grade)p.push('เกรด '+l.grade); if(l.texture)p.push(l.texture); if(l.color)p.push('สี '+l.color);
+    p.push(qtyTag(l.hair_type,Math.round(l.qty_mad||1))); }
+  else if(l.kind==='removal'){ p.push(l.item); p.push(qtyTag(l.technique||l.item,l.qty||1)); }
+  else { p.push(l.technique||l.item); p.push('นำผมมาเอง'); if(l.size)p.push(l.size); if(l.color)p.push('สี '+l.color); p.push(qtyTag(l.technique||l.item,l.qty||1)); }
+  return p.filter(Boolean).join(' : '); }
 function guideCardHtml(){ if(!QGUIDE.length)return '';
-  var rows=QGUIDE.map(function(g,i){ var l=g.line, parts=[];
-    if(l.kind==='product'){ if(l.hair_type)parts.push(l.hair_type); if(l.length_in)parts.push(l.length_in+'นิ้ว'); if(l.grade)parts.push('เกรด '+l.grade); if(l.texture)parts.push(l.texture); if(l.color)parts.push('สี '+l.color); parts.push(qtyTag(l.hair_type,Math.round(l.qty_mad||1))); }
-    else { if(l.size)parts.push(l.size); parts.push(l.kind==='removal'?'เหมา':qtyTag(l.technique||l.item,l.qty||1)); }
-    return '<div style="display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--line)"><div style="flex:1;min-width:0"><b style="font-weight:500;font-size:13px">'+esc(l.kind==='product'?l.name:l.item)+'</b> <span class="mini" style="color:var(--gold-soft)">'+esc(g.type)+'</span><div class="mini" style="margin-top:1px">'+esc(parts.join(' · '))+(g.scan?' · <span style="color:var(--gold)">ต้องสแกน QR จริง</span>':'')+'</div></div>'+
-      '<button class="btn sec" style="width:auto;padding:4px 12px;font-size:12px;flex:none" onclick="guideAdd('+i+')">+ เพิ่ม</button></div>'; }).join('');
-  return '<div style="margin-bottom:10px;padding:10px 12px;background:var(--bg2);border:1px solid var(--gold-dim);border-radius:11px">'+
-    '<div style="display:flex;justify-content:space-between;align-items:center"><b style="color:var(--gold-soft);font-size:13px">📋 ตามที่ลูกค้าจอง'+(QGTECH?(' · ช่าง '+esc(QGTECH)):'')+'</b>'+
-    '<button class="btn sec" style="width:auto;padding:4px 12px;font-size:12px;flex:none" onclick="guideAddAll()">เพิ่มทั้งหมด</button></div>'+
-    '<div class="mini" style="margin:2px 0 4px">ไกด์ไลน์อ้างอิง · หยิบของจริงแล้วสแกน QR / กดเพิ่มแล้วแก้ได้ (เปลี่ยนเกรด/ขนาด/ราคาได้)</div>'+rows+'</div>'; }
+  var rows=QGUIDE.map(function(g,i){ return '<div style="display:flex;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)">'+
+    '<div style="flex:1;min-width:0;font-size:12.5px;line-height:1.5">'+esc(guideSpec(g))+(g.scan?'<div class="mini" style="color:var(--gold)">↳ หยิบของจริงแล้วสแกน QR</div>':'')+'</div>'+
+    '<div class="mono" style="color:var(--gold-soft);white-space:nowrap">'+fmt(lineTotal(g.line))+'</div>'+
+    '<button class="btn sec" style="width:auto;padding:5px 10px;font-size:12px;flex:none" onclick="guideAdd('+i+')">+ เพิ่ม</button></div>'; }).join('');
+  var sum=QGUIDE.reduce(function(a,g){return a+lineTotal(g.line);},0);
+  return '<div style="margin-bottom:10px;padding:12px;background:var(--bg2);border:1px solid var(--gold-dim);border-radius:12px">'+
+    '<div style="display:flex;justify-content:space-between;align-items:baseline"><b style="color:var(--gold-soft);font-size:14px">📋 รายละเอียดการจอง</b>'+(QGTECH?('<span class="mini">ช่าง <b style="color:var(--gold-soft)">'+esc(QGTECH)+'</b></span>'):'')+'</div>'+
+    '<div class="mini" style="margin:3px 0 2px">หยิบของจริงแล้วสแกน QR · หรือกด "เพิ่ม" แล้วแก้ได้ (เปลี่ยนเกรด/ขนาด/ราคาหน้างาน)</div>'+
+    '<div style="display:flex;gap:8px;font-size:10px;color:var(--faint);padding-top:4px;text-transform:uppercase;letter-spacing:.04em"><div style="flex:1">รายการ</div><div>มูลค่าประเมิน</div></div>'+
+    rows+
+    '<div style="display:flex;gap:8px;align-items:center;padding:9px 0 2px;border-top:2px solid var(--gold-dim);margin-top:2px"><b style="flex:1;color:var(--gold-soft)">รวมประเมิน</b><b class="mono" style="color:var(--gold-soft)">'+fmt(sum)+'</b>'+
+    '<button class="btn" style="width:auto;padding:5px 12px;font-size:12px;flex:none" onclick="guideAddAll()">เพิ่มทุกรายการ</button></div></div>'; }
 function guideAdd(i){ var g=QGUIDE[i]; if(!g)return; CART.push(JSON.parse(JSON.stringify(g.line))); renderCart(); toast('เพิ่มลงบิลแล้ว · แตะเพื่อแก้ไข/เลือกช่าง'); }
 function guideAddAll(){ QGUIDE.forEach(function(g){ CART.push(JSON.parse(JSON.stringify(g.line))); }); renderCart(); toast('เพิ่มทั้งหมดแล้ว · ตรวจของจริง/เลือกช่าง'); }
 function detachBooking(){ window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName=''; QGUIDE=[]; QGTECH=''; renderCart(); toast('ยกเลิกการผูกคิวกับบิลนี้'); }
