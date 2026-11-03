@@ -102,8 +102,8 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(17,16,16,.92);backdr
 .slipthumbbtn:active{border-color:var(--gold)}
 .toast{position:fixed;left:50%;bottom:74px;transform:translateX(-50%);background:var(--elev);border:1px solid var(--gold-dim);color:var(--fg);padding:12px 18px;border-radius:12px;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:.2s;z-index:60;max-width:90vw;text-align:center}
 .toast.show{opacity:1}.toast.err{border-color:var(--crit)}
-#rcpt{background:#fff;color:#141414;font-family:'IBM Plex Mono';font-size:12px;line-height:1.55;padding:14px;border-radius:10px}
-#rcpt h3{text-align:center;margin:0}#rcpt .c{text-align:center}#rcpt .rr{display:flex;justify-content:space-between}#rcpt .rr.sub{color:#777;font-size:10.5px;padding-left:8px}#rcpt .hr{border-top:1px dashed #999;margin:6px 0}#rcpt .big{font-size:15px;font-weight:bold}
+#rcpt,.rcpt{background:#fff;color:#141414;font-family:'IBM Plex Mono';font-size:12px;line-height:1.55;padding:14px;border-radius:10px}
+.rcpt h3,#rcpt h3{text-align:center;margin:0}.rcpt .c,#rcpt .c{text-align:center}.rcpt .rr,#rcpt .rr{display:flex;justify-content:space-between}.rcpt .rr.sub,#rcpt .rr.sub{color:#777;font-size:10.5px;padding-left:8px}.rcpt .hr,#rcpt .hr{border-top:1px dashed #999;margin:6px 0}.rcpt .big,#rcpt .big{font-size:15px;font-weight:bold}
 .hide{display:none}
 </style></head>
 <body>
@@ -200,7 +200,7 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(17,16,16,.92);backdr
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P22-AUTOTARGET'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P24-BILL'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='',DATA=null,FULL=false,CART=[],CAT='ขายผม',PAY='เงินสด',BUSY=false,RMAP={},USERTECH='';
 window._disc=0; window._recv=0; window._split=false; window._p2m='พร้อมเพย์'; window._p2a=0; window._slips=[];
 window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName='';
@@ -618,7 +618,9 @@ function uploadSlips(saleId, method, amount, slips, i, done){ if(i>=slips.length
 function finishSale(rc){ showReceipt(rc); CART=[]; QGUIDE=[]; QGTECH=''; window._disc=0; window._recv=0; window._split=false; window._p2a=0; window._slips=[]; window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName=''; PAY='เงินสด';
   var cn=document.getElementById('cName'); if(cn)cn.value=''; var cp=document.getElementById('cPhone'); if(cp)cp.value=''; renderCart(); if(FULL)loadToday(); }
 
-function showReceipt(rc){ var h='<h3>'+esc(rc.shopName)+'</h3><div class="c">ใบเสร็จรับเงิน</div><div class="c">'+esc(rc.bill)+' · '+esc(rc.datetime)+'</div><div class="c">ลูกค้า: '+esc(rc.customer)+'</div><div class="hr"></div>';
+function showReceipt(rc){ document.getElementById('rcpt').innerHTML=receiptHtml(rc); document.getElementById('rcptModal').classList.add('show'); }
+/* เลย์เอาต์ใบเสร็จ — ใช้ร่วมกันระหว่าง "ออกใบเสร็จตอนขาย" กับ "เปิดบิลย้อนหลัง/พิมพ์ซ้ำ" จะได้ตรงกันเสมอ */
+function receiptHtml(rc){ var h='<h3>'+esc(rc.shopName)+'</h3><div class="c">ใบเสร็จรับเงิน</div><div class="c">'+esc(rc.bill)+' · '+esc(rc.datetime)+'</div><div class="c">ลูกค้า: '+esc(rc.customer)+'</div><div class="hr"></div>';
   (rc.lines||[]).forEach(function(l){ var isP=(l.type==='product'), det=[];
     if(l.byob) det.push('นำผมมาเอง');
     if(!isP && l.size) det.push(/^\d+$/.test(String(l.size))?(l.size+'นิ้ว'):l.size);
@@ -637,10 +639,11 @@ function showReceipt(rc){ var h='<h3>'+esc(rc.shopName)+'</h3><div class="c">ใ
   h+='<div class="rr big"><span>ยอดชำระ</span><span>'+fmt(due)+'</span></div>';
   (rc.payments||[]).forEach(function(p){ h+='<div class="rr"><span>ชำระ · '+esc(p.method)+'</span><span>'+fmt(p.amount)+'</span></div>'; });
   if(rc.change>0)h+='<div class="rr"><span>เงินทอน</span><span>'+fmt(rc.change)+'</span></div>';
-  h+='<div class="hr"></div><div class="c">ขอบคุณค่ะ 🤍 House265</div>';
-  document.getElementById('rcpt').innerHTML=h; document.getElementById('rcptModal').classList.add('show'); }
+  if(rc.cashier)h+='<div class="rr sub"><span>ผู้ทำรายการ '+esc(rc.cashier)+'</span><span></span></div>';
+  h+='<div class="hr"></div><div class="c">ขอบคุณค่ะ 🤍 '+esc(rc.shopName||'House265')+'</div>';
+  return h; }
 function closeRcpt(){ document.getElementById('rcptModal').classList.remove('show'); }
-function printRcpt(){ var w=window.open('','_blank'); w.document.write('<html><head><title>ใบเสร็จ</title><style>body{font-family:monospace;font-size:12px;width:58mm;margin:0;padding:6px}h3{text-align:center;margin:0}.c{text-align:center}.rr{display:flex;justify-content:space-between}.rr.sub{color:#777;font-size:10px;padding-left:8px}.hr{border-top:1px dashed #999;margin:6px 0}.big{font-size:15px;font-weight:bold}</style></head><body>'+document.getElementById('rcpt').innerHTML+'</body></html>'); w.document.close(); w.focus(); setTimeout(function(){w.print();},300); }
+function printRcpt(srcId){ var el=document.getElementById(srcId||'rcpt'); if(!el){toast('ไม่พบใบเสร็จ',1);return;} var w=window.open('','_blank'); if(!w){toast('เบราว์เซอร์บล็อกหน้าต่างพิมพ์',1);return;} w.document.write('<html><head><title>ใบเสร็จ</title><style>body{font-family:monospace;font-size:12px;width:58mm;margin:0;padding:6px}h3{text-align:center;margin:0}.c{text-align:center}.rr{display:flex;justify-content:space-between}.rr.sub{color:#777;font-size:10px;padding-left:8px}.hr{border-top:1px dashed #999;margin:6px 0}.big{font-size:15px;font-weight:bold}</style></head><body>'+el.innerHTML+'</body></html>'); w.document.close(); w.focus(); setTimeout(function(){w.print();},300); }
 
 /* ---- today ---- */
 function loadToday(){ var box=document.getElementById('todayBox'); if(!box)return; box.innerHTML='<div class="empty">กำลังโหลด…</div>';
@@ -672,7 +675,8 @@ function loadHistory(){ var box=document.getElementById('histBox'); if(!box)retu
     box.innerHTML=list.length?list.map(histRow).join(''):'<div class="empty">ไม่พบบิลที่ตรงเงื่อนไข</div>';
   }).catch(function(){ box.innerHTML='<div class="empty">เชื่อมต่อไม่สำเร็จ</div>'; sum.innerHTML=''; }); }
 function histBadge(s){ var need=/พร้อมเพย์|โอน|บัตร/.test(s.pay_method||'');
-  if(s.slip_count>0){ return s.slip_match ? '<span class="badge ok">✓ สลิปตรงยอด</span>' : '<span class="badge bad">⚠️ สลิป '+fmt(s.slip_total)+' ต่างยอด</span>'; }
+  if(s.slip_count>0){ return s.slip_match ? '<span class="badge ok">✓ สลิปตรงยอดโอน</span>'
+    : '<span class="badge bad">⚠️ สลิป '+fmt(s.slip_total)+' / ยอดโอน '+fmt(s.slip_expect!=null?s.slip_expect:s.total)+'</span>'; }
   return need ? '<span class="badge warn">📎 ยังไม่มีสลิป</span>' : ''; }
 function histRow(s){ var t=String(s.datetime).replace('T',' ').slice(5,16);
   var sub=[s.phone,s.line].filter(Boolean).join(' · '), bdg=histBadge(s);
@@ -681,24 +685,37 @@ function histRow(s){ var t=String(s.datetime).replace('T',' ').slice(5,16);
     '<div class="mini" style="margin-top:2px">'+esc(t)+' · '+esc(s.pay_method||'-')+(sub?(' · '+esc(sub)):'')+'</div>'+
     (bdg?('<div style="margin-top:5px">'+bdg+'</div>'):'')+'</div>'+
     '<div style="text-align:right;white-space:nowrap"><b style="color:var(--gold-soft);font-size:16px">'+fmt(s.total)+'</b> <span class="faint">฿</span><div class="mini" style="color:var(--gold)">ดูบิล ›</div></div></div>'; }
+/* แปลงข้อมูลบิลที่เก็บไว้ → โครงใบเสร็จ (ใช้ตัวเรนเดอร์เดียวกับตอนขาย ใบจะหน้าตาเหมือนกันเป๊ะ) */
+var BILLRC=null;
+function rcFromDetail(d){ var s=d.sale||{};
+  return { bill:s.sale_id, datetime:String(s.datetime||'').replace('T',' ').slice(0,16), shopName:s.shopName||'House265',
+    customer:s.customer||'ลูกค้า', cashier:s.cashier||'',
+    lines:(d.items||[]).map(function(it){ return { type:it.line_type, item:it.name, size:it.size, color:it.color,
+      qty:it.qty, unit_ref:it.name, byob:it.byob, ext:it.ext, tech:it.tech,
+      price:(it.gross!=null?it.gross:it.amount), disc:it.disc, net:it.amount }; }),
+    gross:(s.gross!=null?s.gross:s.subtotal), lineDiscTotal:s.lineDiscTotal||0,
+    subtotal:s.subtotal, discount:s.discount, discount_name:s.discount_name||'',
+    deposit_applied:s.deposit_applied||0, total:s.total, due:(s.due!=null?s.due:s.total),
+    received:s.received, change:s.change, payments:(d.payments||[]) }; }
 function openBill(sid){ var body=document.getElementById('lmBody'); document.getElementById('lmTitle').innerText='บิล '+sid;
   body.innerHTML='<div class="empty">กำลังโหลด…</div>'; document.getElementById('lineModal').classList.add('show');
   api('saleDetail',{sale_id:sid}).then(function(r){ if(!r||!r.ok){ body.innerHTML='<div class="empty">'+esc((r&&r.message)||'โหลดไม่สำเร็จ')+'</div>'; return; }
     var d=r.data, s=d.sale, slips=d.slips||[];
-    var h='<div class="mini">'+esc(String(s.datetime).replace('T',' ').slice(0,16))+' · ผู้ทำรายการ '+esc(s.cashier||'-')+'</div>';
-    if(s.customer||s.phone){ h+='<div style="margin:7px 0 2px"><b>'+esc(s.customer||'ลูกค้า')+'</b>'+(s.phone?(' · '+esc(s.phone)):'')+'</div>'; }
-    h+='<div class="hr2"></div>';
-    h+=(d.items||[]).map(function(it){ var isP=(it.line_type==='product'); var q=(it.line_type==='removal')?'เหมา':qtyTag(it.name,it.qty);
-      return '<div class="tot"><span>'+esc(it.name)+(isP?'':(it.size?(' '+esc(it.size)):''))+(q?(' · '+q):'')+'</span><b>'+fmt(it.amount)+'</b></div>'; }).join('')||'<div class="mini faint">— ไม่มีรายการ —</div>';
-    h+='<div class="hr2"></div>';
-    if(Number(s.discount)>0) h+='<div class="tot"><span>ส่วนลด</span><b>-'+fmt(s.discount)+'</b></div>';
-    h+='<div class="tot"><span>ยอดบิลรวม</span><b style="color:var(--gold-soft);font-size:17px">'+fmt(s.total)+' ฿</b></div>';
-    (d.payments||[]).forEach(function(p){ h+='<div class="tot"><span class="faint">· '+esc(p.method)+'</span><span class="faint">'+fmt(p.amount)+'</span></div>'; });
-    var st=slips.reduce(function(a,x){return a+Number(x.amount||0);},0), match=slips.length&&Math.abs(st-Number(s.total))<1;
-    h+='<div class="hr2"></div><div class="mini" style="margin-bottom:7px">สลิปแนบ ('+slips.length+')'+(slips.length?(' · ยอดสลิปรวม <b>'+fmt(st)+'</b> '+(match?'<span class="badge ok">✓ ตรงยอดบิล</span>':'<span class="badge bad">⚠️ ต่าง '+fmt(st-Number(s.total))+'</span>')):'')+'</div>';
+    /* ใช้เลย์เอาต์ใบเสร็จจริง → ตรวจเทียบกับใบที่ลูกค้าถืออยู่ได้บรรทัดต่อบรรทัด */
+    BILLRC=rcFromDetail(d);
+    var h='<div class="rcpt" id="billRcpt">'+receiptHtml(BILLRC)+'</div>';
+    /* ส่วนตรวจสอบภายใน (ไม่อยู่บนใบเสร็จลูกค้า) */
+    var st=slips.reduce(function(a,x){return a+Number(x.amount||0);},0);
+    var expect=(s.slip_expect!=null)?Number(s.slip_expect)
+      :(d.payments||[]).reduce(function(a,p){ return a+(/พร้อมเพย์|โอน|บัตร/.test(String(p.method||''))?Number(p.amount||0):0); },0);
+    var diff=st-expect, match=slips.length&&Math.abs(diff)<1;
+    h+='<div class="hr2"></div><div class="mini" style="margin-bottom:7px">สลิปแนบ ('+slips.length+')'+
+      (slips.length?(' · ยอดสลิปรวม <b>'+fmt(st)+'</b> / ยอดโอนในบิล <b>'+fmt(expect)+'</b> '+
+        (match?'<span class="badge ok">✓ ตรงยอดโอน</span>':'<span class="badge bad">⚠️ ต่าง '+(diff>0?'+':'')+fmt(diff)+'</span>')):'')+'</div>';
     if(slips.length){ h+='<div class="sgrid">'+slips.map(function(x){ return '<button class="slipthumbbtn" onclick="viewSlip(\''+esc(x.file_id)+'\',\''+esc(sid)+'\')"><span style="font-size:22px">🧾</span><span class="mini">'+esc(x.method||'')+'<br>'+fmt(x.amount)+'฿</span></button>'; }).join('')+'</div>'; }
     else { h+='<div class="mini faint">— ไม่มีสลิปแนบ —</div>'; }
-    h+='<div style="margin-top:14px"><button class="btn sec" onclick="closeLine()">ปิด</button></div>';
+    h+='<div class="row2" style="margin-top:14px"><button class="btn sec" onclick="closeLine()">ปิด</button>'+
+       '<button class="btn" onclick="printRcpt(\'billRcpt\')">🖨️ พิมพ์ใบเสร็จซ้ำ</button></div>';
     body.innerHTML=h;
   }).catch(function(){ body.innerHTML='<div class="empty">เชื่อมต่อไม่สำเร็จ</div>'; }); }
 function viewSlip(fid,sid){ document.getElementById('imTitle').innerText='สลิป '+(sid||''); document.getElementById('imBody').innerHTML='กำลังโหลด…'; document.getElementById('imgModal').classList.add('show');
