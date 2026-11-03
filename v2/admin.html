@@ -172,6 +172,13 @@ textarea.in{min-height:70px;resize:vertical;font-size:12px;font-family:'IBM Plex
 .mrow .bt>i{display:block;height:100%;border-radius:0 4px 4px 0}
 .planbox{border:1px solid var(--gold-dim);border-radius:12px;padding:12px 13px;background:var(--bg2)}
 .planday{margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--gold-ghost);border:1px solid var(--gold-dim);font-size:12.5px;line-height:1.7;color:var(--fg)}
+/* ตั้งเป้า: หัวข้อแยกส่วน เป้าร้าน vs เป้าค่ามือช่าง */
+.tgsec{display:flex;align-items:baseline;gap:8px;margin:20px 0 10px;padding-top:14px;border-top:1px solid var(--line);font-size:14.5px;font-weight:500;color:var(--gold-soft)}
+.tgsec:first-child{margin-top:0;padding-top:0;border-top:0}
+.tgsec span{font-size:11px;font-weight:300;color:var(--muted)}
+.trow{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.trow .tnm{flex:1;min-width:0;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trow .tci{width:124px;flex:0 0 auto;margin:0;text-align:right}
 .planday b{color:var(--gold-soft)}
 .insrow{font-size:13px;border-radius:9px;padding:8px 11px;border:1px solid var(--line);background:var(--bg2)}
 .insrow.ins-good{border-color:rgba(121,192,138,.4)}.insrow.ins-warn{border-color:rgba(217,138,138,.4);color:var(--crit)}.insrow.ins-info{color:var(--muted)}
@@ -312,7 +319,7 @@ textarea.in{min-height:70px;resize:vertical;font-size:12px;font-family:'IBM Plex
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P32-ANALYTICS'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P33-TARGET2'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='', SCHED=null, SETTINGS=null, TAB='dash', FULL=false, ROLE='', MYTECH='';
 var THD=['อา','จ','อ','พ','พฤ','ศ','ส'];
 function api(a,p){ return fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:a,token:TOKEN||'',payload:p||{}})}).then(function(r){return r.json();}); }
@@ -803,19 +810,28 @@ function targetCard(d){ var t=d.target||{}; var ym=(d.range&&d.range.from||'').s
     sub:(vb.length?('= '+vb.map(function(v){return '<b>'+esc(v.name)+'</b> '+esc(v.label);}).join(' · ')):'')});
   h+=vzMeter('จำนวนบิล',d.count,t.count,{suffix:' บิล'});
   return h+'</div>'; }
-var TGMODE='auto', TGPLAN=null;
+var TGMODE='auto', TGPLAN=null, TGT=null;
 function openTarget(){ var m=document.getElementById('tgtModal');
   if(!m){ m=document.createElement('div'); m.id='tgtModal'; m.className='modal'; m.onclick=function(e){ if(e.target===m)closeTarget(); };
     m.innerHTML='<div class="mbox"><div class="mh">🎯 ตั้งเป้าประจำเดือน</div><div class="mc" id="tgtBody" style="max-height:78vh;overflow:auto"></div></div>';
     document.body.appendChild(m); }
-  TGPLAN=null; renderTargetForm(); m.classList.add('show'); }
+  TGPLAN=null; m.classList.add('show');
+  var d=DASHDATA||{}; tgLoad(((d.range&&d.range.from)||iso(new Date())).slice(0,7)); }
+/* โหลดเป้าของเดือนนั้น (เป้าร้าน + เป้าค่ามือช่างรายคน) ก่อนวาดฟอร์ม */
+function tgLoad(ym){ var box=document.getElementById('tgtBody'); if(box) box.innerHTML='<div class="mini">กำลังโหลด…</div>';
+  api('getTargets',{ym:ym}).then(function(r){
+    TGT=(r&&r.ok&&r.data)?r.data:{ym:ym,current:{revenue:0,count:0,profit:0,qr:0},techs:[],commTotal:0};
+    renderTargetForm();
+  }).catch(function(){ TGT={ym:ym,current:{revenue:0,count:0,profit:0,qr:0},techs:[],commTotal:0}; renderTargetForm(); }); }
+function tgChangeYm(){ var v=(document.getElementById('tgYm')||{}).value; if(v){ TGPLAN=null; tgLoad(v); } }
 function tgSetMode(mo){ TGMODE=mo; TGPLAN=null; renderTargetForm(); }
-function renderTargetForm(){ var d=DASHDATA||{}, t=d.target||{}, ym=((d.range&&d.range.from)||iso(new Date())).slice(0,7);
-  var keepYm=(document.getElementById('tgYm')||{}).value; if(keepYm)ym=keepYm;
-  var h='<div class="quick" style="margin-bottom:12px">'+
+function renderTargetForm(){ var G=TGT||{}, t=G.current||{}, ym=G.ym||iso(new Date()).slice(0,7);
+  var h='<label class="lbl">เดือน</label><input type="month" class="in" id="tgYm" value="'+esc(ym)+'" onchange="tgChangeYm()">'+
+    (G.dupes>0?('<div class="insrow ins-warn" style="margin-top:8px">🔧 เจอแถวซ้ำในชีต Targets '+G.dupes+' แถว (จากบั๊กเดิมที่ชีตแปลงเดือนเป็นวันที่) — กดบันทึกครั้งนี้ระบบจะยุบให้เหลือแถวเดียว</div>'):'')+
+    '<div class="tgsec">🏪 เป้าร้าน <span>เจ้าของ/ผู้จัดการเห็นเท่านั้น</span></div>'+
+    '<div class="quick" style="margin-bottom:12px">'+
     '<button class="qbtn'+(TGMODE==='auto'?' on':'')+'" onclick="tgSetMode(\'auto\')">⚡ ตั้งจากยอดขาย</button>'+
-    '<button class="qbtn'+(TGMODE==='manual'?' on':'')+'" onclick="tgSetMode(\'manual\')">✍️ กรอกเองทุกช่อง</button></div>'+
-    '<label class="lbl">เดือน</label><input type="month" class="in" id="tgYm" value="'+esc(ym)+'">';
+    '<button class="qbtn'+(TGMODE==='manual'?' on':'')+'" onclick="tgSetMode(\'manual\')">✍️ กรอกเองทุกช่อง</button></div>';
   if(TGMODE==='auto'){
     h+='<label class="lbl" style="margin-top:12px">💰 ยอดขายที่ต้องการ (บาท)</label>'+
       '<input type="number" class="in" id="tgRev" value="'+(t.revenue||'')+'" placeholder="เช่น 200000" oninput="TGPLAN=null">'+
@@ -823,9 +839,7 @@ function renderTargetForm(){ var d=DASHDATA||{}, t=d.target||{}, ym=((d.range&&d
       '<select class="in" id="tgMonths" onchange="TGPLAN=null"><option value="3">3 เดือนล่าสุด (แนะนำ)</option><option value="6">6 เดือนล่าสุด</option><option value="12">12 เดือนล่าสุด</option></select>'+
       '<div class="mini" style="margin-top:3px">ระบบจะถอด <b>กำไรสุทธิ · ปริมาณงาน (QR) · จำนวนบิล</b> ให้อัตโนมัติ จากอัตราส่วนจริงของร้าน</div>'+
       '<button class="btn sec" style="margin-top:12px" onclick="tgCalc()">🧮 คำนวณให้ดูก่อน</button>'+
-      '<div id="tgPlan" style="margin-top:12px"></div>'+
-      '<div class="row2" style="margin-top:14px"><button class="btn sec" onclick="closeTarget()">ยกเลิก</button>'+
-      '<button class="btn" id="tgSaveBtn" onclick="saveTargetAuto()" disabled style="opacity:.5">บันทึกเป้า</button></div>';
+      '<div id="tgPlan" style="margin-top:12px"></div>';
   } else {
     h+='<label class="lbl" style="margin-top:12px">💰 ยอดขาย (บาท)</label><input type="number" class="in" id="tgRev" value="'+(t.revenue||'')+'" placeholder="เช่น 300000">'+
       '<label class="lbl" style="margin-top:12px">📈 กำไรสุทธิ (บาท)</label><input type="number" class="in" id="tgProf" value="'+(t.profit||'')+'" placeholder="เช่น 100000">'+
@@ -833,10 +847,67 @@ function renderTargetForm(){ var d=DASHDATA||{}, t=d.target||{}, ym=((d.range&&d
       '<label class="lbl" style="margin-top:12px">✂️ ปริมาณงาน (QR)</label><input type="number" class="in" id="tgQr" value="'+(t.qr||'')+'" placeholder="เช่น 160">'+
       '<div class="mini" style="margin-top:3px">1 QR = 50 กรัม · <b>ขนนก 1 QR = 100 ช่อ</b> · <b>เปียเกาหลี 1 QR = 50 ช่อ</b> · <b>นาโน 1 QR = 0.5 มัด</b></div>'+
       '<label class="lbl" style="margin-top:12px">🧾 จำนวนบิล</label><input type="number" class="in" id="tgCnt" value="'+(t.count||'')+'" placeholder="เช่น 70">'+
-      '<div class="mini" style="margin-top:10px">เว้นว่าง/0 = ไม่ตั้งเป้าตัวนั้น</div>'+
-      '<div class="row2" style="margin-top:14px"><button class="btn sec" onclick="closeTarget()">ยกเลิก</button><button class="btn" onclick="saveTarget()">บันทึกเป้า</button></div>';
+      '<div class="mini" style="margin-top:10px">เว้นว่าง/0 = ไม่ตั้งเป้าตัวนั้น</div>';
   }
-  document.getElementById('tgtBody').innerHTML=h; }
+  /* ---- ส่วนที่ 2: เป้าค่ามือช่าง (คนละเรื่องกับเป้าร้าน) ---- */
+  var techs=G.techs||[];
+  h+='<div class="tgsec">👩‍🎤 เป้าค่ามือช่าง <span>ช่างเห็นเฉพาะของตัวเอง</span></div>'+
+    '<div class="mini" style="margin:-4px 0 10px">ค่ามือเป็น <b>ต้นทุน</b>ของร้าน แต่เป็น <b>เป้า</b>ของช่าง — ตั้งรายคน รายเดือน แยกจากเป้ายอดขายด้านบน</div>';
+  if(!techs.length){ h+='<div class="mini">ยังไม่มีช่างที่เปิดใช้งานในชีต Technicians</div>'; }
+  else {
+    h+='<div class="quick" style="margin-bottom:10px">'+
+      '<button class="qbtn" onclick="tgSplit(\'share\')">⚡ แบ่งตามผลงานจริง</button>'+
+      '<button class="qbtn" onclick="tgSplit(\'even\')">⚖️ แบ่งเท่ากัน</button>'+
+      '<button class="qbtn" onclick="tgSplit(\'clear\')">ล้าง</button></div>'+
+      '<div id="tgSplitNote" class="mini" style="margin:-4px 0 10px"></div>';
+    techs.forEach(function(x,i){
+      h+='<div class="trow"><span class="tnm">'+esc(x.name)+'</span>'+
+        '<input type="number" class="in tci" id="tgc'+i+'" data-tid="'+esc(x.tech_id)+'" value="'+(x.comm||'')+'" placeholder="0" oninput="tgCommSum()"></div>'; });
+    h+='<div id="tgCommSum" class="mini" style="margin-top:8px"></div>';
+  }
+  h+='<div class="row2" style="margin-top:16px"><button class="btn sec" onclick="closeTarget()">ยกเลิก</button>'+
+     '<button class="btn" onclick="saveTargetAll()">บันทึกเป้า</button></div>';
+  document.getElementById('tgtBody').innerHTML=h; tgCommSum(); }
+
+/* ผลรวมเป้าค่ามือ เทียบกับเป้ายอดขาย — ให้เห็นทันทีว่าตั้งไว้แล้วกำไรจะเหลือไหม */
+function tgCommSum(){ var el=document.getElementById('tgCommSum'); if(!el) return;
+  var tot=0; document.querySelectorAll('#tgtBody .tci').forEach(function(i){ tot+=Number(i.value)||0; });
+  var rev=Number((document.getElementById('tgRev')||{}).value)||0;
+  var pct=rev>0?Math.round(tot/rev*1000)/10:0;
+  var base=(TGPLAN&&TGPLAN.commPlan)?TGPLAN.commPlan.ratePct:null;
+  var txt='รวมเป้าค่ามือทุกคน <b style="color:var(--gold-soft)">฿'+fmt(tot)+'</b>';
+  if(rev>0) txt+=' · คิดเป็น <b>'+pct+'%</b> ของเป้ายอดขาย';
+  if(base!=null && rev>0){
+    txt+=' (อัตราจริงย้อนหลัง '+base+'%)';
+    if(pct>base+2) txt='<span style="color:var(--crit)">⚠ '+txt+' — สูงกว่าปกติ เป้ากำไรอาจไม่ถึง</span>';
+    else if(tot>0&&pct<base-2) txt='<span style="color:var(--ok)">'+txt+' — ต่ำกว่าอัตราปกติ</span>';
+  }
+  el.innerHTML=txt; }
+
+/* แบ่งเป้าค่ามือจากเป้ายอดขาย — ใช้ targetPlan ตัวเดียวกับที่ถอดเป้าร้าน (ไม่เขียนสูตรซ้ำ) */
+function tgSplit(mode){
+  var inputs=[].slice.call(document.querySelectorAll('#tgtBody .tci'));
+  var note=document.getElementById('tgSplitNote');
+  if(mode==='clear'){ inputs.forEach(function(i){ i.value=''; }); if(note)note.innerHTML=''; tgCommSum(); return; }
+  var rev=Number((document.getElementById('tgRev')||{}).value)||0;
+  if(!(rev>0)){ toast('ใส่เป้ายอดขายด้านบนก่อน',1); return; }
+  var ym=(document.getElementById('tgYm')||{}).value||iso(new Date()).slice(0,7);
+  var mo=Number((document.getElementById('tgMonths')||{}).value)||3;
+  if(note) note.innerHTML='กำลังคำนวณ…';
+  api('targetPlan',{ym:ym,revenue:rev,months:mo}).then(function(r){
+    if(!r||!r.ok||!r.data||!r.data.commPlan){ if(note)note.innerHTML='<span style="color:var(--crit)">คำนวณไม่สำเร็จ</span>'; return; }
+    TGPLAN=r.data; var cp=r.data.commPlan, map={};
+    cp.techs.forEach(function(t){ map[t.tech_id]=t; });
+    if(mode==='share'&&!cp.hasHistory){ if(note)note.innerHTML='<span style="color:var(--warn)">ยังไม่มีประวัติค่ามือย้อนหลัง — ใช้ "แบ่งเท่ากัน" ไปก่อน</span>'; return; }
+    inputs.forEach(function(i){ var t=map[i.getAttribute('data-tid')]; if(!t) return;
+      i.value=(mode==='even'?t.commEven:t.comm)||''; });
+    if(note) note.innerHTML=(mode==='even'
+      ? 'แบ่งเท่ากัน '+inputs.length+' คน จากค่ามือรวม ฿'+fmt(cp.total)
+      : 'แบ่งตามสัดส่วนค่ามือจริง '+esc(TGPLAN.basis.from)+' → '+esc(TGPLAN.basis.to)+' · '+
+        cp.techs.filter(function(t){return t.sharePct>0;}).map(function(t){ return esc(t.name)+' '+t.sharePct+'%'; }).join(' · '))
+      +' · แก้ทับรายคนได้';
+    tgCommSum();
+  }).catch(function(){ if(note)note.innerHTML='<span style="color:var(--crit)">เชื่อมต่อไม่สำเร็จ</span>'; }); }
 function tgCalc(){ var rev=Number((document.getElementById('tgRev')||{}).value)||0;
   var ym=(document.getElementById('tgYm')||{}).value||iso(new Date()).slice(0,7);
   var mo=Number((document.getElementById('tgMonths')||{}).value)||3;
@@ -859,17 +930,26 @@ function tgCalc(){ var rev=Number((document.getElementById('tgRev')||{}).value)|
       '</div>';
     var sb=document.getElementById('tgSaveBtn'); if(sb){ sb.disabled=false; sb.style.opacity='1'; }
   }).catch(function(){ box.innerHTML='<div class="mini" style="color:var(--crit)">เชื่อมต่อไม่สำเร็จ</div>'; }); }
-function saveTargetAuto(){ if(!TGPLAN||!TGPLAN.estimate){ toast('กด "คำนวณให้ดูก่อน" ก่อนบันทึก',1); return; }
-  var e=TGPLAN.estimate, ym=(document.getElementById('tgYm')||{}).value||TGPLAN.ym;
-  api('setTarget',{ym:ym,revenue:e.revenue,profit:e.profit,qr:e.qr,count:e.count})
-    .then(function(x){ if(x&&x.ok){ toast('บันทึกเป้าเดือน '+ym+' แล้ว (คำนวณจากสถิติ)'); closeTarget(); loadDash(); } else toast((x&&x.message)||'บันทึกไม่สำเร็จ',1); })
+/* บันทึกครั้งเดียว: เป้าร้าน + เป้าค่ามือช่างรายคน */
+function saveTargetAll(){ var g=function(id){ return Number((document.getElementById(id)||{}).value)||0; };
+  var ym=(document.getElementById('tgYm')||{}).value||iso(new Date()).slice(0,7);
+  var shop;
+  if(TGMODE==='auto'){
+    if(TGPLAN&&TGPLAN.estimate) shop=TGPLAN.estimate;
+    else if(g('tgRev')>0){ toast('กด "🧮 คำนวณให้ดูก่อน" ก่อนบันทึกเป้าร้าน',1); return; }
+    else shop={revenue:0,profit:0,qr:0,count:0};
+  } else shop={revenue:g('tgRev'),profit:g('tgProf'),qr:g('tgQr'),count:g('tgCnt')};
+  var techs=[].slice.call(document.querySelectorAll('#tgtBody .tci')).map(function(i){
+    return { tech_id:i.getAttribute('data-tid'), comm:Number(i.value)||0 }; });
+  api('setTarget',{ym:ym,shop:true,revenue:shop.revenue,profit:shop.profit,qr:shop.qr,count:shop.count,techs:techs})
+    .then(function(x){ if(x&&x.ok){
+        var nt=techs.filter(function(t){return t.comm>0;}).length;
+        toast('บันทึกเป้าเดือน '+ym+' แล้ว'+(nt?(' · เป้าค่ามือช่าง '+nt+' คน'):''));
+        closeTarget(); loadDash();
+      } else toast((x&&x.message)||'บันทึกไม่สำเร็จ',1); })
     .catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
 function closeTarget(){ var m=document.getElementById('tgtModal'); if(m)m.classList.remove('show'); }
-function saveTarget(){ var g=function(id){ return Number((document.getElementById(id)||{}).value)||0; };
-  var ym=(document.getElementById('tgYm')||{}).value||iso(new Date()).slice(0,7);
-  api('setTarget',{ym:ym,revenue:g('tgRev'),profit:g('tgProf'),qr:g('tgQr'),count:g('tgCnt')})
-    .then(function(x){ if(x&&x.ok){ toast('บันทึกเป้าเดือน '+ym+' แล้ว'); closeTarget(); loadDash(); } else toast((x&&x.message)||'บันทึกไม่สำเร็จ',1); })
-    .catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
+function saveTarget(){ saveTargetAll(); }
 /* ข้อ12: drilldown ผลงานช่าง → แดชบอร์ดรายคน (ใช้ข้อมูลเดียวกับแดชบอร์ดช่าง · เจ้าของ/ผจก.เท่านั้น) */
 function openTechDash(tech){ var m=document.getElementById('techDashModal');
   if(!m){ m=document.createElement('div'); m.id='techDashModal'; m.className='modal'; m.onclick=function(e){ if(e.target===m)closeTechDash(); };
