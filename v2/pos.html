@@ -103,7 +103,7 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(17,16,16,.92);backdr
 .toast{position:fixed;left:50%;bottom:74px;transform:translateX(-50%);background:var(--elev);border:1px solid var(--gold-dim);color:var(--fg);padding:12px 18px;border-radius:12px;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:.2s;z-index:60;max-width:90vw;text-align:center}
 .toast.show{opacity:1}.toast.err{border-color:var(--crit)}
 #rcpt{background:#fff;color:#141414;font-family:'IBM Plex Mono';font-size:12px;line-height:1.55;padding:14px;border-radius:10px}
-#rcpt h3{text-align:center;margin:0}#rcpt .c{text-align:center}#rcpt .rr{display:flex;justify-content:space-between}#rcpt .hr{border-top:1px dashed #999;margin:6px 0}#rcpt .big{font-size:15px;font-weight:bold}
+#rcpt h3{text-align:center;margin:0}#rcpt .c{text-align:center}#rcpt .rr{display:flex;justify-content:space-between}#rcpt .rr.sub{color:#777;font-size:10.5px;padding-left:8px}#rcpt .hr{border-top:1px dashed #999;margin:6px 0}#rcpt .big{font-size:15px;font-weight:bold}
 .hide{display:none}
 </style></head>
 <body>
@@ -200,6 +200,7 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(17,16,16,.92);backdr
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
+var BUILD='P22-AUTOTARGET'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='',DATA=null,FULL=false,CART=[],CAT='ขายผม',PAY='เงินสด',BUSY=false,RMAP={},USERTECH='';
 window._disc=0; window._recv=0; window._split=false; window._p2m='พร้อมเพย์'; window._p2a=0; window._slips=[];
 window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName='';
@@ -222,6 +223,10 @@ function doLogout(){ api('logout',{}); TOKEN=''; setTok(''); location.reload(); 
 
 function boot(){ api('bootstrap',{}).then(function(r){ if(!r||!r.ok){ if(r&&r.code==='AUTH'){ setTok(''); location.reload(); return; } toast((r&&r.message)||'โหลดไม่สำเร็จ',1); return; }
     DATA=r.data; FULL=!!DATA.user.full;
+    /* ตัวบอกเวอร์ชัน: หน้าเว็บ vs เซิร์ฟเวอร์ — ไม่ตรง = Deploy ไม่ครบ */
+    (function(){ var srv=String(DATA.version||'-'), okv=(srv.indexOf(BUILD)>=0);
+      var el=document.querySelector('.brand .tag'); if(el){ el.innerHTML='POS · <span style="color:'+(okv?'var(--ok)':'var(--crit)')+'">'+esc(BUILD)+'</span>'; el.title='หน้าเว็บ '+BUILD+' · เซิร์ฟเวอร์ '+srv; }
+      if(!okv) toast('⚠ เวอร์ชันไม่ตรงกัน — หน้าเว็บ '+BUILD+' · เซิร์ฟเวอร์ '+srv+' (ต้อง Deploy Core.gs เป็น New version)',1); })();
     document.getElementById('app').classList.remove('hide');
     document.getElementById('uInfo').innerText=(DATA.user.name||'')+' · '+(DATA.user.role==='owner'?'เจ้าของ':DATA.user.role==='manager'?'ผู้จัดการ':'ช่าง');
     document.getElementById('navToday').style.display=FULL?'flex':'none';
@@ -398,7 +403,8 @@ function closeLine(){ document.getElementById('lineModal').classList.remove('sho
 /* ===================================================================
  * CART / BILL
  * =================================================================== */
-function clearCart(){ CART=[]; window._disc=0; window._recv=0; window._split=false; window._p2a=0; window._slips=[]; window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName=''; renderCart(); }
+function clearCart(){ CART=[]; QGUIDE=[]; QGTECH=''; window._disc=0; window._recv=0; window._split=false; window._p2a=0; window._slips=[]; window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName=''; PAY='เงินสด';
+  var cn=document.getElementById('cName'); if(cn)cn.value=''; var cp=document.getElementById('cPhone'); if(cp)cp.value=''; renderCart(); toast('ล้างบิลแล้ว'); }
 function delLine(i){ CART.splice(i,1); renderCart(); }
 function editLine(i){ if(CART[i].kind==='product')openProductEdit(i); else openLine(null,null,i); }
 function prodQty(l){ return Math.max(1, Math.round(Number(l.qty_mad)||1)); }
@@ -414,17 +420,20 @@ function cartDue(){ return Math.max(0, cartSub()-(window._disc||0)-cartDeposit()
 function pnorm(s){ return String(s==null?'':s).trim(); }
 function lineAttrs(l){ if(l.kind==='product') return { technique:l.hair_type||'', size:l.length_in||'', grade:l.grade||'', texture:l.texture||'', color:l.color||'', qty:prodQty(l), techs:(l.techs||[]).map(function(t){return t.name;}).filter(Boolean), amount:lineTotal(l) };
   return { technique:String(l.item||'').replace('ขยับปม',''), size:l.size||'', grade:'', texture:'', color:'', qty:(Number(l.qty)||1), techs:(l.techs||[]).map(function(t){return t.name;}).filter(Boolean), amount:lineTotal(l) }; }
+/* min_bundle = จำนวน "มัด" (มัดเต็ม 100g = 2 QR) · a.qty = จำนวน QR → มัด = QR×0.5 · ตรวจรวมทั้งบิล ไม่ใช่รายบรรทัด */
 function promoMatch(p,a){ if(p.tech&&a.techs.indexOf(p.tech)<0)return false;
   if(p.technique&&pnorm(a.technique)!==pnorm(p.technique))return false;
   if(p.size&&digits(a.size)!==digits(p.size))return false;
   if(p.grade&&pnorm(a.grade)!==pnorm(p.grade))return false;
   if(p.color&&pnorm(a.color)!==pnorm(p.color))return false;
   if(p.texture&&pnorm(a.texture)!==pnorm(p.texture))return false;
-  if(p.min_bundle&&a.qty<p.min_bundle)return false; return true; }
+  return true; }
 function promoDiscount(p){ var attrs=CART.map(lineAttrs);
-  var hasCond=p.tech||p.technique||p.size||p.grade||p.color||p.texture||p.min_bundle;
+  var hasCond=p.tech||p.technique||p.size||p.grade||p.color||p.texture;
   var match=hasCond?attrs.filter(function(a){return promoMatch(p,a);}):attrs; if(!match.length)return 0;
-  var base=match.reduce(function(s,a){return s+a.amount;},0), qty=match.reduce(function(s,a){return s+a.qty;},0), disc=0;
+  var qty=match.reduce(function(s,a){return s+a.qty;},0); /* รวม QR ของรายการที่เข้าเงื่อนไข */
+  if(p.min_bundle){ var mad=qty*0.5; if(mad < Number(p.min_bundle)) return 0; } /* ต้องครบจำนวนมัดขั้นต่ำก่อน */
+  var base=match.reduce(function(s,a){return s+a.amount;},0), disc=0;
   if(p.type==='percent')disc=Math.round(base*p.value/100); else disc=(p.per==='mad')?Math.round(p.value*qty):Math.round(p.value);
   return Math.min(disc, cartSub()); }
 var PROMOLIST=[];
@@ -458,10 +467,12 @@ function renderCart(){ var box=document.getElementById('cartBody');
     var ld=lineDisc(l); var priceHtml=ld>0?('<span style="text-decoration:line-through;color:var(--faint);font-size:12px">'+fmt(lineTotal(l))+'</span> <span class="mono" style="color:var(--gold-soft)">'+fmt(lineNet(l))+'</span>'):('<span class="mono" style="color:var(--gold-soft)">'+fmt(lineTotal(l))+'</span>');
     return '<div style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)"><div style="flex:1;min-width:0;cursor:pointer" onclick="editLine('+i+')"><b style="font-weight:500">'+esc(l.kind==='product'?l.name:l.item)+'</b>'+tag+' <span style="color:var(--gold);font-size:12px">✎</span><div class="mini" style="margin-top:2px">'+esc(det.join(' · '))+(ld>0?(' · <span style="color:var(--gold-soft)">ลดพิเศษ -'+fmt(ld)+'</span>'):'')+'</div></div><div style="text-align:right">'+priceHtml+'</div><button class="x" onclick="delLine('+i+')">✕</button></div>';
   }).join('');
-  var sub=cartSub(), disc=window._disc||0, dep=cartDeposit(), due=cartDue(), ldTot=cartLineDisc();
+  var gross=CART.reduce(function(a,l){return a+lineTotal(l);},0), ldTot=cartLineDisc(), sub=cartSub(), disc=window._disc||0, dep=cartDeposit(), due=cartDue();
   var pay=promoBar()+
-    '<div class="tot"><span>รวมย่อย'+(ldTot>0?' (หลังลดพิเศษ)':'')+'</span><b>'+fmt(sub)+'</b></div>'+
+    '<div class="tot"><span>รวมราคาเต็ม</span><b>'+fmt(gross)+'</b></div>'+
+    (ldTot>0?('<div class="tot"><span>ส่วนลดพิเศษรายการ</span><b style="color:var(--ok)">-'+fmt(ldTot)+'</b></div>'):'')+
     (window._promoName?('<div class="tot"><span>🎁 โปร: '+esc(window._promoName)+'</span><b style="color:var(--ok)">-'+fmt(disc)+'</b></div>'):'')+
+    ((ldTot>0||disc>0)?('<div class="tot"><span>รวมหลังส่วนลด</span><b>'+fmt(sub-disc)+'</b></div>'):'')+
     (dep>0?('<div class="tot"><span>หัก มัดจำที่ชำระแล้ว</span><b style="color:var(--ok)">-'+fmt(dep)+'</b></div>'):'')+
     '<div class="tot grand"><span>ยอดชำระ</span><b>'+fmt(due)+'</b></div>'+
     '<div class="chkline"><input type="checkbox" id="splitChk" '+(window._split?'checked':'')+' onchange="window._split=this.checked;renderCart()"><label for="splitChk">แยกจ่าย 2 ช่องทาง</label></div>';
@@ -604,23 +615,32 @@ function uploadSlips(saleId, method, amount, slips, i, done){ if(i>=slips.length
     if(!r||!r.ok){ alert('⚠️ อัปโหลดสลิปไม่สำเร็จ: '+((r&&r.message)||'ไม่ทราบสาเหตุ')+'\n\n(มักเกิดจากยังไม่ได้อนุญาตสิทธิ์ Drive — ให้รัน grantDrive ใน Apps Script ก่อน)'); }
     uploadSlips(saleId,method,amount,slips,i+1,done); })
   .catch(function(){ alert('⚠️ เชื่อมต่อไม่ได้ตอนอัปโหลดสลิปรูปที่ '+(i+1)); uploadSlips(saleId,method,amount,slips,i+1,done); }); }
-function finishSale(rc){ showReceipt(rc); CART=[]; window._disc=0; window._recv=0; window._split=false; window._p2a=0; window._slips=[]; window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName=''; PAY='เงินสด'; renderCart(); if(FULL)loadToday(); }
+function finishSale(rc){ showReceipt(rc); CART=[]; QGUIDE=[]; QGTECH=''; window._disc=0; window._recv=0; window._split=false; window._p2a=0; window._slips=[]; window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName=''; PAY='เงินสด';
+  var cn=document.getElementById('cName'); if(cn)cn.value=''; var cp=document.getElementById('cPhone'); if(cp)cp.value=''; renderCart(); if(FULL)loadToday(); }
 
 function showReceipt(rc){ var h='<h3>'+esc(rc.shopName)+'</h3><div class="c">ใบเสร็จรับเงิน</div><div class="c">'+esc(rc.bill)+' · '+esc(rc.datetime)+'</div><div class="c">ลูกค้า: '+esc(rc.customer)+'</div><div class="hr"></div>';
-  (rc.lines||[]).forEach(function(l){ var isP=(l.type==='product');
-    var q=(l.type==='removal')?'เหมา':qtyTag(l.unit_ref||l.item,l.qty);
-    var nm=esc(l.item)+(isP?'':(l.size?(' '+esc(l.size)):'')); /* ชื่อสินค้ามีขนาดอยู่แล้ว ไม่ซ้ำ */
-    var tg=(isP&&!l.ext)?'':(l.tech?(' ('+esc(l.tech)+')'):(l.ext?' (ต่อผม)':''));
-    h+='<div class="rr"><span>'+nm+(q?(' · '+q):'')+tg+'</span><span>'+fmt(l.price)+'</span></div>'; });
-  h+='<div class="hr"></div><div class="rr"><span>รวมย่อย</span><span>'+fmt(rc.subtotal)+'</span></div>';
-  if(rc.discount>0)h+='<div class="rr"><span>ส่วนลด</span><span>-'+fmt(rc.discount)+'</span></div>';
-  h+='<div class="rr big"><span>ยอดชำระ</span><span>'+fmt(rc.total)+'</span></div>';
+  (rc.lines||[]).forEach(function(l){ var isP=(l.type==='product'), det=[];
+    if(l.byob) det.push('นำผมมาเอง');
+    if(!isP && l.size) det.push(/^\d+$/.test(String(l.size))?(l.size+'นิ้ว'):l.size);
+    if(l.color) det.push('สี '+l.color);
+    var q=(l.type==='removal')?'เหมา':qtyTag(l.unit_ref||l.item,l.qty); if(q)det.push(q);
+    if(l.tech) det.push('ช่าง '+l.tech); else if(l.ext) det.push('ต่อผม');
+    h+='<div class="rr"><span>'+esc(l.item)+'</span><span>'+fmt(l.price)+'</span></div>';
+    if(det.length) h+='<div class="rr sub"><span>'+esc(det.join(' · '))+'</span><span></span></div>';
+    if(Number(l.disc)>0) h+='<div class="rr sub"><span>ส่วนลดพิเศษ</span><span>-'+fmt(l.disc)+'</span></div>';
+  });
+  var gross=(rc.gross!=null?rc.gross:rc.subtotal), due=(rc.due!=null?rc.due:rc.total);
+  h+='<div class="hr"></div><div class="rr"><span>รวมราคาเต็ม</span><span>'+fmt(gross)+'</span></div>';
+  if(Number(rc.lineDiscTotal)>0)h+='<div class="rr"><span>ส่วนลดพิเศษรายการ</span><span>-'+fmt(rc.lineDiscTotal)+'</span></div>';
+  if(Number(rc.discount)>0)h+='<div class="rr"><span>ส่วนลด'+(rc.discount_name?(' · '+esc(rc.discount_name)):'')+'</span><span>-'+fmt(rc.discount)+'</span></div>';
+  if(Number(rc.deposit_applied)>0)h+='<div class="rr"><span>หัก มัดจำที่ชำระแล้ว</span><span>-'+fmt(rc.deposit_applied)+'</span></div>';
+  h+='<div class="rr big"><span>ยอดชำระ</span><span>'+fmt(due)+'</span></div>';
   (rc.payments||[]).forEach(function(p){ h+='<div class="rr"><span>ชำระ · '+esc(p.method)+'</span><span>'+fmt(p.amount)+'</span></div>'; });
   if(rc.change>0)h+='<div class="rr"><span>เงินทอน</span><span>'+fmt(rc.change)+'</span></div>';
   h+='<div class="hr"></div><div class="c">ขอบคุณค่ะ 🤍 House265</div>';
   document.getElementById('rcpt').innerHTML=h; document.getElementById('rcptModal').classList.add('show'); }
 function closeRcpt(){ document.getElementById('rcptModal').classList.remove('show'); }
-function printRcpt(){ var w=window.open('','_blank'); w.document.write('<html><head><title>ใบเสร็จ</title><style>body{font-family:monospace;font-size:12px;width:58mm;margin:0;padding:6px}h3{text-align:center;margin:0}.c{text-align:center}.rr{display:flex;justify-content:space-between}.hr{border-top:1px dashed #999;margin:6px 0}.big{font-size:15px;font-weight:bold}</style></head><body>'+document.getElementById('rcpt').innerHTML+'</body></html>'); w.document.close(); w.focus(); setTimeout(function(){w.print();},300); }
+function printRcpt(){ var w=window.open('','_blank'); w.document.write('<html><head><title>ใบเสร็จ</title><style>body{font-family:monospace;font-size:12px;width:58mm;margin:0;padding:6px}h3{text-align:center;margin:0}.c{text-align:center}.rr{display:flex;justify-content:space-between}.rr.sub{color:#777;font-size:10px;padding-left:8px}.hr{border-top:1px dashed #999;margin:6px 0}.big{font-size:15px;font-weight:bold}</style></head><body>'+document.getElementById('rcpt').innerHTML+'</body></html>'); w.document.close(); w.focus(); setTimeout(function(){w.print();},300); }
 
 /* ---- today ---- */
 function loadToday(){ var box=document.getElementById('todayBox'); if(!box)return; box.innerHTML='<div class="empty">กำลังโหลด…</div>';
@@ -792,8 +812,8 @@ function guideCardHtml(){ if(!QGUIDE.length)return '';
     '<div style="display:flex;justify-content:space-between;align-items:baseline"><b style="color:var(--gold-soft);font-size:14px">📋 รายละเอียดการจอง</b>'+(QGTECH?('<span class="mini">ช่าง <b style="color:var(--gold-soft)">'+esc(QGTECH)+'</b></span>'):'')+'</div>'+
     '<div style="display:flex;gap:8px;font-size:10px;color:var(--faint);padding-top:6px;text-transform:uppercase;letter-spacing:.04em"><div style="flex:1">รายการ</div><div>มูลค่าประเมิน</div></div>'+
     rows+
-    '<div style="display:flex;gap:8px;align-items:center;padding:9px 0 2px;border-top:2px solid var(--gold-dim);margin-top:2px"><b style="flex:1;color:var(--gold-soft)">รวมประเมิน</b><b class="mono" style="color:var(--gold-soft)">'+fmt(sum)+'</b>'+
-    '<button class="btn" style="width:auto;padding:5px 12px;font-size:12px;flex:none" onclick="guideAddAll()">เพิ่มลงบิล</button></div></div>'; }
+    '<div style="display:flex;gap:8px;align-items:center;padding:9px 0 2px;border-top:2px solid var(--gold-dim);margin-top:2px"><b style="flex:1;color:var(--gold-soft)">รวมประเมิน</b><b class="mono" style="color:var(--gold-soft)">'+fmt(sum)+'</b></div>'+
+    '<div class="mini" style="margin-top:6px;color:var(--faint)">ℹ️ ไกด์ไลน์สำหรับตรวจสอบเท่านั้น — สแกน QR หรือเลือกจากเมนูเพื่อลงบิลจริง</div></div>'; }
 function guideAdd(i){ var g=QGUIDE[i]; if(!g)return; CART.push(JSON.parse(JSON.stringify(g.line))); renderCart(); toast('เพิ่มลงบิลแล้ว · แตะเพื่อแก้ไข/เลือกช่าง'); }
 function guideAddAll(){ QGUIDE.forEach(function(g){ CART.push(JSON.parse(JSON.stringify(g.line))); }); renderCart(); toast('เพิ่มทั้งหมดแล้ว · ตรวจของจริง/เลือกช่าง'); }
 function detachBooking(){ window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName=''; QGUIDE=[]; QGTECH=''; renderCart(); toast('ยกเลิกการผูกคิวกับบิลนี้'); }
