@@ -11,9 +11,11 @@
 body{margin:0;background:var(--bg);color:var(--fg);font-family:'Kanit',sans-serif;font-weight:300;font-variant-numeric:tabular-nums;padding-bottom:calc(70px + env(safe-area-inset-bottom));overflow-wrap:anywhere}
 .mono{font-family:'IBM Plex Mono',monospace}
 button{cursor:pointer;font-family:inherit}
-header.top{position:sticky;top:0;z-index:20;background:rgba(17,16,16,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:11px 15px;display:flex;align-items:center;justify-content:space-between}
-.brand b{font-weight:600;font-size:17px}.brand b .n{color:var(--gold-soft)}.brand .tag{font-family:'IBM Plex Mono';font-size:10px;letter-spacing:.3em;color:var(--gold);text-transform:uppercase;margin-left:7px}
-.chip{background:var(--surface2);border:1px solid var(--line);border-radius:999px;padding:6px 11px;font-size:13px;color:var(--muted)}
+header.top{position:sticky;top:0;z-index:20;background:rgba(17,16,16,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.brand{display:flex;flex-direction:column;line-height:1.1;min-width:0}
+.brand b{font-weight:600;font-size:17px;white-space:nowrap}.brand b .n{color:var(--gold-soft)}
+.brand .tag{font-family:'IBM Plex Mono';font-size:9.5px;letter-spacing:.08em;color:var(--gold);margin:2px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip{background:var(--surface2);border:1px solid var(--line);border-radius:999px;padding:6px 11px;font-size:13px;color:var(--muted);white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis}
 .lo{background:none;border:1px solid var(--line);color:var(--muted);border-radius:10px;padding:7px 10px;font-size:12px}
 .saleGrid{display:block}
 @media(min-width:900px){ .saleGrid{display:grid;grid-template-columns:1fr 380px;gap:16px;align-items:start;max-width:1100px;margin:0 auto;padding:16px} .cart{position:sticky;top:76px} }
@@ -200,7 +202,7 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(17,16,16,.92);backdr
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P31-MIGCOMM'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P32-ANALYTICS'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='',DATA=null,FULL=false,CART=[],CAT='ขายผม',PAY='เงินสด',BUSY=false,RMAP={},USERTECH='';
 window._disc=0; window._recv=0; window._split=false; window._p2m='พร้อมเพย์'; window._p2a=0; window._slips=[];
 window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName='';
@@ -225,7 +227,8 @@ function boot(){ api('bootstrap',{}).then(function(r){ if(!r||!r.ok){ if(r&&r.co
     DATA=r.data; FULL=!!DATA.user.full;
     /* ตัวบอกเวอร์ชัน: หน้าเว็บ vs เซิร์ฟเวอร์ — ไม่ตรง = Deploy ไม่ครบ */
     (function(){ var srv=String(DATA.version||'-'), okv=(srv.indexOf(BUILD)>=0);
-      var el=document.querySelector('.brand .tag'); if(el){ el.innerHTML='POS · <span style="color:'+(okv?'var(--ok)':'var(--crit)')+'">'+esc(BUILD)+'</span>'; el.title='หน้าเว็บ '+BUILD+' · เซิร์ฟเวอร์ '+srv; }
+      var who={owner:'เจ้าของร้าน',manager:'ผู้จัดการ',staff:'ช่าง'}[DATA.user.role]||'ผู้ใช้';
+      var el=document.querySelector('.brand .tag'); if(el){ el.innerHTML='POS · '+esc(who)+' · <span style="color:'+(okv?'var(--ok)':'var(--crit)')+'">'+esc(BUILD)+'</span>'; el.title='หน้าเว็บ '+BUILD+' · เซิร์ฟเวอร์ '+srv; }
       if(!okv) toast('⚠ เวอร์ชันไม่ตรงกัน — หน้าเว็บ '+BUILD+' · เซิร์ฟเวอร์ '+srv+' (ต้อง Deploy Core.gs เป็น New version)',1); })();
     document.getElementById('app').classList.remove('hide');
     document.getElementById('uInfo').innerText=(DATA.user.name||'')+' · '+(DATA.user.role==='owner'?'เจ้าของ':DATA.user.role==='manager'?'ผู้จัดการ':'ช่าง');

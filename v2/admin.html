@@ -8,9 +8,12 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:'Kanit',sans-serif;font-weight:300;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;padding-bottom:40px}
 .mono{font-family:'IBM Plex Mono',monospace}
-header.top{position:sticky;top:0;z-index:20;background:rgba(17,16,16,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
-.brand b{font-weight:600;font-size:18px}.brand b .n{color:var(--gold-soft)}.brand .tag{font-family:'IBM Plex Mono';font-size:10px;letter-spacing:.3em;color:var(--gold);text-transform:uppercase;margin-left:8px}
-.who{display:flex;gap:8px;align-items:center}.chip{background:var(--surface2);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--muted)}
+header.top{position:sticky;top:0;z-index:20;background:rgba(17,16,16,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.brand{display:flex;flex-direction:column;line-height:1.1;min-width:0}
+.brand b{font-weight:600;font-size:18px;white-space:nowrap}.brand b .n{color:var(--gold-soft)}
+.brand .tag{font-family:'IBM Plex Mono';font-size:9.5px;letter-spacing:.08em;color:var(--gold);margin:2px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.who{display:flex;gap:8px;align-items:center;flex:0 0 auto}
+.chip{background:var(--surface2);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--muted);white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis}
 .lo{background:none;border:1px solid var(--line);color:var(--muted);border-radius:10px;padding:7px 11px;font-size:12px;cursor:pointer;font-family:inherit}
 .wrap{max-width:920px;margin:0 auto;padding:14px}
 .tabbar{display:flex;gap:5px;margin:0 0 12px;position:sticky;top:57px;z-index:15;background:var(--bg);padding:8px 0;overflow-x:auto}
@@ -99,6 +102,13 @@ textarea.in{min-height:70px;resize:vertical;font-size:12px;font-family:'IBM Plex
 .billhd{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding-bottom:4px}
 .billctx{font-size:12px;color:var(--muted);background:var(--bg);border-radius:8px;padding:6px 9px;margin:2px 0 4px;line-height:1.5}
 .nocomm{color:#9a8c6a;font-size:10.5px}
+.tbl{font-size:12.5px}
+.tbl .tr{display:grid;grid-template-columns:1fr auto auto auto;gap:6px 12px;padding:8px 0;border-bottom:1px solid var(--line);align-items:baseline}
+.tbl .tr:last-child{border-bottom:0}
+.tbl .tr.th{font-size:10.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--line)}
+.tbl .tr span:not(:first-child){font-family:'IBM Plex Mono',monospace;white-space:nowrap;text-align:right}
+.tbl .tr small{color:var(--faint);font-size:10.5px}
+.tbl .hi{color:var(--gold-soft);font-weight:600}
 .tssec{margin-bottom:0}.card .tssec{margin:0}
 .tsh{font-size:13px;font-weight:600;color:var(--gold-soft);margin:0 0 8px;display:flex;align-items:center;gap:6px}
 .prog{height:12px;border-radius:999px;background:var(--bg);border:1px solid var(--line);overflow:hidden}
@@ -208,7 +218,7 @@ textarea.in{min-height:70px;resize:vertical;font-size:12px;font-family:'IBM Plex
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
-<header class="top"><div class="brand"><b>House<span class="n">265</span></b><span class="tag">Manager</span></div>
+<header class="top"><div class="brand"><b>House<span class="n">265</span></b><span class="tag">ระบบจัดการร้าน</span></div>
   <div class="who"><span class="chip" id="uInfo">—</span><button class="lo" onclick="doLogout()">ออก</button></div></header>
 
 <div id="app" class="wrap hide">
@@ -302,7 +312,7 @@ textarea.in{min-height:70px;resize:vertical;font-size:12px;font-family:'IBM Plex
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P31-MIGCOMM'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P32-ANALYTICS'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='', SCHED=null, SETTINGS=null, TAB='dash', FULL=false, ROLE='', MYTECH='';
 var THD=['อา','จ','อ','พ','พฤ','ศ','ส'];
 function api(a,p){ return fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:a,token:TOKEN||'',payload:p||{}})}).then(function(r){return r.json();}); }
@@ -326,10 +336,13 @@ function boot(){ api('bootstrap',{}).then(function(r){ if(!r||!r.ok){ if(r&&r.co
     var u=r.data.user; FULL=!!u.full; ROLE=u.role||''; MYTECH=u.tech_id||'';
     /* ตัวบอกเวอร์ชัน: หน้าเว็บ vs เซิร์ฟเวอร์ — ถ้าไม่ตรงแปลว่า Deploy ไม่ครบ (เตือนให้เห็นชัด) */
     (function(){ var srv=String(r.data.version||'-'), okv=(srv.indexOf(BUILD)>=0);
-      var el=document.querySelector('.brand .tag'); if(el){ el.innerHTML='Manager · <span style="color:'+(okv?'var(--ok)':'var(--crit)')+'">'+esc(BUILD)+'</span>';
+      /* ป้ายหัวจอเปลี่ยนตามคนที่ล็อกอิน ไม่ค้างเป็น Manager */
+      var who={owner:'เจ้าของร้าน',manager:'ผู้จัดการ',staff:'ช่าง'}[u.role]||'ผู้ใช้';
+      var el=document.querySelector('.brand .tag'); if(el){ el.innerHTML=esc(who)+' · <span style="color:'+(okv?'var(--ok)':'var(--crit)')+'">'+esc(BUILD)+'</span>';
         el.title='หน้าเว็บ '+BUILD+' · เซิร์ฟเวอร์ '+srv; }
+      try{ document.title='House265 · '+who; }catch(e){}
       if(!okv) toast('⚠ เวอร์ชันไม่ตรงกัน — หน้าเว็บ '+BUILD+' · เซิร์ฟเวอร์ '+srv+' (ต้อง Deploy Core.gs เป็น New version)',1); })();
-    document.getElementById('uInfo').innerText=(u.name||'')+' · '+({owner:'เจ้าของ',manager:'ผู้จัดการ',staff:'พนักงาน'}[u.role]||u.role||'');
+    document.getElementById('uInfo').innerText=String(u.nickname||u.name||'ผู้ใช้');
     document.getElementById('app').classList.remove('hide');
     if(!FULL){ applyStaffMode(); return; }
     buildQuick('dQuick',setDashRange); buildQuick('aQuick',setAcctRange);
@@ -525,6 +538,77 @@ function vzHover(id,el,ev){ var cx=document.getElementById(id+'cx'), dot=documen
   vzTip(1,el.getAttribute('data-t'),ev); }
 function vzLeave(id){ var cx=document.getElementById(id+'cx'), dot=document.getElementById(id+'dot');
   if(cx)cx.setAttribute('opacity','0'); if(dot)dot.setAttribute('opacity','0'); vzTip(0); }
+/* ---- กราฟพื้นที่ซ้อน: ต้นทุน+ค่าใช้จ่าย (ล่าง) + กำไรสุทธิ (บน) · ขอบบนสุด = ยอดขาย ----
+ * ใช้ 2 สีที่ผ่าน validator · อ่านได้ครบ 3 ค่าโดยไม่ต้องเพิ่มสีที่ 3 */
+function vzStack(rows,opt){ opt=opt||{}; rows=rows||[];
+  var n=rows.length; if(!n) return '<div class="vzempty">ยังไม่มีข้อมูลในช่วงนี้</div>';
+  var W=600,H=opt.h||210,PL=48,PR=12,PT=18,PB=28, iw=W-PL-PR, ih=H-PT-PB, id=vzId();
+  /* เส้นคาดการณ์: ต่อจากงวดล่าสุด (งวดที่ยังไม่จบ) ไปถึงยอดที่คาดว่าจะจบงวด */
+  var PJ=null;
+  if(opt.proj && num0(opt.proj.revenue)>num0(rows[n-1].revenue)){
+    var last=rows[n-1], lr=num0(last.revenue), pr=num0(opt.proj.revenue), k=lr>0?pr/lr:1;
+    var pc=(num0(last.cost)+num0(last.expenses))*k;
+    PJ={revenue:pr,cost:pc,net:pr-pc,label:'คาด'};
+  }
+  var NS=n+(PJ?1:0);
+  var tops=rows.map(function(r){ return Math.max(num0(r.revenue), num0(r.cost)+num0(r.expenses)+Math.max(0,num0(r.net))); });
+  if(PJ) tops.push(PJ.revenue);
+  var max=Math.max.apply(null,tops.concat([1]));
+  var X=function(i){ return NS===1?PL+iw/2:PL+iw*i/(NS-1); };
+  var Y=function(v){ return PT+ih-(v/max)*ih; };
+  var g=''; for(var k=0;k<=2;k++){ var yv=max*k/2, y=Y(yv);
+    g+='<line x1="'+PL+'" y1="'+y.toFixed(1)+'" x2="'+(W-PR)+'" y2="'+y.toFixed(1)+'" stroke="'+VZ.grid+'" stroke-width="1"/>'+
+       '<text x="'+(PL-8)+'" y="'+(y+3.5).toFixed(1)+'" text-anchor="end" class="vzax">'+nfmt(yv)+'</text>'; }
+  var pCost=rows.map(function(r,i){ return [X(i),Y(num0(r.cost)+num0(r.expenses))]; });
+  var pTop =rows.map(function(r,i){ return [X(i),Y(num0(r.cost)+num0(r.expenses)+Math.max(0,num0(r.net)))]; });
+  var base=PT+ih;
+  var costArea=vzSmooth(pCost)+' L'+pCost[n-1][0].toFixed(1)+' '+base+' L'+pCost[0][0].toFixed(1)+' '+base+' Z';
+  var profArea=vzSmooth(pTop)+' L'+pTop[n-1][0].toFixed(1)+' '+pCost[n-1][1].toFixed(1)+' '+
+      vzSmooth(pCost.slice().reverse()).replace(/^M/,'L')+' Z';
+  var body='<defs>'+
+    '<linearGradient id="'+id+'c" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+VZ.gold+'" stop-opacity=".55"/><stop offset="1" stop-color="'+VZ.gold+'" stop-opacity=".18"/></linearGradient>'+
+    '<linearGradient id="'+id+'p" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+VZ.teal+'" stop-opacity=".75"/><stop offset="1" stop-color="'+VZ.teal+'" stop-opacity=".35"/></linearGradient>'+
+    '</defs>'+g+
+    '<path d="'+profArea+'" fill="url(#'+id+'p)"/>'+
+    '<path d="'+costArea+'" fill="url(#'+id+'c)"/>'+
+    '<path d="'+vzSmooth(pCost)+'" fill="none" stroke="'+VZ.gold+'" stroke-width="1.5" opacity=".8"/>'+
+    '<path d="'+vzSmooth(pTop)+'" fill="none" stroke="'+VZ.goldHi+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+  if(PJ){ var xl=X(n-1), xp=X(n), yl=pTop[n-1][1], yp=Y(PJ.revenue), ycl=pCost[n-1][1], ycp=Y(PJ.cost);
+    body+='<path d="M'+xl.toFixed(1)+' '+ycl.toFixed(1)+' L'+xp.toFixed(1)+' '+ycp.toFixed(1)+' L'+xp.toFixed(1)+' '+base+' L'+xl.toFixed(1)+' '+base+' Z" fill="'+VZ.gold+'" opacity=".16"/>'+
+      '<path d="M'+xl.toFixed(1)+' '+yl.toFixed(1)+' L'+xp.toFixed(1)+' '+yp.toFixed(1)+' L'+xp.toFixed(1)+' '+ycp.toFixed(1)+' L'+xl.toFixed(1)+' '+ycl.toFixed(1)+' Z" fill="'+VZ.teal+'" opacity=".22"/>'+
+      '<line x1="'+xl.toFixed(1)+'" y1="'+PT+'" x2="'+xl.toFixed(1)+'" y2="'+base+'" stroke="'+VZ.goldHi+'" stroke-width="1" stroke-dasharray="2 4" opacity=".45"/>'+
+      '<path d="M'+xl.toFixed(1)+' '+ycl.toFixed(1)+' L'+xp.toFixed(1)+' '+ycp.toFixed(1)+'" fill="none" stroke="'+VZ.gold+'" stroke-width="1.5" stroke-dasharray="5 4" opacity=".65"/>'+
+      '<path d="M'+xl.toFixed(1)+' '+yl.toFixed(1)+' L'+xp.toFixed(1)+' '+yp.toFixed(1)+'" fill="none" stroke="'+VZ.goldHi+'" stroke-width="2.5" stroke-dasharray="5 4" stroke-linecap="round"/>'+
+      '<circle cx="'+xp.toFixed(1)+'" cy="'+yp.toFixed(1)+'" r="4" fill="#1a1816" stroke="'+VZ.goldHi+'" stroke-width="2"/>'; }
+  var step=Math.ceil(n/6);
+  rows.forEach(function(r,i){ if(i%step===0||i===n-1) body+='<text x="'+X(i).toFixed(1)+'" y="'+(H-9)+'" text-anchor="middle" class="vzlb">'+vzAttr(r.label)+'</text>'; });
+  if(PJ) body+='<text x="'+X(n).toFixed(1)+'" y="'+(H-9)+'" text-anchor="middle" class="vzlb" fill="'+VZ.goldHi+'">คาด</text>';
+  body+='<line id="'+id+'cx" x1="0" y1="'+PT+'" x2="0" y2="'+base+'" stroke="'+VZ.goldHi+'" stroke-width="1" opacity="0"/>'+
+        '<circle id="'+id+'dot" r="4.5" fill="'+VZ.goldHi+'" stroke="#1a1816" stroke-width="2" opacity="0"/>';
+  var sw=iw/Math.max(1,NS-1);
+  if(PJ){ var pmg=PJ.revenue>0?Math.round(PJ.net/PJ.revenue*100):0;
+    var ptip='<b>คาดการณ์สิ้นงวด</b><br>ยอดขาย ฿'+fmt(Math.round(PJ.revenue))+
+      '<br>ต้นทุน+ค่าใช้จ่าย ฿'+fmt(Math.round(PJ.cost))+
+      '<br><b>กำไรสุทธิ ฿'+fmt(Math.round(PJ.net))+' ('+pmg+'%)</b>'+
+      '<br>คิดจากอัตราการขายจริงถึงวันนี้';
+    body+='<rect class="vzslot" x="'+(X(n)-sw/2).toFixed(1)+'" y="'+PT+'" width="'+(sw/2).toFixed(1)+'" height="'+ih+'" data-t="'+ptip+'" data-x="'+X(n).toFixed(1)+'" data-y="'+Y(PJ.revenue).toFixed(1)+'" '+
+      'onmousemove="vzHover(\''+id+'\',this,event)" onmouseleave="vzLeave(\''+id+'\')"/>'; }
+  rows.forEach(function(r,i){ var cx=X(i), x0=(i===0?PL:cx-sw/2), ww=(NS===1?iw:(i===0?sw/2:(i===n-1&&!PJ?sw/2:sw)));
+    var mg=num0(r.revenue)>0?Math.round(num0(r.net)/num0(r.revenue)*100):0;
+    var tip='<b>'+vzAttr(r.label)+'</b><br>ยอดขาย ฿'+fmt(r.revenue)+
+      '<br>ต้นทุน ฿'+fmt(r.cost)+(num0(r.expenses)?('<br>ค่าใช้จ่ายอื่น ฿'+fmt(r.expenses)):'')+
+      (num0(r.discount)?('<br>ส่วนลด ฿'+fmt(r.discount)):'')+
+      '<br><b>กำไรสุทธิ ฿'+fmt(r.net)+' ('+mg+'%)</b>'+
+      '<br>'+fmt(r.count)+' บิล · เฉลี่ย ฿'+fmt(r.avgTicket);
+    body+='<rect class="vzslot" x="'+x0.toFixed(1)+'" y="'+PT+'" width="'+Math.max(1,ww).toFixed(1)+'" height="'+ih+'" data-t="'+tip+'" data-x="'+cx.toFixed(1)+'" data-y="'+Y(num0(r.cost)+num0(r.expenses)+Math.max(0,num0(r.net))).toFixed(1)+'" '+
+      'onmousemove="vzHover(\''+id+'\',this,event)" onmouseleave="vzLeave(\''+id+'\')"/>'; });
+  return '<svg class="vzsvg" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="ยอดขาย ต้นทุน และกำไรสุทธิ">'+body+'</svg>'+
+    '<div class="vzleg"><span><i style="background:'+VZ.goldHi+'"></i>ยอดขาย (ขอบบน)</span>'+
+    '<span><i style="background:'+VZ.gold+';opacity:.7"></i>ต้นทุน + ค่าใช้จ่าย</span>'+
+    '<span><i style="background:'+VZ.teal+'"></i>กำไรสุทธิ</span>'+
+    (PJ?'<span><i style="background:transparent;border:1.5px dashed '+VZ.goldHi+'"></i>คาดการณ์สิ้นงวด</span>':'')+'</div>'; }
+function num0(v){ return Number(v)||0; }
+function numTH(v){ return (Math.round((Number(v)||0)*100)/100).toLocaleString('en-US'); }
 /* ---- sparkline 12 จุด (ในการ์ด KPI) ---- */
 function vzSpark(vals,color,opt){ opt=opt||{}; vals=(vals||[]).map(function(v){return Number(v)||0;}); if(vals.length<2) return '';
   var big=!!opt.big, W=big?600:120, H=big?64:26, id=vzId();
@@ -605,25 +689,37 @@ function renderDash(){ var d=DASHDATA; var p=d.prev||{}; var h='';
   var cmpName=(d.cmp==='yoy'?'ปีก่อน':'งวดก่อน');
   var dayKeys=Object.keys(d.byDay||{}).sort(), dayVals=dayKeys.map(function(k){return d.byDay[k];});
   /* ---- HERO: ตัวเลขนำของหน้า (หนึ่งเดียว) + sparkline ---- */
+  var pr=(p.range||{});
+  var cmpLabel='เทียบ '+esc(pr.from||'')+' → '+esc(pr.to||'')+' ('+(d.cmp==='yoy'?'ช่วงเดียวกันปีก่อน':'ช่วงก่อนหน้า ยาวเท่ากัน')+')';
   h+='<div class="card"><div class="hero"><div class="hl">ยอดขายรวม · '+esc((d.range&&d.range.from)||'')+' → '+esc((d.range&&d.range.to)||'')+'</div>'+
     '<div class="hv">฿'+fmt(d.revenue)+'</div>'+
-    '<div class="hd">'+vzDelta(d.revenue,p.revenue,'เทียบ'+cmpName)+'<span class="mini" style="margin:0">'+fmt(d.count)+' บิล · เฉลี่ย ฿'+fmt(d.avg)+'</span></div></div>'+
-    (dayVals.length>1?('<div style="margin-top:14px">'+vzSpark(dayVals,null,{big:true})+'<div class="mini" style="margin-top:2px">ยอดขายรายวันในช่วงที่เลือก · '+dayVals.length+' วัน</div></div>'):'')+'</div>';
+    '<div class="hd">'+vzDelta(d.revenue,p.revenue)+'<span class="mini" style="margin:0">'+fmt(d.count)+' บิล · เฉลี่ยบิลละ ฿'+fmt(d.avg)+'</span></div>'+
+    '<div class="mini" style="margin-top:4px">'+cmpLabel+'</div></div>'+
+    /* กราฟรวม: ยอดขาย / ต้นทุน / กำไร อยู่ในภาพเดียว */
+    '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:16px 0 6px">'+
+    '<b style="font-size:13.5px;color:var(--gold-soft)">📈 ยอดขาย · ต้นทุน · กำไรสุทธิ</b>'+
+    '<div class="seg3" style="display:flex;gap:4px;flex-wrap:wrap">'+
+    ['day:รายวัน','week:รายสัปดาห์','month:รายเดือน'].map(function(x){ var g=x.split(':'); return '<button class="gbtn'+(TRENDG===g[0]?' on':'')+'" onclick="setTrendG(\''+g[0]+'\')">'+g[1]+'</button>'; }).join('')+'</div></div>'+
+    '<div id="trendBox"></div></div>';
   /* ---- KPI tiles ---- */
   h+='<div class="tiles" style="margin:12px 0">'+
     tile('กำไรสุทธิ','฿'+fmt(d.net!=null?d.net:d.grossProfit),vzDelta(d.grossProfit,p.grossProfit)+' <span class="mini" style="margin:0">margin '+d.margin+'%</span>')+
     tile('จำนวนบิล',fmt(d.count)+' <span style="font-size:13px;color:var(--faint)">บิล</span>',vzDelta(d.count,p.count)+' <span class="mini" style="margin:0">'+cmpName+' '+fmt(p.count||0)+'</span>')+
     tile('มูลค่าสต็อก','฿'+fmt(d.stockValue),'<span class="mini" style="margin:0">'+fmt(d.stockQR)+' QR'+((d.lowStock&&d.lowStock.length)?(' · <span style="color:var(--crit)">ใกล้หมด '+d.lowStock.length+'</span>'):'')+'</span>')+
     '</div>';
-  /* business insights */
-  if(d.insights&&d.insights.length){ h+='<div class="card"><h2>💡 ข้อสังเกตธุรกิจ</h2><div style="display:flex;flex-direction:column;gap:7px;margin-top:4px">'+
-    d.insights.map(function(x){ var c=(x.type==='good')?'ins-good':(x.type==='warn'?'ins-warn':'ins-info'); var ic=(x.type==='good')?'✅':(x.type==='warn'?'⚠️':'•'); return '<div class="insrow '+c+'">'+ic+' '+esc(x.text)+'</div>'; }).join('')+'</div></div>'; }
+  /* คาดการณ์สิ้นเดือน — มีเฉพาะตอนดูเดือนปัจจุบัน */
+  var fc=d.forecast;
+  if(fc){ var fpct=(d.target&&d.target.revenue>0)?Math.round(fc.projected/d.target.revenue*100):0;
+    h+='<div class="card"><h2>🔮 คาดการณ์สิ้นเดือน</h2>'+
+      '<div class="mini" style="margin:0 0 10px">คำนวณจากอัตราการขายจริง '+fc.openPast+' วันเปิดที่ผ่านมา · เหลืออีก '+fc.daysLeft+' วันเปิด</div>'+
+      '<div class="tiles">'+
+      tile('คาดว่าจะจบเดือนที่','฿'+fmt(fc.projected),(d.target&&d.target.revenue>0)?('<span class="mini" style="margin:0">'+fpct+'% ของเป้า ฿'+fmt(d.target.revenue)+'</span>'):'')+
+      tile('อัตราปัจจุบัน','฿'+fmt(fc.perDay)+'<span style="font-size:13px;color:var(--faint)">/วัน</span>','<span class="mini" style="margin:0">'+fc.perDayBills+' บิล/วัน</span>')+
+      tile('ทำได้แล้ว','฿'+fmt(d.revenue),'<span class="mini" style="margin:0">'+fc.openPast+'/'+fc.openAll+' วันเปิด</span>')+
+      '</div></div>'; }
   /* target */
   h+=targetCard(d);
   /* trend (granularity) */
-  h+='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"><h2 style="margin:0">📈 เทรนด์ยอดขาย</h2><div class="seg3" style="display:flex;gap:4px;flex-wrap:wrap">'+
-    ['day:รายวัน','week:รายสัปดาห์','month:รายเดือน'].map(function(x){ var g=x.split(':'); return '<button class="gbtn'+(TRENDG===g[0]?' on':'')+'" onclick="setTrendG(\''+g[0]+'\')">'+g[1]+'</button>'; }).join('')+'</div></div>'+
-    '<div id="trendBox"></div></div>';
   /* breakdown — แท่งแบ่งสัดส่วน (หนึ่งก้อน แบ่งเป็นส่วน) */
   h+='<div class="card"><h2>แยกประเภทยอดขาย</h2><div class="mini" style="margin:0 0 10px">สัดส่วนรายได้ของแต่ละประเภทงาน</div>'+
     vzSeg(Object.keys(d.byType||{}).map(function(k){return {name:k,value:d.byType[k]};}))+'</div>';
@@ -643,6 +739,27 @@ function renderDash(){ var d=DASHDATA; var p=d.prev||{}; var h='';
     '<div class="pnl tot"><span>กำไรขั้นต้น</span><b>฿'+fmt(d.grossProfit)+'</b></div>'+
     ((d.expenses>0)?('<div class="pnl neg"><span>− ค่าใช้จ่ายอื่น</span><b>฿'+fmt(d.expenses)+'</b></div>'):'')+
     '<div class="pnl tot pos"><span>กำไรสุทธิ</span><b>฿'+fmt(d.net!=null?d.net:d.grossProfit)+'</b></div></div>';
+  /* ---- เทคนิคไหนทำเงิน: รายได้ vs กำไรต่อ QR (ตัวชี้ว่าควรดันอะไร) ---- */
+  var bt=d.byTechnique||[];
+  if(bt.length){
+    var totR=bt.reduce(function(a,x){return a+x.revenue;},0)||1;
+    h+='<div class="card"><h2>✂️ เทคนิคไหนทำเงิน</h2><div class="mini" style="margin:0 0 10px">สัดส่วนรายได้ และ "กำไรต่อ 1 QR" — ตัวหลังบอกว่างานแบบไหนคุ้มเวลาที่สุด</div>'+
+      vzSeg(bt.map(function(x){return {name:x.name,value:x.revenue};}))+
+      '<div style="height:14px"></div>'+
+      '<div class="tbl"><div class="tr th"><span>เทคนิค</span><span>รายได้</span><span>กำไร/QR</span><span>มาร์จิ้น</span></div>'+
+      bt.map(function(x){ return '<div class="tr"><span><b>'+esc(x.name)+'</b><small> · '+esc(x.qty_label)+' · '+x.jobs+' งาน</small></span>'+
+        '<span>฿'+fmt(x.revenue)+'<small> '+Math.round(x.revenue/totR*100)+'%</small></span>'+
+        '<span class="hi">฿'+fmt(x.profitPerQR)+'</span>'+
+        '<span>'+x.margin+'%</span></div>'; }).join('')+'</div>'+
+      '<div class="mini" style="margin-top:8px">เฉลี่ยต่อบิล: '+bt.map(function(x){return esc(x.name)+' ฿'+fmt(x.avgTicket);}).join(' · ')+'</div></div>'; }
+  /* ---- ความยาวที่ขายดี ---- */
+  var bs=d.bySize||[];
+  if(bs.length){ h+='<div class="card"><h2>📏 ความยาวที่ขายดี</h2><div class="mini" style="margin:0 0 8px">ใช้วางแผนสต็อก — ความยาวไหนหมุนเร็วที่สุด</div>'+
+    vzBars(bs.map(function(x){ return {name:x.name,value:x.revenue,sub:numTH(x.qr)+' QR · '+x.jobs+' งาน'}; }))+'</div>'; }
+  /* ---- วันไหนขายดี (เฉลี่ยต่อวันเปิด ไม่ใช่ผลรวมดิบ) ---- */
+  var bd=(d.byDow||[]).filter(function(x){return x.days>0;});
+  if(bd.length){ h+='<div class="card"><h2>📅 วันไหนขายดี</h2><div class="mini" style="margin:0 0 8px">เฉลี่ยต่อวันที่เปิดจริง — ใช้จัดคิวช่างและตั้งโปรวันที่เงียบ</div>'+
+    vzBars(bd.map(function(x){ return {name:x.name,value:x.avgPerDay,sub:x.bills+' บิล / '+x.days+' วัน'}; }))+'</div>'; }
   h+='<div class="card"><h2>🏆 ขายดี (ตามยอดเงิน)</h2>'+vzBars((d.topItems||[]).map(function(x){return {name:x.name,value:x.amount};}),{limit:8})+'</div>';
   h+='<div class="card"><h2>ช่องทางรับเงิน</h2>'+vzBars(Object.keys(d.byMethod||{}).map(function(k){return {name:k,value:d.byMethod[k]};}))+'</div>';
   /* Technician Performance — แท่งเรียงอันดับ แตะดูรายคน */
@@ -657,10 +774,15 @@ function renderDash(){ var d=DASHDATA; var p=d.prev||{}; var h='';
   document.getElementById('dashBody').innerHTML=h; renderTrend(); }
 function renderTrend(){ var el=document.getElementById('trendBox'); if(!el||!TRENDDATA)return; var s=TRENDDATA.series||[];
   if(!s.length){ el.innerHTML='<div class="vzempty">ยังไม่มีข้อมูล</div>'; return; }
-  var rows=s.map(function(m){ return { label:m.label, value:m.revenue, value2:m.grossProfit, sub:m.count+' บิล' }; });
-  var totRev=s.reduce(function(a,m){return a+m.revenue;},0), totProf=s.reduce(function(a,m){return a+m.grossProfit;},0);
-  el.innerHTML=vzArea(rows,{h:190,name:'ยอดขาย',name2:'กำไรขั้นต้น',aria:'กราฟแนวโน้มยอดขายและกำไร'})+
-    '<div class="mini" style="text-align:center;margin-top:6px">รวม '+s.length+' งวด · ยอดขาย ฿'+fmt(totRev)+' · กำไรขั้นต้น ฿'+fmt(totProf)+'</div>'; }
+  var totRev=s.reduce(function(a,m){return a+m.revenue;},0), totNet=s.reduce(function(a,m){return a+(m.net||0);},0);
+  var mg=totRev>0?Math.round(totNet/totRev*100):0;
+  /* ต่อเส้นคาดการณ์เฉพาะมุมมองรายเดือน และเฉพาะเมื่องวดสุดท้ายคือเดือนปัจจุบันที่ยังไม่จบ */
+  var proj=null;
+  try{ var fc=DASHDATA&&DASHDATA.forecast, curYm=iso(new Date()).slice(0,7);
+    if(fc&&fc.projected&&TRENDG==='month'&&String(s[s.length-1].key)===curYm) proj={revenue:fc.projected};
+  }catch(e){}
+  el.innerHTML=vzStack(s,{h:215,proj:proj})+
+    '<div class="mini" style="text-align:center;margin-top:6px">สะสม '+s.length+' งวด · ยอดขาย <b style="color:var(--gold-soft)">฿'+fmt(totRev)+'</b> · กำไรสุทธิ <b style="color:var(--ok)">฿'+fmt(totNet)+'</b> ('+mg+'%)</div>'; }
 /* แถบเป้าแบบ meter (ใช้ซ้ำได้ทุกตัวชี้วัด) */
 function vzMeter(label,cur,tgt,opt){ opt=opt||{}; if(!(Number(tgt)>0)) return '';
   cur=Number(cur)||0; tgt=Number(tgt); var pct=Math.round(cur/tgt*100), w=Math.min(100,Math.max(0,pct));
