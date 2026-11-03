@@ -302,7 +302,7 @@ textarea.in{min-height:70px;resize:vertical;font-size:12px;font-family:'IBM Plex
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P28-SYNC'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P29-LINK'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='', SCHED=null, SETTINGS=null, TAB='dash', FULL=false, ROLE='', MYTECH='';
 var THD=['อา','จ','อ','พ','พฤ','ศ','ส'];
 function api(a,p){ return fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:a,token:TOKEN||'',payload:p||{}})}).then(function(r){return r.json();}); }
@@ -386,7 +386,17 @@ function loadMyStats(){ var box=document.getElementById('mineBody'); if(!box)ret
   }).catch(function(){ box.innerHTML='<div class="empty">เชื่อมต่อไม่สำเร็จ</div>'; }); }
 function myMonth(v){ MYMONTH=v; loadMyStats(); }
 function renderTechStats(d, box, withPicker){
-  if(!d.linked){ box.innerHTML='<div class="card"><h2>📈 รายได้ของฉัน</h2><div class="mini" style="margin-top:4px">บัญชีนี้ยังไม่ได้ผูกกับช่าง จึงยังไม่มีข้อมูลรายได้ส่วนตัว<br>แจ้งเจ้าของร้านให้ไปที่ <b>จัดการผู้ใช้</b> แล้วเลือก “ผูกกับช่าง” ให้บัญชีนี้</div></div>'; return; }
+  if(!d.linked){
+    var msg;
+    if(d.reason==='tech_not_found'){
+      msg='บัญชีนี้ผูกไว้กับรหัสช่าง <b style="color:var(--crit)">'+esc(d.tech_id||'-')+'</b> แต่<b>ไม่พบรหัสนี้ในชีต Technicians</b>'+
+          '<br>รหัสช่างที่มีจริงในระบบ: <b>'+((d.known_tech_ids||[]).map(esc).join(' · ')||'— ยังไม่มีช่างในชีต Technicians —')+'</b>'+
+          '<br>แก้โดยเปลี่ยน tech_id ในชีต <b>Users</b> ให้ตรงกับรหัสข้างบน (ตัวพิมพ์เล็ก-ใหญ่ต้องตรง)';
+    } else {
+      msg='บัญชีนี้ยังไม่ได้ผูกกับช่าง จึงยังไม่มีข้อมูลรายได้ส่วนตัว'+
+          '<br>ไปที่ <b>ตั้งค่า → จัดการผู้ใช้</b> แล้วเลือก “ผูกกับช่าง” ให้บัญชีนี้ (หรือใส่ tech_id ในชีต Users)';
+    }
+    box.innerHTML='<div class="card"><h2>📈 รายได้ของฉัน</h2><div class="mini" style="margin-top:6px;line-height:1.8">'+msg+'</div></div>'; return; }
   var s=d.summary, g=d.goal, h='';
   var trendVals=(d.trend||[]).map(function(x){return x.amount;});
   var last=trendVals.length?trendVals[trendVals.length-1]:0, prevM=trendVals.length>1?trendVals[trendVals.length-2]:null;
