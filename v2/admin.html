@@ -302,7 +302,7 @@ textarea.in{min-height:70px;resize:vertical;font-size:12px;font-family:'IBM Plex
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P25-PROFIT'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P27-PNL'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='', SCHED=null, SETTINGS=null, TAB='dash', FULL=false, ROLE='', MYTECH='';
 var THD=['อา','จ','อ','พ','พฤ','ศ','ส'];
 function api(a,p){ return fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:a,token:TOKEN||'',payload:p||{}})}).then(function(r){return r.json();}); }
@@ -930,7 +930,7 @@ function renderSettings(){ var box=document.getElementById('setBody'); var gs={}
   /* เวลาเปิด-ปิดร้าน แสดงเป็นวิดเจ็ตเฉพาะด้านบน (ไม่ซ้ำในรายการทั่วไป) — ข้อ7 */
   SETTINGS.settings.forEach(function(s){ if(SHOPHOUR_KEYS.indexOf(s.key)>=0)return; (gs[s.group]=gs[s.group]||[]).push(s); });
   var groups=order.filter(function(g){return gs[g];}); Object.keys(gs).forEach(function(g){ if(groups.indexOf(g)<0)groups.push(g); });
-  var ICON={'ร้าน':'🏪','เวลาทำการ':'🕐','การชำระเงิน':'💳','มัดจำ':'💰','ค่ามือช่าง':'✂️','ฉลาก':'🏷️','ข้อความ':'💬','อื่นๆ':'📦','ระบบ':'🔒'};
+  var ICON={'ร้าน':'🏪','เวลาทำการ':'🕐','การชำระเงิน':'💳','มัดจำ':'💰','ค่ามือช่าง':'✂️','บัญชี':'📒','ฉลาก':'🏷️','ข้อความ':'💬','อื่นๆ':'📦','ระบบ':'🔒'};
   var h='<div class="card" style="margin-bottom:6px"><h2>⚙️ ตั้งค่าระบบ</h2><div class="mini" style="margin:0">แก้ไขได้จากที่นี่โดยไม่ต้องเปิด Google Sheet · กด "บันทึกการตั้งค่า" ด้านล่างเมื่อแก้เสร็จ</div></div>';
   /* ---- วิดเจ็ตเวลาทำการร้าน ---- */
   var openT=setVal('openTime')||'10:00', closeT=setVal('closeTime')||'19:00';
@@ -1004,6 +1004,7 @@ function renderAcct(d){ var sv=d.service||{revenue:0,cost:0,profit:0}, hp=d.hair
   '<div class="pnl '+(hp.profit>=0?'pos':'neg')+'"><span style="padding-left:12px">กำไร-ขายผม</span><b>฿'+fmt(hp.profit)+'</b></div>'+
   '<div class="pnl tot pos"><span>กำไรขั้นต้น</span><b>฿'+fmt(d.grossProfit)+'</b></div>'+
   '<div class="pnl neg"><span>− ค่าใช้จ่ายอื่น</span><b>฿'+fmt(d.expenses)+'</b></div>'+
+  ((d.expSkipped>0)?('<div class="mini" style="margin:6px 0 0">ไม่หักซ้ำ: '+Object.keys(d.expSkippedByType||{}).map(function(k){return esc(k)+' ฿'+fmt(d.expSkippedByType[k]);}).join(' · ')+' <span style="color:var(--faint)">(คิดในต้นทุนรายบรรทัดแล้ว)</span></div>'):'')+
   '<div class="pnl tot '+(d.net>=0?'pos':'neg')+'"><span>กำไรสุทธิ</span><b>฿'+fmt(d.net)+'</b></div>'+
   '<div class="mini">margin '+d.margin+'% · '+d.saleCount+' บิล · ซื้อผมเข้าสต๊อกช่วงนี้ ฿'+fmt(d.purchases)+' (ทรัพย์สิน ไม่รวมในกำไรขาดทุน)</div></div>';
   if(d.expByType&&Object.keys(d.expByType).length) h+='<div class="card"><h2>ค่าใช้จ่ายแยกประเภท</h2>'+barRows(d.expByType,'',true)+'</div>';
