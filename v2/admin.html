@@ -302,7 +302,7 @@ textarea.in{min-height:70px;resize:vertical;font-size:12px;font-family:'IBM Plex
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P24-BILL'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P25-PROFIT'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='', SCHED=null, SETTINGS=null, TAB='dash', FULL=false, ROLE='', MYTECH='';
 var THD=['อา','จ','อ','พ','พฤ','ศ','ส'];
 function api(a,p){ return fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:a,token:TOKEN||'',payload:p||{}})}).then(function(r){return r.json();}); }
@@ -1047,12 +1047,12 @@ function exportAcctExcel(){ if(typeof XLSX==='undefined'){ toast('ยังโ�
       ['margin %','',a.margin||0],['จำนวนบิล','',a.saleCount||0]];
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(pnl), 'สรุป P&L');
     // 2) หัวบิล (Sales) — รวมมัดจำ/ยอดสุทธิ/ค้างชำระ
-    var sh=[['วันที่','เลขบิล','ลูกค้า','เบอร์','ยอดก่อนลด','ส่วนลด','มัดจำ','ยอดสุทธิ','คงเหลือ','รับเงิน','เงินทอน','ช่องทาง','สถานะ','หมายเหตุ']];
-    sales.forEach(function(s){ sh.push([s.date,s.sale_id,s.customer,s.phone,s.subtotal,s.discount,s.deposit,s.total,s.due,s.received,s.change,s.method,s.status,s.note]); });
+    var sh=[['วันที่','เลขบิล','ลูกค้า','เบอร์','ยอดก่อนลด','ส่วนลด','มัดจำ','ยอดสุทธิ','คงเหลือ','รับเงิน','เงินทอน','กำไรทั้งบิล','ช่องทาง','สถานะ','หมายเหตุ']];
+    sales.forEach(function(s){ sh.push([s.date,s.sale_id,s.customer,s.phone,s.subtotal,s.discount,s.deposit,s.total,s.due,s.received,s.change,s.profit,s.method,s.status,s.note]); });
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sh), 'หัวบิล');
-    // 3) รายการในบิล (SaleItems) ละเอียด — ต้นทุน/ค่ามือ/ช่าง/กำไรต่อบรรทัด
-    var si=[['วันที่','เลขบิล','ประเภท','รายการ','ขนาด','สี','จำนวน(หน่วยขาย)','จำนวน QR','ราคา/หน่วย','ยอดรวม','ต้นทุนผม','ค่าอุปกรณ์','ค่ามือช่าง','ช่าง','กำไร','หมายเหตุ']];
-    items.forEach(function(x){ si.push([x.date,x.sale_id,(LT[x.line_type]||x.line_type),x.item,x.size,x.color,x.qty_label,x.qty_mad,x.unit_price,x.amount,x.hair_cost,x.equip,x.comm,x.tech,x.profit,x.note]); });
+    // 3) รายการในบิล (SaleItems) ละเอียด — ต้นทุน/ค่ามือ/ส่วนลดเฉลี่ย/ช่าง/กำไรต่อบรรทัด
+    var si=[['วันที่','เลขบิล','ประเภท','รายการ','ขนาด','สี','จำนวน(หน่วยขาย)','จำนวน QR','ราคา/หน่วย','ยอดรวม','ต้นทุนผม','ค่าอุปกรณ์','ค่ามือช่าง','ส่วนลด/โปร','ต้นทุนรวม','ช่าง','กำไร','หมายเหตุ']];
+    items.forEach(function(x){ si.push([x.date,x.sale_id,(LT[x.line_type]||x.line_type),x.item,x.size,x.color,x.qty_label,x.qty_mad,x.unit_price,x.amount,x.hair_cost,x.equip,x.comm,x.discount,x.cost_total,x.tech,x.profit,x.note]); });
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(si), 'รายการในบิล');
     // 4) ค่าใช้จ่าย
     var ex=[['วันที่','ประเภท','รายการ','จำนวน','ราคารวม']];
