@@ -131,7 +131,11 @@ button.is-busy,.is-busy{cursor:progress!important;opacity:.78}
   /* @page{size:...} ถูก inject ตามขนาดป้ายจริงใน applyLabelSize() → 1 ดวง = 1 หน้า เท่าสติกเกอร์พอดี */
   html,body{margin:0!important;padding:0!important;background:#fff!important;height:auto!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
   /* ทุกอย่างที่ลอยทับหน้าจอต้องหายตอนพิมพ์ ไม่งั้นมันไปทับฉลากทุกหน้า */
-  #loginModal,.top,.noprint,.tabbar,.tabpane,#busybar,#varModal,.modal,.toast,#toast{display:none!important}
+  #loginModal,.top,.noprint,.tabbar,#busybar,#varModal,.modal,.toast,#toast{display:none!important}
+  /* เหลือเฉพาะแท็บฉลาก และในแท็บนั้นเหลือเฉพาะการ์ดฉลาก (ต้องบังคับโชว์ เพราะแท็บอื่นอาจเปิดอยู่ตอนสั่งพิมพ์) */
+  .tabpane:not(#tabLabel){display:none!important}
+  #tabLabel{display:block!important}
+  #tabLabel>.card:not(#resultCard){display:none!important}
   .wrap>.card:not(#resultCard){display:none!important}
   #app,.wrap{display:block!important;margin:0!important;padding:0!important;background:none!important;border:0!important}
   #resultCard{display:block!important;margin:0!important;padding:0!important;border:0!important;background:none!important;box-shadow:none!important}
@@ -161,6 +165,7 @@ button.is-busy,.is-busy{cursor:progress!important;opacity:.78}
 
     <div class="tabbar">
       <button type="button" class="tabbtn on" data-t="receive" onclick="setTab('receive')">📦 รับเข้า</button>
+      <button type="button" class="tabbtn" data-t="label" onclick="setTab('label')">🏷️ ฉลาก</button>
       <button type="button" class="tabbtn" data-t="stock" onclick="setTab('stock')">📊 สต็อก</button>
       <button type="button" class="tabbtn" data-t="batch" onclick="setTab('batch')">🧾 Batch</button>
     </div>
@@ -248,13 +253,6 @@ button.is-busy,.is-busy{cursor:progress!important;opacity:.78}
         <div id="stockSum" class="mini" style="margin:0 0 8px"></div>
         <div id="stockBox"><div class="mini">กำลังโหลด…</div></div>
       </div>
-      <div class="card">
-        <h2>🖨️ พิมพ์ฉลากซ้ำ</h2>
-        <div class="mini" style="margin-top:0">กรณีเครื่องพิมพ์พลาด หรือฉลากชำรุด — ออกฉลากใหม่ได้ โดยไม่สร้างสต็อกเพิ่ม</div>
-        <label class="lbl" style="margin-top:12px">พิมพ์/สแกนบาร์โค้ด แล้วออกฉลาก 1 ดวง</label>
-        <div style="display:flex;gap:8px"><input id="reBarcode" class="in" placeholder="เช่น H000073L0" onkeydown="if(event.key==='Enter')reprintBarcode()"><button class="btn" style="width:auto;padding:0 20px" onclick="reprintBarcode()">พิมพ์ซ้ำ</button></div>
-        <div class="mini" style="margin-top:8px">• ต้องการพิมพ์ทั้ง Batch? ไปแท็บ <b>🧾 Batch</b> แล้วกดปุ่มพิมพ์ที่ Batch นั้น</div>
-      </div>
     </div>
 
     <!-- ===== TAB: Batch ===== -->
@@ -276,7 +274,8 @@ button.is-busy,.is-busy{cursor:progress!important;opacity:.78}
       </div>
     </div>
 
-    <!-- ===== ฉลาก (ใช้ร่วม: รับเข้า + พิมพ์ซ้ำ) ===== -->
+    <!-- ===== TAB: ฉลาก (ใช้ร่วม: รับเข้า + พิมพ์ซ้ำ) ===== -->
+    <div class="tabpane hide" id="tabLabel">
     <div class="card hide" id="resultCard">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <h2 style="margin:0">🏷️ ฉลาก QR (<span id="lblCount">0</span> ดวง)</h2>
@@ -292,6 +291,18 @@ button.is-busy,.is-busy{cursor:progress!important;opacity:.78}
       <div class="noprint mini" id="previewHead" style="margin-top:12px;color:var(--gold-soft)"></div>
       <div class="labels noprint" id="labelPreview"></div>
       <div id="printArea"><div class="labels" id="labels"></div></div>
+    </div>
+
+    <!-- การ์ดเครื่องมือ · แสดงตลอด เพื่อให้ดึงฉลากเดิมกลับมาพิมพ์ซ้ำได้ทุกเมื่อ -->
+    <div class="card" id="noLabelYet">
+      <h2>🏷️ ฉลาก QR ติดมัดผม</h2>
+      <div class="mini" style="margin:0 0 10px">สติกเกอร์ที่ติดบนมัดผมแต่ละมัด — มี QR สำหรับสแกนขายที่ POS พร้อมชื่อรุ่น เกรด ลักษณะผม สี ความยาว จำนวนช่อ และราคาขายเปล่า (<b>ไม่พิมพ์ต้นทุน</b>)<br>
+        <b>1 ดวง = 1 มัด (1 QR = 50g)</b> รับเข้า 10 มัด ก็ได้ฉลาก 10 ดวง</div>
+      <div class="mini" style="margin:0 0 14px;color:var(--gold-soft)">ฉลากจะมาอยู่ที่นี่อัตโนมัติเมื่อรับผมเข้าล็อตใหม่ · แท็บนี้ไว้ดึงฉลาก<b>เดิม</b>กลับมาพิมพ์ซ้ำ ไม่สร้าง QR ใหม่ สต็อกไม่เปลี่ยน</div>
+      <label class="lbl">พิมพ์ซ้ำเฉพาะดวงเดียว (สติกเกอร์หลุด/ขาด/พิมพ์ไม่ติด)</label>
+      <div style="display:flex;gap:8px"><input id="reBarcode" class="in" placeholder="ใส่หรือสแกนรหัส QR เช่น H000073L0" style="flex:1;margin:0" onkeydown="if(event.key==='Enter'){event.preventDefault();reprintBarcode();}"><button class="btn" style="width:auto;padding:0 20px;margin:0" onclick="reprintBarcode()">ดึงฉลาก</button></div>
+      <div class="mini" style="margin-top:8px">• พิมพ์ซ้ำทั้งล็อต → ไปแท็บ <b>🧾 Batch</b> แล้วกด 🖨️ พิมพ์ซ้ำ ที่แถวนั้น</div>
+    </div>
     </div>
 
   </div>
@@ -411,7 +422,7 @@ function fillTextures(){ var dl=document.getElementById('textureList'); if(!dl)r
   dl.innerHTML=base.map(function(t){return '<option value="'+esc(t)+'"></option>';}).join(''); }
 /* ---- แท็บ ---- */
 function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
-function setTab(t){ ['receive','stock','batch'].forEach(function(x){ var el=document.getElementById('tab'+cap(x)); if(el)el.classList.toggle('hide',x!==t); });
+function setTab(t){ ['receive','label','stock','batch'].forEach(function(x){ var el=document.getElementById('tab'+cap(x)); if(el)el.classList.toggle('hide',x!==t); });
   [].forEach.call(document.querySelectorAll('.tabbtn'),function(b){ b.classList.toggle('on',b.dataset.t===t); });
   if(t==='stock'&&!STOCKDATA)loadStock(); if(t==='batch'&&!BATCHDATA)loadBatches(); window.scrollTo(0,0); }
 function onTypeSel(){ var t=document.getElementById('nvType').value; var s=(DATA.services||[]).filter(function(x){return String(x.acct_name)===t;})[0];
@@ -569,6 +580,7 @@ function drawQRin_(container, codes){ var qrs=container.querySelectorAll('.qr');
     try{ new QRCode(el,{text:code,width:320,height:320,correctLevel:QRCode.CorrectLevel.M}); }catch(e){ el.innerHTML=esc(code); } } }
 function renderLabels(d){
   document.getElementById('resultCard').classList.remove('hide');
+  setTab('label');                       /* ฉลากอยู่ในแท็บของตัวเอง → เด้งไปให้เลย ไม่ต้องหา */
   loadLabelSize();
   document.getElementById('lblCount').innerText=fmt(d.count);
   document.getElementById('batchInfo').innerHTML=(d.reprint?'🔁 พิมพ์ซ้ำ · ':'')+'Batch <b class="mono">'+esc(d.batch_id||'-')+'</b> · '+esc(d.variant_name||'')+(d.reprint?'':(' · ต้นทุน/มัด '+fmt(d.cost_per_mad)+' ฿ (ไม่พิมพ์บนฉลาก)'));
