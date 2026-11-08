@@ -741,7 +741,7 @@ function sizesForTech(){ var svc=CAT.services.filter(function(s){return String(s
   return (CAT.serviceSizes||[]).filter(function(z){return String(z.service_id)===String(svc.service_id);}).map(function(z){return {size:String(z.size),price:Number(z.price)};}); }
 function buildSizeChips(sizes,byob){ var box=document.getElementById('sizeList'); if(!box)return; box.innerHTML='';
   sizes.forEach(function(s){ var c=document.createElement('div'); c.className='chip'+(STATE.size===s.size?' sel':'');
-    c.innerHTML=esc(s.size)+'<span class="sm">'+fmt(s.price)+' ฿/มัด</span>';
+    c.innerHTML=esc(s.size)+'<span class="sm">'+fmt(s.price)+' ฿/QR</span>';
     c.onclick=function(){ STATE.size=(STATE.size===s.size?'':s.size); buildSizeChips(sizes,byob); syncBundle(); updatePriceHint(); refreshNav(); }; box.appendChild(c); }); }
 
 function bundleBlock(){ return '<span class="lbl" id="bundleLbl">'+lbl('label','bundle','จำนวน','Quantity')+' <span class="en">('+esc(svcSellUnit(svc()))+')</span></span>'+

@@ -136,7 +136,8 @@ textarea.in{min-height:70px;resize:vertical;font-size:12px;font-family:'IBM Plex
 .vzempty{font-size:12px;color:var(--faint);text-align:center;padding:22px 0}
 .vztip{position:fixed;z-index:9999;display:none;pointer-events:none;background:#0d0c0b;border:1px solid var(--gold-dim);border-radius:9px;padding:7px 10px;font-size:11.5px;color:var(--fg);box-shadow:0 8px 24px rgba(0,0,0,.6);max-width:220px;line-height:1.5}
 .vztip b{color:var(--gold-soft)}
-.vzsvg{width:100%;height:auto;display:block;overflow:visible}
+/* overflow:hidden สำคัญ — เดิมเป็น visible ทำให้กราฟที่คำนวณพิกัดเกินสเกลไปวาดทับการ์ดอื่นทั้งหน้า */
+.vzsvg{width:100%;height:auto;display:block;overflow:hidden}
 .vzslot{fill:transparent;cursor:crosshair}
 .vzbarhit{fill:transparent;cursor:pointer}
 /* hero figure + stat tiles */
@@ -388,7 +389,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P42-AUDIT'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P44-COST'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='', SCHED=null, SETTINGS=null, TAB='dash', FULL=false, ROLE='', MYTECH='';
 var THD=['อา','จ','อ','พ','พฤ','ศ','ส'];
 /* ===== สถานะ "กำลังทำงาน" — ใช้ร่วมกันทุกหน้า (admin / pos / receive / Booking) =====
@@ -610,7 +611,8 @@ function vzArea(rows,opt){ opt=opt||{}; rows=rows||[];
   var v2=has2?rows.map(function(r){return Number(r.value2)||0;}):[];
   var max=Math.max.apply(null,v1.concat(v2).concat([1]));
   var X=function(i){ return n===1?PL+iw/2:PL+iw*i/(n-1); };
-  var Y=function(v){ return PT+ih-(v/max)*ih; };
+  /* กันพิกัดหลุดกรอบไว้อีกชั้น เผื่อมีค่าผิดปกติที่คิดไม่ถึง (เช่น ต้นทุนติดลบ) */
+  var Y=function(v){ var y=PT+ih-(v/max)*ih; return y<PT?PT:(y>PT+ih?PT+ih:y); };
   var g=''; for(var k=0;k<=2;k++){ var yv=max*k/2, y=Y(yv);
     g+='<line x1="'+PL+'" y1="'+y.toFixed(1)+'" x2="'+(W-PR)+'" y2="'+y.toFixed(1)+'" stroke="'+VZ.grid+'" stroke-width="1"/>'+
        '<text x="'+(PL-8)+'" y="'+(y+3.5).toFixed(1)+'" text-anchor="end" class="vzax">'+nfmt(yv)+'</text>'; }
@@ -655,7 +657,9 @@ function vzStack(rows,opt){ opt=opt||{}; rows=rows||[];
   }
   var NS=n+(PJ?1:0);
   var tops=rows.map(function(r){ return Math.max(num0(r.revenue), num0(r.cost)+num0(r.expenses)+Math.max(0,num0(r.net))+num0(r.discount)); });
-  if(PJ) tops.push(PJ.revenue);
+  /* ต้องนับ "ต้นทุนที่คาดการณ์" ด้วย ไม่ใช่แค่ยอดขายที่คาด — งวดที่ขาดทุน ต้นทุนจะสูงกว่ายอดขาย
+   * ถ้าไม่นับ สเกลจะเตี้ยเกินจริงแล้วแถบต้นทุนทะลุออกนอกกรอบ */
+  if(PJ) tops.push(num0(PJ.revenue));
   var max=Math.max.apply(null,tops.concat([1]));
   var X=function(i){ return NS===1?PL+iw/2:PL+iw*i/(NS-1); };
   var Y=function(v){ return PT+ih-(v/max)*ih; };
@@ -688,10 +692,14 @@ function vzStack(rows,opt){ opt=opt||{}; rows=rows||[];
     (anyDisc?('<path d="'+vzSmooth(pTop)+'" fill="none" stroke="'+VZ.teal+'" stroke-width="1.5" opacity=".9"/>'):'')+
     '<path d="'+vzSmooth(anyDisc?pGr:pTop)+'" fill="none" stroke="'+VZ.goldHi+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
   if(PJ){ var xl=X(n-1), xp=X(n), yl=pTop[n-1][1], yp=Y(PJ.revenue), ycl=pCost[n-1][1], ycp=Y(PJ.cost);
-    body+='<path d="M'+xl.toFixed(1)+' '+ycl.toFixed(1)+' L'+xp.toFixed(1)+' '+ycp.toFixed(1)+' L'+xp.toFixed(1)+' '+base+' L'+xl.toFixed(1)+' '+base+' Z" fill="'+VZ.gold+'" opacity=".16"/>'+
-      '<path d="M'+xl.toFixed(1)+' '+yl.toFixed(1)+' L'+xp.toFixed(1)+' '+yp.toFixed(1)+' L'+xp.toFixed(1)+' '+ycp.toFixed(1)+' L'+xl.toFixed(1)+' '+ycl.toFixed(1)+' Z" fill="'+VZ.teal+'" opacity=".22"/>'+
+    /* คาดการณ์เฉพาะ "ยอดขาย" เท่านั้น — ต้นทุนคาดการณ์เดิมคูณด้วยอัตราส่วนยอดขาย
+     * ต้นเดือนที่ยอดยังน้อย ตัวคูณจะสูงมากจนต้นทุนคาดพุ่งเกินจริงหลายเท่า เลยไม่วาดให้เข้าใจผิด */
+    body+=
+      /* แถบกำไรคาดการณ์ วาดเฉพาะตอนที่คาดว่าจะมีกำไรจริง — ถ้างวดนี้คาดว่าขาดทุน
+       * ต้นทุนจะอยู่สูงกว่ายอดขาย รูปจะพลิกกลับหัวแล้วกวาดออกนอกกรอบ */
+      ((PJ.net>0)?('<path d="M'+xl.toFixed(1)+' '+yl.toFixed(1)+' L'+xp.toFixed(1)+' '+yp.toFixed(1)+' L'+xp.toFixed(1)+' '+ycp.toFixed(1)+' L'+xl.toFixed(1)+' '+ycl.toFixed(1)+' Z" fill="'+VZ.teal+'" opacity=".22"/>'):'')+
       '<line x1="'+xl.toFixed(1)+'" y1="'+PT+'" x2="'+xl.toFixed(1)+'" y2="'+base+'" stroke="'+VZ.goldHi+'" stroke-width="1" stroke-dasharray="2 4" opacity=".45"/>'+
-      '<path d="M'+xl.toFixed(1)+' '+ycl.toFixed(1)+' L'+xp.toFixed(1)+' '+ycp.toFixed(1)+'" fill="none" stroke="'+VZ.gold+'" stroke-width="1.5" stroke-dasharray="5 4" opacity=".65"/>'+
+
       '<path d="M'+xl.toFixed(1)+' '+yl.toFixed(1)+' L'+xp.toFixed(1)+' '+yp.toFixed(1)+'" fill="none" stroke="'+VZ.goldHi+'" stroke-width="2.5" stroke-dasharray="5 4" stroke-linecap="round"/>'+
       '<circle cx="'+xp.toFixed(1)+'" cy="'+yp.toFixed(1)+'" r="4" fill="#1a1816" stroke="'+VZ.goldHi+'" stroke-width="2"/>'; }
   var step=Math.ceil(n/6);
@@ -1112,7 +1120,9 @@ function qBk(b){ var parts=[];
     '<div class="bd">'+spec+'</div>'+
     '<div class="bd">📞 '+esc(b.phone||'-')+' · มัดจำ '+fmt(b.deposit)+' ฿ · ยอด '+fmt(b.suggest_total)+' ฿</div>'+
     (Number(b.reschedule_count)>0?('<div class="bd" style="color:var(--warn)">🔁 เลื่อนมาแล้ว '+Number(b.reschedule_count)+' ครั้ง</div>'):'')+
-    ((b.status==='ยกเลิก'||b.status==='เช็คเอาต์')?'':
+    /* คิวที่จบแล้วเลื่อนไม่ได้ — เดิมปุ่มหายไปเฉย ๆ ทำให้เข้าใจว่าฟังก์ชันพัง ตอนนี้บอกเหตุผลไว้ */
+    ((b.status==='ยกเลิก'||b.status==='เช็คเอาต์')
+      ?('<div class="bd" style="color:var(--faint);margin-top:6px">🔒 '+(b.status==='เช็คเอาต์'?'เช็คเอาต์แล้ว':'ยกเลิกแล้ว')+' — เลื่อนคิวไม่ได้</div>'):
       ('<div style="margin-top:7px"><button class="btn sec" style="width:auto;padding:5px 12px;font-size:12px" onclick="openResched(\''+esc(b.booking_id)+'\')">🔁 เลื่อนคิว</button></div>'))+
     '</div></div>'; }
 
@@ -1345,7 +1355,7 @@ function renderSettings(){ var box=document.getElementById('setBody'); var gs={}
   /* เวลาเปิด-ปิดร้าน แสดงเป็นวิดเจ็ตเฉพาะด้านบน (ไม่ซ้ำในรายการทั่วไป) — ข้อ7 */
   SETTINGS.settings.forEach(function(s){ if(SHOPHOUR_KEYS.indexOf(s.key)>=0)return; (gs[s.group]=gs[s.group]||[]).push(s); });
   var groups=order.filter(function(g){return gs[g];}); Object.keys(gs).forEach(function(g){ if(groups.indexOf(g)<0)groups.push(g); });
-  var ICON={'ร้าน':'🏪','เวลาทำการ':'🕐','การชำระเงิน':'💳','มัดจำ':'💰','ค่ามือช่าง':'✂️','บัญชี':'📒','ฉลาก':'🏷️','ข้อความ':'💬','อื่นๆ':'📦','ระบบ':'🔒'};
+  var ICON={'ร้าน':'🏪','เวลาทำการ':'🕐','การชำระเงิน':'💳','มัดจำ':'💰','เลื่อนคิว':'🔁','ค่ามือช่าง':'✂️','บัญชี':'📒','ฉลาก':'🏷️','ข้อความ':'💬','อื่นๆ':'📦','ระบบ':'🔒'};
   var h='<div class="card" style="margin-bottom:6px"><h2>⚙️ ตั้งค่าระบบ</h2><div class="mini" style="margin:0">แก้ไขได้จากที่นี่โดยไม่ต้องเปิด Google Sheet · กด "บันทึกการตั้งค่า" ด้านล่างเมื่อแก้เสร็จ</div></div>';
   /* ---- วิดเจ็ตเวลาทำการร้าน ---- */
   /* แสดงค่าที่บันทึกไว้จริง ไม่ใช่ค่าเริ่มต้น — ถ้าเคยบันทึกแล้วต้องค้างให้ตรวจสอบได้ */
@@ -1547,8 +1557,8 @@ function exportAcctExcel(){ if(typeof XLSX==='undefined'){ toast('ยังโ�
     sales.forEach(function(s){ sh.push([s.date,s.sale_id,s.customer,s.phone,s.subtotal,s.discount,s.deposit,s.total,s.due,s.received,s.change,s.profit,s.method,s.status,s.note]); });
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sh), 'หัวบิล');
     // 3) รายการในบิล (SaleItems) ละเอียด — ต้นทุน/ค่ามือ/ส่วนลดเฉลี่ย/ช่าง/กำไรต่อบรรทัด
-    var si=[['วันที่','เลขบิล','ประเภท','รายการ','ขนาด','สี','จำนวน(หน่วยขาย)','จำนวน QR','ราคา/หน่วย','ยอดรวม','ต้นทุนผม','ค่าอุปกรณ์','ค่ามือช่าง','ค่าช่างปั้นช่อ','ส่วนลด/โปร','ต้นทุนรวม','ช่าง','กำไร','หมายเหตุ']];
-    items.forEach(function(x){ si.push([x.date,x.sale_id,(LT[x.line_type]||x.line_type),x.item,x.size,x.color,x.qty_label,x.qty_mad,x.unit_price,x.amount,x.hair_cost,x.equip,x.comm,x.craft,x.discount,x.cost_total,x.tech,x.profit,x.note]); });
+    var si=[['วันที่','เลขบิล','ประเภท','รายการ','ขนาด','สี','จำนวน(หน่วยขาย)','จำนวน QR','ราคา/หน่วย','ยอดรวม','① ต้นทุนผมเพียวๆ','② ค่าปั้นช่อ','③ ค่าวัสดุปั้น','④ ค่าขนส่งเฉลี่ย','⑤ ค่าอุปกรณ์ต่อผม','⑥ ค่ามือช่าง','ส่วนลด/โปร','ต้นทุนรวม','ช่าง','กำไร','หมายเหตุ']];
+    items.forEach(function(x){ si.push([x.date,x.sale_id,(LT[x.line_type]||x.line_type),x.item,x.size,x.color,x.qty_label,x.qty_mad,x.unit_price,x.amount,x.hair_cost,x.craft,x.matl,x.ship,x.equip,x.comm,x.discount,x.cost_total,x.tech,x.profit,x.note]); });
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(si), 'รายการในบิล');
     // 4) ค่าใช้จ่าย
     var ex=[['วันที่','ประเภท','รายการ','จำนวน','ราคารวม']];
