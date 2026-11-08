@@ -3,6 +3,7 @@
 <title>House265 · ผู้จัดการ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 :root{--bg:#111010;--surface:#1a1816;--surface2:#211f1c;--bg2:#161412;--elev:#262320;--line:#322e29;--fg:#efe9df;--muted:#b3aa9c;--faint:#7c7265;--gold:#c8a75a;--gold-soft:#e6cc7e;--gold-dim:#9c7f3f;--gold-ghost:rgba(200,167,90,.12);--ok:#79c08a;--crit:#d98a8a;--blue:#7fa8c8;--r:13px;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -419,7 +420,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P46-DEPOSIT'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P47-LABELFIX'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='', SCHED=null, SETTINGS=null, TAB='dash', FULL=false, ROLE='', MYTECH='';
 var THD=['อา','จ','อ','พ','พฤ','ศ','ส'];
 /* ===== สถานะ "กำลังทำงาน" — ใช้ร่วมกันทุกหน้า (admin / pos / receive / Booking) =====
@@ -1265,7 +1266,22 @@ function renderResched(){ var box=document.getElementById('reschedBody'); if(!bo
              :('✓ เหลืออีก '+fee.leadDays+' วันถึงคิวเดิม (เกณฑ์ '+fee.freeDays+' วัน) → ไม่เข้าเกณฑ์หักมัดจำ'))+'</div>'+
     '<label class="lbl" style="margin-top:0">หักมัดจำครั้งนี้ (฿) · แก้ได้ตามดุลพินิจ</label>'+
     '<input type="number" class="in" id="rsFee" value="'+sug+'" min="0" max="'+dep+'" oninput="rsFeeHint()">'+
-    '<div class="mini" id="rsFeeHint"></div></div>';
+    '<div class="mini" id="rsFeeHint"></div>'+
+    /* ดุลพินิจผู้จัดการ: สุดวิสัย หรือร้านเป็นฝ่ายขอเลื่อน → ตั้ง 0 ได้ */
+    '<div class="mini" style="margin-top:6px;color:var(--faint)">ตั้ง <b>0</b> ได้ถ้าเป็นเหตุสุดวิสัย หรือร้านเป็นฝ่ายขอเลื่อนเอง</div>'+
+    /* ---- รับมัดจำใหม่ เมื่อหักมัดจำเดิมไปแล้ว ---- */
+    '<div id="rsTopupBox" style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)">'+
+      '<label class="lbl" style="margin-top:0">รับมัดจำเพิ่มในวันนี้ (฿) · ถ้าลูกค้าโอนมาใหม่</label>'+
+      '<input type="number" class="in" id="rsTopup" value="0" min="0" oninput="rsFeeHint()">'+
+      '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">'+
+        '<button type="button" class="btn sec" style="width:auto;padding:8px 14px;font-size:13px;margin:0" onclick="rsMakeQR()">📱 สร้าง QR ให้ลูกค้าสแกนจ่าย</button>'+
+        '<label class="btn sec" style="width:auto;padding:8px 14px;font-size:13px;margin:0;cursor:pointer">📎 แนบสลิปใบใหม่'+
+          '<input type="file" accept="image/*" style="display:none" onchange="rsPickSlip(this)"></label>'+
+      '</div>'+
+      '<div id="rsSlipName" class="mini" style="margin-top:6px"></div>'+
+      '<div id="rsQRBox" style="margin-top:10px;text-align:center"></div>'+
+      '<div class="mini" style="margin-top:6px;color:var(--faint)">สลิปใบใหม่จะเก็บ<b>เพิ่ม</b> ไม่ทับใบเดิม เพราะใบเดิมคือหลักฐานของเงินที่ถูกริบไปแล้ว</div>'+
+    '</div></div>';
 
   h+='<label class="lbl">เหตุผลที่เลื่อน <span style="color:var(--crit)">*</span></label>'+
      '<input class="in" id="rsReason" placeholder="เช่น ลูกค้าติดธุระ / ช่างลาป่วย" oninput="rsValid()">';
@@ -1281,14 +1297,36 @@ function rsFeeHint(){ var el=document.getElementById('rsFeeHint'); if(!el||!RS||
 function rsValid(){ var btn=document.getElementById('rsGo'); if(!btn||!RS) return;
   var ok=!!RS.start && !!String((document.getElementById('rsReason')||{}).value||'').trim();
   btn.disabled=!ok; btn.style.opacity=ok?'1':'.5'; }
+/* ---- มัดจำรอบใหม่ตอนเลื่อนคิว ---- */
+var RSSLIP=null;
+function rsPickSlip(inp){ var f=inp.files&&inp.files[0]; if(!f) return;
+  if(f.size>6*1024*1024){ toast('ไฟล์ใหญ่เกิน 6MB',1); inp.value=''; return; }
+  var rd=new FileReader();
+  rd.onload=function(){ RSSLIP=rd.result;
+    var el=document.getElementById('rsSlipName'); if(el) el.innerHTML='✓ แนบแล้ว: '+esc(f.name); };
+  rd.readAsDataURL(f); }
+function rsMakeQR(){ var amt=Number((document.getElementById('rsTopup')||{}).value)||0;
+  var box=document.getElementById('rsQRBox'); if(!box) return;
+  if(!(amt>0)){ box.innerHTML='<div class="mini" style="color:var(--crit)">ใส่ยอดที่จะให้ลูกค้าโอนก่อน</div>'; return; }
+  box.innerHTML='<div class="mini">กำลังสร้าง QR…</div>';
+  api('payQR',{amount:amt}).then(function(r){
+    if(!r||!r.ok){ box.innerHTML='<div class="mini" style="color:var(--crit)">'+esc((r&&r.message)||'สร้าง QR ไม่สำเร็จ')+'</div>'; return; }
+    box.innerHTML='<div id="rsQRImg" style="display:inline-block;background:#fff;padding:10px;border-radius:10px"></div>'+
+      '<div class="mini" style="margin-top:6px">สแกนเพื่อโอน <b style="color:var(--gold-soft)">฿'+fmt(r.data.amount)+'</b> · ให้ลูกค้าสแกนจากหน้าจอนี้ได้เลย</div>';
+    var el=document.getElementById('rsQRImg');
+    if(typeof QRCode==='undefined'){ el.innerHTML='<div class="mini" style="color:var(--crit)">โหลดตัวสร้าง QR ไม่สำเร็จ</div>'; return; }
+    new QRCode(el,{text:r.data.payload,width:200,height:200,correctLevel:QRCode.CorrectLevel.M});
+  }).catch(function(){ box.innerHTML='<div class="mini" style="color:var(--crit)">เชื่อมต่อไม่สำเร็จ</div>'; }); }
 function doResched(){ if(!RS||!RS.start) return;
   var reason=String((document.getElementById('rsReason')||{}).value||'').trim();
   if(!reason){ toast('ใส่เหตุผลที่เลื่อน',1); return; }
   var fee=Number((document.getElementById('rsFee')||{}).value)||0;
-  api('rescheduleBooking',{booking_id:RS.id,date:RS.date,start:RS.start,tech_id:(RS.tech||'any'),reason:reason,forfeit:fee})
+  var topup=Number((document.getElementById('rsTopup')||{}).value)||0;
+  api('rescheduleBooking',{booking_id:RS.id,date:RS.date,start:RS.start,tech_id:(RS.tech||'any'),reason:reason,forfeit:fee,
+    new_deposit:topup, new_slip_data_url:(topup>0?(RSSLIP||''):'')})
     .then(function(r){ if(!r||!r.ok){ toast((r&&r.message)||'เลื่อนไม่สำเร็จ',1); return; }
       var d=r.data; toast('เลื่อนคิวแล้ว · '+d.to.date+' '+d.to.start+(d.forfeit>0?(' · หักมัดจำ ฿'+fmt(d.forfeit)):' · ไม่หักมัดจำ'));
-      closeResched(); loadQueue(); })
+      RSSLIP=null; closeResched(); loadQueue(); })
     .catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
 function qSetFTech(v){ QFTECH=v; renderQueue(); }
 function qSetFTQ(v){ QFTQ=v; renderQueue(); }

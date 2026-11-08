@@ -162,7 +162,15 @@ button.is-busy,.is-busy{cursor:progress!important;opacity:.78}
   #printArea{position:static!important;left:auto!important;top:auto!important;width:auto!important}
   /* ป้ายละ 1 หน้า · ไม่มีขอบ/เงา · จัดกึ่งกลางสติกเกอร์ */
   .labels{display:block!important;gap:0!important;margin:0!important}
-  .label{border:none!important;border-radius:0!important;margin:0 auto!important;box-shadow:none!important;page-break-after:always;break-after:page;overflow:hidden}
+  /* ★ เว้นขอบนิรภัย 1 มม. รอบดวง — เครื่องพิมพ์ฉลากม้วนมักเลื่อนดวงแรกเล็กน้อยตอนเริ่มงาน
+   *   ถ้าเนื้อหาชิดขอบพอดีเป๊ะ เลื่อนแค่ 1 มม. ก็กิน QR จนสแกนไม่ได้
+   *   เว้นไว้แล้ว QR จะรอดแม้กระดาษเลื่อน และยังอ่านง่ายเท่าเดิม */
+  .label{border:none!important;border-radius:0!important;box-shadow:none!important;
+    width:calc(var(--lw) - 2mm)!important;height:calc(var(--lh) - 2mm)!important;
+    margin:1mm auto!important;page-break-after:always;break-after:page;page-break-inside:avoid;overflow:hidden}
+  /* หน้าเปล่านำ 1 ใบ สำหรับเครื่องที่เลื่อนดวงแรกเสมอ (เปิด-ปิดได้จากหน้าจอ) */
+  #leadBlank{display:none}
+  body.lead-blank #leadBlank{display:block!important;height:calc(var(--lh) - 2mm);page-break-after:always;break-after:page}
   .label:last-child{page-break-after:auto;break-after:auto}
 }
 </style></head>
@@ -315,7 +323,11 @@ button.is-busy,.is-busy{cursor:progress!important;opacity:.78}
       </div>
       <div class="noprint mini" id="previewHead" style="margin-top:12px;color:var(--gold-soft)"></div>
       <div class="labels noprint" id="labelPreview"></div>
-      <div id="printArea"><div class="labels" id="labels"></div></div>
+      <label class="mini noprint" style="display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer">
+        <input type="checkbox" id="leadBlankChk" onchange="setLeadBlank(this.checked)" style="width:18px;height:18px;margin:0">
+        <span>เว้นฉลากดวงแรกไว้ 1 ดวง — เลือกข้อนี้ถ้าเครื่องพิมพ์ทำดวงแรกเสียประจำ (ดวงแรกจะออกมาเปล่า แล้วค่อยเริ่มดวงจริง)</span>
+      </label>
+      <div id="printArea"><div id="leadBlank"></div><div class="labels" id="labels"></div></div>
     </div>
 
     <!-- การ์ดเครื่องมือ · แสดงตลอด เพื่อให้ดึงฉลากเดิมกลับมาพิมพ์ซ้ำได้ทุกเมื่อ -->
@@ -344,7 +356,7 @@ button.is-busy,.is-busy{cursor:progress!important;opacity:.78}
 /* ===== ตั้งค่า: ใส่ลิงก์ /exec ของโปรเจกต์ระบบใหม่ ===== */
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
 
-var BUILD='P46-DEPOSIT'; /* เวอร์ชันหน้าเว็บ — เทียบกับ APP.VERSION ของหลังบ้าน แสดงที่มุมบนขวา */
+var BUILD='P47-LABELFIX'; /* เวอร์ชันหน้าเว็บ — เทียบกับ APP.VERSION ของหลังบ้าน แสดงที่มุมบนขวา */
 var TOKEN='', DATA=null, BUSY=false, LAST=null;
 
 /* ---- สถานะ "กำลังทำงาน" ----
@@ -577,13 +589,24 @@ function doReceive(){ if(BUSY)return;
   else go();
 }
 
+/* เว้นดวงแรก: บางเครื่องพิมพ์ฉลากม้วนต้องเดินกระดาษ 1 ดวงก่อนถึงจะตรงร่อง
+ * จำค่าไว้ในเครื่องนี้ เพื่อไม่ต้องมาติ๊กใหม่ทุกครั้ง */
+function setLeadBlank(on){ document.body.classList.toggle('lead-blank',!!on);
+  try{ localStorage.setItem('h265_leadBlank', on?'1':'0'); }catch(e){} }
+function loadLeadBlank(){ var v='0'; try{ v=localStorage.getItem('h265_leadBlank')||'0'; }catch(e){}
+  var c=document.getElementById('leadBlankChk'); if(c) c.checked=(v==='1'); setLeadBlank(v==='1'); }
 function applyLabelSize(){
   var w=Math.max(10,Number(document.getElementById('lw').value)||32),
       h=Math.max(10,Number(document.getElementById('lh').value)||25),
       c=Math.max(1,Math.round(Number(document.getElementById('lcols').value)||3));
-  var qr=Math.max(10, Math.min(w*0.5, h-7));  /* ชื่อร้านย้ายเข้าคอลัมน์ข้อความแล้ว → QR ใหญ่เต็มความสูง body */
-  /* ฟอนต์สเกลตามความสูงป้าย → ขยายป้ายแล้วตัวหนังสือโตตาม อ่านชัดตอนพิมพ์ */
+  /* ★ ขนาด QR ต้องคิดจากพื้นที่ "ที่เหลือจริง" หลังหักขอบนิรภัย ขอบใน บรรทัดรหัส และชื่อร้าน
+   *   สูตรเดิมใช้ h-7 ซึ่งเผื่อไม่พอ เนื้อหาเลยสูงเกินป้ายแล้วโดน overflow:hidden ตัดก้นทิ้ง
+   *   ผลคือ QR ขาดส่วนล่าง สแกนไม่ได้ (เห็นชัดที่ดวงแรกสุด) */
+  var PAD=1.3, SAFE=2, GAP=0.4;                      /* ต้องตรงกับ .label{padding} และ margin ตอนพิมพ์ */
   var codeFs=Math.max(2.4, Math.round(h*0.125*10)/10), lineFs=Math.max(1.6, Math.round(h*0.072*10)/10);
+  var headH = codeFs*1.25 + lineFs*0.92*1.4 + GAP*2;  /* บรรทัดรหัส + ชื่อร้าน + ช่องไฟ */
+  var availH = h - PAD*2 - SAFE - headH;
+  var qr=Math.max(8, Math.min(w*0.5, availH));
   var r=document.documentElement.style;
   r.setProperty('--lw',w+'mm'); r.setProperty('--lh',h+'mm'); r.setProperty('--cols',c); r.setProperty('--qr',qr+'mm');
   r.setProperty('--code-fs',codeFs+'mm'); r.setProperty('--line-fs',lineFs+'mm');
@@ -623,7 +646,7 @@ function drawQRin_(container, codes){ var qrs=container.querySelectorAll('.qr');
 function renderLabels(d){
   document.getElementById('resultCard').classList.remove('hide');
   setTab('label');                       /* ฉลากอยู่ในแท็บของตัวเอง → เด้งไปให้เลย ไม่ต้องหา */
-  loadLabelSize();
+  loadLabelSize(); loadLeadBlank();
   document.getElementById('lblCount').innerText=fmt(d.count);
   document.getElementById('batchInfo').innerHTML=(d.reprint?'🔁 พิมพ์ซ้ำ · ':'')+'Batch <b class="mono">'+esc(d.batch_id||'-')+'</b> · '+esc(d.variant_name||'')+(d.reprint?'':(' · ต้นทุน/QR '+fmt(d.cost_per_mad)+' ฿ (ไม่พิมพ์บนฉลาก)'));
   var codes=d.barcodes||[], full=document.getElementById('labels'), prev=document.getElementById('labelPreview');
