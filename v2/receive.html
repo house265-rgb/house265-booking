@@ -7,6 +7,13 @@
 <style>
 :root{--bg:#111010;--surface:#1a1816;--surface2:#211f1c;--bg2:#161412;--elev:#262320;--line:#322e29;--fg:#efe9df;--muted:#b3aa9c;--faint:#7c7265;--gold:#c8a75a;--gold-soft:#e6cc7e;--gold-dim:#9c7f3f;--gold-ghost:rgba(200,167,90,.12);--ok:#79c08a;--crit:#d98a8a;--r:13px;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+/* บนมือถือ ปุ่มเล็ก ๆ (ชิปกรอง, ปุ่มล้าง) กดพลาดง่าย — บังคับความสูงขั้นต่ำให้กดด้วยนิ้วได้
+ * 34px เป็นค่าต่ำสุดที่ยังไม่ทำให้แถวชิปสูงจนเปลืองจอ */
+@media (max-width:520px){
+  button,.chip,.bkflag,.tabbtn,.gchip,.seg>*,a[onclick]{min-height:34px}
+  button,.bkflag,.chip{display:inline-flex;align-items:center;justify-content:center}
+}
+
 /* iOS/Safari: input[type=date|month|time] มีความกว้างขั้นต่ำในตัวที่ไม่ยอมหดตาม flex/grid
  * ทำให้ช่องล้นออกนอกคอลัมน์แล้วกรอบไปทับช่องข้าง ๆ บนไอแพดกับมือถือ
  * ต้องปลด min-width ทั้งที่ flex item และที่ตัว input เอง */
@@ -337,7 +344,7 @@ button.is-busy,.is-busy{cursor:progress!important;opacity:.78}
 /* ===== ตั้งค่า: ใส่ลิงก์ /exec ของโปรเจกต์ระบบใหม่ ===== */
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
 
-var BUILD='P44-COST'; /* เวอร์ชันหน้าเว็บ — เทียบกับ APP.VERSION ของหลังบ้าน แสดงที่มุมบนขวา */
+var BUILD='P45-AUDIT2'; /* เวอร์ชันหน้าเว็บ — เทียบกับ APP.VERSION ของหลังบ้าน แสดงที่มุมบนขวา */
 var TOKEN='', DATA=null, BUSY=false, LAST=null;
 
 /* ---- สถานะ "กำลังทำงาน" ----
@@ -618,7 +625,7 @@ function renderLabels(d){
   setTab('label');                       /* ฉลากอยู่ในแท็บของตัวเอง → เด้งไปให้เลย ไม่ต้องหา */
   loadLabelSize();
   document.getElementById('lblCount').innerText=fmt(d.count);
-  document.getElementById('batchInfo').innerHTML=(d.reprint?'🔁 พิมพ์ซ้ำ · ':'')+'Batch <b class="mono">'+esc(d.batch_id||'-')+'</b> · '+esc(d.variant_name||'')+(d.reprint?'':(' · ต้นทุน/มัด '+fmt(d.cost_per_mad)+' ฿ (ไม่พิมพ์บนฉลาก)'));
+  document.getElementById('batchInfo').innerHTML=(d.reprint?'🔁 พิมพ์ซ้ำ · ':'')+'Batch <b class="mono">'+esc(d.batch_id||'-')+'</b> · '+esc(d.variant_name||'')+(d.reprint?'':(' · ต้นทุน/QR '+fmt(d.cost_per_mad)+' ฿ (ไม่พิมพ์บนฉลาก)'));
   var codes=d.barcodes||[], full=document.getElementById('labels'), prev=document.getElementById('labelPreview');
   full.innerHTML=''; prev.innerHTML='';
   codes.forEach(function(code){ full.appendChild(mkLabel_(d,code)); });                 // ชุดเต็ม (ไว้พิมพ์ · นอกจอ)
