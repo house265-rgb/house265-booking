@@ -94,6 +94,28 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
   .row2{gap:10px}
 }
 @media(max-width:400px){ .row2{grid-template-columns:1fr} }
+
+/* เลือกก่อนรับเข้า: ล็อตนี้ให้จองออนไลน์ได้ไหม */
+.bkpick{margin-top:14px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--bg2)}
+.bkq{font-size:14px;margin-bottom:2px}
+.bkhint{font-size:11.5px;color:var(--muted);margin-bottom:10px}
+.bkhint.warn{color:var(--crit)}
+.bkopts{display:grid;gap:8px}
+.bkopt{text-align:left;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:transparent;
+  color:var(--fg);font-family:inherit;cursor:pointer;display:block;width:100%}
+.bkopt b{display:block;font-weight:500;font-size:13.5px;margin-bottom:2px}
+.bkopt span{display:block;font-size:11.5px;color:var(--muted);line-height:1.4}
+.bkopt.on{border-color:var(--gold);background:var(--gold-ghost,rgba(176,144,54,.12))}
+.bkopt.on b{color:var(--gold-soft)}
+
+.bkflag{font-family:inherit;font-size:11px;padding:4px 9px;border-radius:999px;cursor:pointer;
+  border:1px solid var(--line);background:transparent;color:var(--muted);white-space:nowrap}
+.bkflag.on{border-color:var(--gold,#b09036);color:var(--gold-soft,#e0c580)}
+
+/* ตารางล็อตบนจอแคบ: เลื่อนแนวนอนแทนการตัดคำจนอ่านไม่ออก */
+#batchBox{overflow-x:auto;-webkit-overflow-scrolling:touch}
+#batchBox table{min-width:520px}
+#batchBox th,#batchBox td{white-space:nowrap}
 </style></head>
 <body>
 
@@ -166,6 +188,16 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
       <input class="in" id="supNew" placeholder="+ ผู้ขายใหม่ (ถ้ายังไม่มีในรายการ)" style="margin-top:8px">
 
       <div class="prev" id="rPrev">กรอกข้อมูลเพื่อดูสรุป</div>
+      <div class="bkpick" id="bkPick">
+        <div class="bkq">ล็อตนี้ให้ลูกค้า<b>จองออนไลน์</b>ได้หรือไม่ <span style="color:var(--crit)">*</span></div>
+        <div class="bkhint" id="bkHint">ต้องเลือกก่อนรับเข้า — เลือกแล้วไม่ต้องมาเปิด-ปิดทีหลัง</div>
+        <div class="bkopts">
+          <button type="button" class="bkopt" data-v="1" onclick="setBookable(1)">
+            <b>✅ จองออนไลน์ได้</b><span>ผมเกรดมาตรฐานที่สั่งประจำ · ลูกค้าเลือกได้ในแอป</span></button>
+          <button type="button" class="bkopt" data-v="0" onclick="setBookable(0)">
+            <b>🏪 ขายหน้าร้านเท่านั้น</b><span>ล็อตพิเศษ/ของหายาก คนละราคา · ไม่โผล่ในระบบจอง</span></button>
+        </div>
+      </div>
       <button class="btn" id="btnReceive" style="margin-top:12px" onclick="doReceive()">รับเข้า + สร้าง QR</button>
     </div>
 
@@ -306,9 +338,18 @@ function prev(){ var box=document.getElementById('rPrev');
     box.innerHTML='รับเข้า <b>'+fmt(qq)+'</b> มัด · ต้นทุนรวม <b>'+fmt(t)+'</b> ฿ · ต้นทุน/มัด (รวมค่าใช้จ่าย) <b>'+fmt(ef)+'</b> ฿ · จะสร้าง QR <b>'+fmt(qq)+'</b> ดวง';
   } else box.innerHTML='กรอกจำนวน + ต้นทุนเพื่อดูสรุป'; }
 
+var BOOKABLE=null;   /* ต้องเลือกเอง ไม่มีค่าเริ่มต้น */
+function setBookable(v){ BOOKABLE=(v?1:0);
+  [].forEach.call(document.querySelectorAll('#bkPick .bkopt'),function(b){ b.classList.toggle('on', b.getAttribute('data-v')===String(BOOKABLE)); });
+  var hint=document.getElementById('bkHint'); if(hint){ hint.classList.remove('warn');
+    hint.innerText=BOOKABLE?'ล็อตนี้จะเข้าระบบจอง ลูกค้าเลือกได้ในแอป':'ล็อตนี้ขายหน้าร้านเท่านั้น · เปิดให้จองภายหลังได้ที่รายการล็อต'; } }
 function doReceive(){ if(BUSY)return;
+  if(BOOKABLE===null){ var hint=document.getElementById('bkHint');
+    if(hint){ hint.classList.add('warn'); hint.innerText='⚠ เลือกก่อนว่าล็อตนี้ให้จองออนไลน์ได้หรือไม่'; }
+    var el=document.getElementById('bkPick'); if(el) el.scrollIntoView({behavior:'smooth',block:'center'});
+    toast('เลือกก่อนว่าล็อตนี้ให้จองออนไลน์ได้หรือไม่',1); return; }
   var vSel=document.getElementById('vSel').value;
-  var base={ received_date:document.getElementById('rDate').value, supplier_id:document.getElementById('supSel').value };
+  var base={ received_date:document.getElementById('rDate').value, supplier_id:document.getElementById('supSel').value, bookable:(BOOKABLE?'TRUE':'FALSE') };
   if(vSel==='__NEW__'){ var ht=document.getElementById('nvType').value; if(!ht){ toast('เลือกประเภท/เทคนิค',1); return; }
     var nm=[ht,(document.getElementById('nvLen').value||'')+'นิ้ว',document.getElementById('nvColor').value].filter(Boolean).join(' ');
     base.newVariant={ name:nm, hair_type:ht, length_in:document.getElementById('nvLen').value, color:document.getElementById('nvColor').value,
@@ -330,6 +371,9 @@ function doReceive(){ if(BUSY)return;
       if(!r||!r.ok){ toast(((r&&r.message)||'ไม่สำเร็จ')+' · หลังบ้าน '+(DATA&&DATA.version||'เก่า⚠️'),1); return; }
       LAST=r.data; renderLabels(r.data); toast((MODE==='produce'?'ผลิต ':'รับเข้า ')+fmt(r.data.count)+' มัด · Batch '+r.data.batch_id+' ✓');
       ['rQty','rCost','rExtra','pQty','pRaw','pLabor','pMat','pWaste'].forEach(function(id){var e=document.getElementById(id); if(e)e.value='';}); prev();
+      /* ล้างตัวเลือกให้ล็อตถัดไปต้องเลือกใหม่ กันติดค่าจากล็อตก่อน */
+      BOOKABLE=null; [].forEach.call(document.querySelectorAll('#bkPick .bkopt'),function(b){ b.classList.remove('on'); });
+      var hint2=document.getElementById('bkHint'); if(hint2){ hint2.classList.remove('warn'); hint2.innerText='ต้องเลือกก่อนรับเข้า — เลือกแล้วไม่ต้องมาเปิด-ปิดทีหลัง'; }
       loadVariants(); loadStock(); loadBatches();
     }).catch(function(){ BUSY=false; b.disabled=false; b.innerHTML='รับเข้า + สร้าง QR'; toast('เชื่อมต่อไม่สำเร็จ',1); }); };
   if(newSup){ api('createSupplier',{name:newSup}).then(function(r){ if(r&&r.ok){ payload.supplier_id=r.data.supplier_id; document.getElementById('supNew').value=''; loadSuppliers(); } go(); }); }
@@ -402,11 +446,24 @@ function loadStock(){ api('stockSummary',{}).then(function(r){ if(!r||!r.ok)retu
     '<td class="r mono">'+fmt(x.remaining)+'</td><td class="r mono" style="color:var(--gold-soft)">'+fmt(x.available)+'</td><td class="r mono">'+fmt(x.reserved)+'</td><td class="r mono">'+fmt(x.sold)+'</td></tr>';}).join('');
   document.getElementById('stockBox').innerHTML=h+'</table>'; }); }
 
-function loadBatches(){ api('batchesList',{}).then(function(r){ if(!r||!r.ok)return; var b=r.data.batches||[];
+var BATCHES=[];
+function loadBatches(){ api('batchesList',{}).then(function(r){ if(!r||!r.ok)return; BATCHES=r.data.batches||[]; renderBatches(); }); }
+function renderBatches(){ var b=BATCHES;
   if(!b.length){ document.getElementById('batchBox').innerHTML='<div class="mini">ยังไม่มี Batch</div>'; return; }
-  var h='<table><tr><th>Batch</th><th>รุ่น</th><th>วันที่</th><th class="r">รับ/เหลือ</th><th class="r">ต้นทุน/มัด</th></tr>';
-  h+=b.slice(0,20).map(function(x){return '<tr><td class="mono">'+esc(x.batch_id)+'</td><td>'+esc(x.variant_name)+'</td><td>'+esc(x.received_date)+'</td>'+
-    '<td class="r mono">'+fmt(x.qty_received)+'/'+fmt(x.remaining)+'</td><td class="r mono">'+fmt(x.cost_per_mad)+'</td></tr>';}).join('');
-  document.getElementById('batchBox').innerHTML=h+'</table>'; }); }
+  var h='<div class="mini" style="margin-bottom:6px">แตะปุ่มขวาสุดเพื่อเปิด/ปิดการจองออนไลน์ของล็อตนั้น — ใช้ตอนผมมาตรฐานหมดแล้วต้องปล่อยล็อตพิเศษให้จองชั่วคราว</div>'+
+    '<table><tr><th>Batch</th><th>รุ่น</th><th>วันที่</th><th class="r">รับ/เหลือ</th><th class="r">ต้นทุน/มัด</th><th class="r">จองออนไลน์</th></tr>';
+  h+=b.slice(0,30).map(function(x){ var on=(x.bookable!==false);
+    return '<tr><td class="mono">'+esc(x.batch_id)+'</td><td>'+esc(x.variant_name)+'</td><td>'+esc(x.received_date)+'</td>'+
+    '<td class="r mono">'+fmt(x.qty_received)+'/'+fmt(x.remaining)+'</td><td class="r mono">'+fmt(x.cost_per_mad)+'</td>'+
+    '<td class="r"><button type="button" class="bkflag'+(on?' on':'')+'" onclick="toggleBatchBookable(\''+esc(x.batch_id)+'\','+(on?0:1)+')">'+
+      (on?'✅ จองได้':'🏪 หน้าร้าน')+'</button></td></tr>';}).join('');
+  document.getElementById('batchBox').innerHTML=h+'</table>'; }
+function toggleBatchBookable(id,to){
+  api('setBatchBookable',{batch_id:id,bookable:(to?'TRUE':'FALSE')}).then(function(r){
+    if(!r||!r.ok){ toast((r&&r.message)||'เปลี่ยนไม่สำเร็จ',1); return; }
+    BATCHES.forEach(function(x){ if(String(x.batch_id)===String(id)) x.bookable=!!to; });
+    renderBatches(); loadStock();
+    toast('ล็อต '+id+' · '+(to?'เปิดให้จองออนไลน์แล้ว':'ขายหน้าร้านเท่านั้นแล้ว'));
+  }).catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
 </script>
 </body></html>

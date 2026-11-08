@@ -532,7 +532,10 @@ function buildStaff(){ var box=document.getElementById('techStaffList'); box.inn
 /* ================= STEP 2 : เลือกผม (adaptive) ================= */
 /* variantsForTech = ทุกรุ่นของเทคนิค (รวมที่หมด → โชว์แบบจาง) · variantsAvail = เฉพาะที่มีของ */
 function variantsForTech(){ return (CAT.variants||[]).filter(function(v){ return String(v.hair_type).trim()===String(STATE.technique).trim(); }); }
-function variantsAvail(){ return variantsForTech().filter(function(v){ return Number(v.available)>0; }); }
+/* สต๊อกที่ "จองออนไลน์ได้" — นับเฉพาะล็อตที่ร้านเปิดให้จอง และหักคิวที่กันไว้แล้ว
+ * ผมล็อตพิเศษ/ของหายากจะไม่โผล่ในระบบจอง ต้องมาเลือกที่หน้าร้าน */
+function bkStock(v){ return Number(v && (v.bookable!=null ? v.bookable : v.available)) || 0; }
+function variantsAvail(){ return variantsForTech().filter(function(v){ return bkStock(v)>0; }); }
 var DIMS=[ {k:'grade',f:'grade',label:'เกรดผม',en:'Hair grade'}, {k:'texture',f:'texture',label:'ลักษณะผม',en:'Texture'},
            {k:'color',f:'color',label:'สีผม',en:'Color'}, {k:'size',f:'length_in',label:'ขนาดผม',en:'Length'} ];
 function fieldEq(d,vVal,sVal){ if(d.k==='size')return digits(vVal)===digits(sVal); return String(vVal||'').trim()===String(sVal||'').trim(); }
@@ -550,18 +553,18 @@ function matchExcept(v,exceptK){ for(var i=0;i<DIMS.length;i++){ var d=DIMS[i]; 
 /* มีของให้เลือกมั้ย (เช็กกับสต็อกจริง) → ใช้ทำจางตัวที่หมด */
 function optAvail(dim,val){ return variantsAvail().some(function(v){ return matchExcept(v,dim.k) && fieldEq(dim,v[dim.f],val); }); }
 function matchedVariants(){ return variantsForTech().filter(function(v){ for(var i=0;i<DIMS.length;i++){ var d=DIMS[i]; var sv=stKey(d.k); if(sv&&!fieldEq(d,v[d.f],sv))return false; } return true; }); }
-function matchedAvail(){ return matchedVariants().filter(function(v){ return Number(v.available)>0; }); }
+function matchedAvail(){ return matchedVariants().filter(function(v){ return bkStock(v)>0; }); }
 function resolveVariant(){ var dims=activeDims(), allSel=dims.every(function(d){return !!stKey(d.k);});
   var ma=matchedAvail();
-  if(allSel && ma.length){ STATE.variantId=String(ma[0].variant_id); return ma.reduce(function(a,v){return a+Number(v.available);},0); }
+  if(allSel && ma.length){ STATE.variantId=String(ma[0].variant_id); return ma.reduce(function(a,v){return a+bkStock(v);},0); }
   STATE.variantId=''; return 0; }
-function stockOfSelection(){ return matchedAvail().reduce(function(a,v){return a+Number(v.available);},0); }
+function stockOfSelection(){ return matchedAvail().reduce(function(a,v){return a+bkStock(v);},0); }
 
 /* ---- ซื้อผมที่ร้านเพิ่ม (addon) · byob/move ใช้เทคนิคเดียวกับงานหลัก · removal เลือกเทคนิคเอง · สต็อกแยกจากตัวหลัก ---- */
 function aTech(){ return isRemoval()?String(STATE.addon.technique||''):STATE.technique; }
 function aSvcOf(){ var t=aTech(); return (CAT.services||[]).filter(function(s){return String(s.acct_name).trim()===String(t).trim();})[0]; }
 function aVariants(){ var t=aTech(); if(!t)return []; return (CAT.variants||[]).filter(function(v){ return String(v.hair_type).trim()===String(t).trim(); }); }
-function aVariantsAvail(){ return aVariants().filter(function(v){ return Number(v.available)>0; }); }
+function aVariantsAvail(){ return aVariants().filter(function(v){ return bkStock(v)>0; }); }
 function aSizesOf(){ var s=aSvcOf(); if(!s)return []; return (CAT.serviceSizes||[]).filter(function(z){return String(z.service_id)===String(s.service_id);}); }
 function aSizePrice(len){ var s=aSvcOf(); if(!s)return 0; var d=digits(len); var hit=(CAT.serviceSizes||[]).filter(function(z){return String(z.service_id)===String(s.service_id)&&digits(z.size)===d;})[0]; return hit?Number(hit.price):0; }
 function aDimVals(d){ var seen={},out=[];
@@ -574,14 +577,14 @@ function aStKey(k){ return STATE.addon[k]; }
 function aMatchExcept(v,exceptK){ for(var i=0;i<DIMS.length;i++){ var d=DIMS[i]; if(d.k===exceptK)continue; var sv=aStKey(d.k); if(sv&&!fieldEq(d,v[d.f],sv))return false; } return true; }
 function aOptAvail(dim,val){ return aVariantsAvail().some(function(v){ return aMatchExcept(v,dim.k) && fieldEq(dim,v[dim.f],val); }); }
 function aMatchedVariants(){ return aVariants().filter(function(v){ for(var i=0;i<DIMS.length;i++){ var d=DIMS[i]; var sv=aStKey(d.k); if(sv&&!fieldEq(d,v[d.f],sv))return false; } return true; }); }
-function aMatchedAvail(){ return aMatchedVariants().filter(function(v){ return Number(v.available)>0; }); }
+function aMatchedAvail(){ return aMatchedVariants().filter(function(v){ return bkStock(v)>0; }); }
 function aResolveVariant(){ var dims=aActiveDims(), allSel=dims.length>0&&dims.every(function(d){return !!aStKey(d.k);}); var ma=aMatchedAvail();
-  if(allSel && ma.length){ STATE.addon.variantId=String(ma[0].variant_id); return ma.reduce(function(a,v){return a+Number(v.available);},0); }
+  if(allSel && ma.length){ STATE.addon.variantId=String(ma[0].variant_id); return ma.reduce(function(a,v){return a+bkStock(v);},0); }
   STATE.addon.variantId=''; return 0; }
-function aStock(){ return aMatchedAvail().reduce(function(a,v){return a+Number(v.available);},0); }
+function aStock(){ return aMatchedAvail().reduce(function(a,v){return a+bkStock(v);},0); }
 /* ทุกเทคนิคที่มีรุ่นผมในระบบ (โชว์ครบ · ของหมดทำจาง) */
 function aTechOptions(){ return (CAT.services||[]).filter(function(s){ return (CAT.variants||[]).some(function(v){ return String(v.hair_type).trim()===String(s.acct_name).trim(); }); }); }
-function aTechHasStock(acct){ return (CAT.variants||[]).some(function(v){ return String(v.hair_type).trim()===String(acct).trim() && Number(v.available)>0; }); }
+function aTechHasStock(acct){ return (CAT.variants||[]).some(function(v){ return String(v.hair_type).trim()===String(acct).trim() && bkStock(v)>0; }); }
 function addonEligible(){ if(isRemoval()) return aTechOptions().length>0; return (isByob()||isMove()) && variantsAvail().length>0; }
 
 function addonSection(){ if(!addonEligible())return '';
