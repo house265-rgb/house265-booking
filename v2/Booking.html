@@ -321,7 +321,8 @@ button:disabled{cursor:not-allowed}
         <div class="th">TERMS &amp; CONDITIONS</div>
         <ul>
           <li>ยกเลิกคิว จองผิดวัน หรือผิดแบบ ไม่คืนมัดจำทุกกรณี</li>
-          <li>เลื่อนคิวล่วงหน้า 5 วัน ไม่มีค่าธรรมเนียม</li>
+          <li id="tmReschedule">เลื่อนคิวล่วงหน้า 5 วัน ไม่มีค่าธรรมเนียม</li>
+          <li><b>ต้องการเลื่อนคิว กรุณาโทรแจ้งร้าน</b> <span id="tmPhone"></span> — ระบบจองไม่สามารถเลื่อนเองได้ เจ้าหน้าที่จะเลื่อนให้และใช้สลิปมัดจำใบเดิมต่อได้</li>
           <li>มาสายเกิน 15 นาที ขอสงวนสิทธิ์หักมัดจำ · เกิน 30 นาที ตัดคิว</li>
           <li>งานถอดผมใช้เวลาตามความยากง่ายของสภาพผม กรุณามาให้ตรงเวลานัด</li>
         </ul>
@@ -475,7 +476,7 @@ function showFatal(msg){ var lb=document.getElementById('loadingBox'); lb.style.
   document.getElementById('wizard').style.display='none'; document.getElementById('navBar').style.display='none'; }
 function onCat(res){ try{
     if(!res||!res.ok){ showFatal('โหลดข้อมูลไม่สำเร็จ'+(res&&res.message?(':<br><small style="color:var(--faint)">'+esc(res.message)+'</small>'):'')); return; }
-    CAT=res.data;
+    CAT=res.data; fillTerms();
     (function(){ var nm=String((CAT.shop&&CAT.shop.name)||'House265'); document.getElementById('shopName').innerHTML=esc(nm).replace(/\d+/g,'<span class="n">$&</span>'); })();
     document.getElementById('shopSub').innerText=(CAT.shop&&CAT.shop.subtitle)||'';
     document.getElementById('tPhone').innerText=(CAT.shop&&CAT.shop.phone)||'';
@@ -840,6 +841,13 @@ function loadMonthAvail(){ MONTHAVAIL=null; renderCal(); updateCalFull();
     .catch(function(){ MONTHERR=true; MONTHAVAIL={}; renderCal(); updateCalFull(); }); }
 /* ปฏิทินเต็มทั้งเดือน → แจ้งลูกค้า + ปุ่มข้ามไปเดือนที่ว่างถัดไป (กันเข้าใจผิดว่ายังโหลดไม่เสร็จ) */
 var MONTHERR=false;
+/* ข้อความเงื่อนไขดึงจากค่าตั้งค่าจริง จะได้ไม่ขัดกับเกณฑ์ที่ระบบใช้คำนวณหักมัดจำ */
+function fillTerms(){ try{
+  var d=Number((CAT.settings||{}).rescheduleFreeDays)||5;
+  var el=document.getElementById('tmReschedule'); if(el) el.innerHTML='เลื่อนคิวล่วงหน้า '+d+' วันขึ้นไป ไม่มีค่าธรรมเนียม · เลื่อนกระชั้นกว่านั้นร้านขอสงวนสิทธิ์หักมัดจำบางส่วน';
+  var ph=String((CAT.shop||{}).phone||'').trim();
+  var pe=document.getElementById('tmPhone'); if(pe&&ph) pe.innerHTML='<a href="tel:'+esc(ph.replace(/[^0-9+]/g,''))+'" style="color:var(--gold-soft)">'+esc(ph)+'</a>';
+}catch(e){} }
 function monthHasAvail(){ if(!MONTHAVAIL)return true; return Object.keys(MONTHAVAIL).some(function(k){ var i=MONTHAVAIL[k]; return i&&!i.off&&i.slots>0; }); }
 function updateCalFull(){ var el=document.getElementById('calFull'); if(!el)return;
   /* โหลดปฏิทินไม่สำเร็จ ≠ คิวเต็ม — เดิมเหมารวมกัน ทำให้ขึ้นว่าเต็มทั้งเดือนทั้งที่คิวยังว่าง */
