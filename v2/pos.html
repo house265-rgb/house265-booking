@@ -8,6 +8,14 @@
 <style>
 :root{--bg:#111010;--surface:#1a1816;--surface2:#211f1c;--bg2:#161412;--elev:#262320;--line:#322e29;--fg:#efe9df;--muted:#b3aa9c;--faint:#7c7265;--gold:#c8a75a;--gold-soft:#e6cc7e;--gold-dim:#9c7f3f;--gold-ghost:rgba(200,167,90,.12);--ok:#79c08a;--crit:#d98a8a;--r:13px;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+/* iOS/Safari: input[type=date|month|time] มีความกว้างขั้นต่ำในตัวที่ไม่ยอมหดตาม flex/grid
+ * ทำให้ช่องล้นออกนอกคอลัมน์แล้วกรอบไปทับช่องข้าง ๆ บนไอแพดกับมือถือ
+ * ต้องปลด min-width ทั้งที่ flex item และที่ตัว input เอง */
+*{min-width:0}
+input[type=date],input[type=month],input[type=time],input[type=datetime-local]{
+  -webkit-appearance:none;appearance:none;min-width:0;max-width:100%;box-sizing:border-box}
+.drow .f,.row2>*,.grid2>*,.g2>*{min-width:0}
+
 body{margin:0;background:var(--bg);color:var(--fg);font-family:'Kanit',sans-serif;font-weight:300;font-variant-numeric:tabular-nums;padding-bottom:calc(70px + env(safe-area-inset-bottom));overflow-wrap:anywhere}
 .mono{font-family:'IBM Plex Mono',monospace}
 button{cursor:pointer;font-family:inherit}

@@ -7,6 +7,17 @@
 <style>
 :root{--bg:#111010;--surface:#1a1816;--surface2:#211f1c;--bg2:#161412;--elev:#262320;--line:#322e29;--fg:#efe9df;--muted:#b3aa9c;--faint:#7c7265;--gold:#c8a75a;--gold-soft:#e6cc7e;--gold-dim:#9c7f3f;--gold-ghost:rgba(200,167,90,.12);--ok:#79c08a;--crit:#d98a8a;--r:13px;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+/* iOS/Safari: input[type=date|month|time] มีความกว้างขั้นต่ำในตัวที่ไม่ยอมหดตาม flex/grid
+ * ทำให้ช่องล้นออกนอกคอลัมน์แล้วกรอบไปทับช่องข้าง ๆ บนไอแพดกับมือถือ
+ * ต้องปลด min-width ทั้งที่ flex item และที่ตัว input เอง */
+*{min-width:0}
+input[type=date],input[type=month],input[type=time],input[type=datetime-local]{
+  -webkit-appearance:none;appearance:none;min-width:0;max-width:100%;box-sizing:border-box}
+.drow .f,.row2>*,.grid2>*,.g2>*{min-width:0}
+/* ตัวอย่างฉลากมีความกว้างจริงเป็นมิลลิเมตร × จำนวนต่อแถว ซึ่งอาจกว้างกว่าจอมือถือ
+ * ให้เลื่อนภายในกล่องของมันเอง ไม่ใช่ดันทั้งหน้าให้เลื่อนแนวนอน */
+#labelPreview,#printArea{max-width:100%;overflow-x:auto}
+
 body{margin:0;background:var(--bg);color:var(--fg);font-family:'Kanit',sans-serif;font-weight:300;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .mono{font-family:'IBM Plex Mono',monospace}
 header.top{position:sticky;top:0;z-index:20;background:rgba(17,16,16,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
@@ -136,6 +147,7 @@ button.is-busy,.is-busy{cursor:progress!important;opacity:.78}
   .tabpane:not(#tabLabel){display:none!important}
   #tabLabel{display:block!important}
   #tabLabel>.card:not(#resultCard){display:none!important}
+  #printArea{max-width:none!important;overflow:visible!important}   /* ตอนพิมพ์ต้องไม่ถูกจำกัดความกว้าง */
   .wrap>.card:not(#resultCard){display:none!important}
   #app,.wrap{display:block!important;margin:0!important;padding:0!important;background:none!important;border:0!important}
   #resultCard{display:block!important;margin:0!important;padding:0!important;border:0!important;background:none!important;box-shadow:none!important}
@@ -682,7 +694,16 @@ function renderBatches(){ var box=document.getElementById('batchBox'); if(!box||
   var rowH=function(x){ return '<div class="srow"><div class="si"><b class="mono">'+esc(x.batch_id)+'</b>'+
       '<div style="font-size:13px;margin-top:2px">'+esc(x.hair_type||x.variant_name)+(x.length_in?(' '+esc(x.length_in)+'นิ้ว'):'')+'</div>'+
       (sChips_(x)?('<div class="chips">'+sChips_(x)+'</div>'):'')+
-      '<div class="sub" style="font-size:11px;color:var(--faint);margin-top:3px">รับ '+fmt(x.qty_received)+' QR · เหลือ '+fmt(x.remaining)+' · ต้นทุน '+fmt(x.cost_per_mad)+'/QR</div></div>'+
+      '<div class="sub" style="font-size:11px;color:var(--faint);margin-top:3px">รับ '+fmt(x.qty_received)+' QR · เหลือ '+fmt(x.remaining)+'</div>'+
+      /* ข้อมูลต้นทุน/ราคา — หน้านี้เปิดได้เฉพาะเจ้าของกับผู้จัดการอยู่แล้ว */
+      '<div class="sub" style="font-size:11px;margin-top:4px;line-height:1.7">'+
+        '<span style="color:var(--muted)">ต้นทุนผมเพียวๆ</span> <b>'+fmt(x.hair_raw_per_qr||x.cost_per_mad)+'</b>/QR'+
+        '<span style="color:var(--faint)"> · รวมทุกอย่าง '+fmt(x.cost_per_mad)+'/QR</span>'+
+        (x.supplier_name?('<br><span style="color:var(--muted)">ผู้จำหน่าย</span> '+esc(x.supplier_name)):'')+
+        '<br><span style="color:var(--muted)">ขายเปล่า</span> <b>'+fmt(x.sell_price)+'</b>฿'+
+        ' · <span style="color:var(--muted)">ค่าต่อ</span> <b>'+fmt(x.attach_price)+'</b>฿'+
+        (x.attach_special?' <span style="color:var(--gold-soft)">★ ราคาพิเศษของล็อตนี้</span>':' <span style="color:var(--faint)">(มาตรฐาน)</span>')+
+      '</div></div>'+
       '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">'+
       (function(){ var on=(x.bookable!==false);
         return '<button type="button" class="bkflag'+(on?' on':'')+'" title="กดเพื่อสลับ เปิด/ปิด การจองออนไลน์ของล็อตนี้" onclick="toggleBatchBookable(\''+esc(x.batch_id)+'\','+(on?0:1)+')">'+(on?'✅ จองได้':'🏪 หน้าร้าน')+'</button>'; })()+
