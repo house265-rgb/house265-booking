@@ -7,6 +7,21 @@
 <style>
 :root{--bg:#111010;--surface:#1a1816;--surface2:#211f1c;--bg2:#161412;--elev:#262320;--line:#322e29;--fg:#efe9df;--muted:#b3aa9c;--faint:#7c7265;--gold:#c8a75a;--gold-soft:#e6cc7e;--gold-dim:#9c7f3f;--gold-ghost:rgba(200,167,90,.12);--ok:#79c08a;--crit:#d98a8a;--blue:#7fa8c8;--r:13px;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+/* หน้าต่างป๊อปอัปต้องไม่สูงเกินจอ — เนื้อหาเลื่อนในตัวมันเอง ไม่ดันหัวเรื่องกับปุ่มยืนยันตกขอบ */
+.mbox{max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);display:flex;flex-direction:column}
+.mh{flex:none}
+.mc{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+/* แถวปุ่มยืนติดก้นหน้าต่างเสมอ กดยืนยันได้โดยไม่ต้องเลื่อนลงไปหา */
+.mfoot{position:sticky;bottom:0;margin:14px -16px -16px;padding:12px 16px;
+  background:var(--surface);border-top:1px solid var(--line);
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;z-index:2}
+/* จอกว้าง: หน้าต่างเลื่อนคิวแบ่ง 2 คอลัมน์ ปฏิทินซ้าย รายละเอียดขวา ไม่ต้องเลื่อนยาว */
+#reschedModal .mbox{max-width:400px}
+@media (min-width:900px){
+  #reschedModal .mbox{max-width:860px}
+  #reschedModal .rs2col{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:18px;align-items:start}
+}
+
 /* บนมือถือ ปุ่มเล็ก ๆ (ชิปกรอง, ปุ่มล้าง) กดพลาดง่าย — บังคับความสูงขั้นต่ำให้กดด้วยนิ้วได้
  * 34px เป็นค่าต่ำสุดที่ยังไม่ทำให้แถวชิปสูงจนเปลืองจอ */
 @media (max-width:520px){
@@ -420,7 +435,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P47-LABELFIX'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P48-LIFF'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='', SCHED=null, SETTINGS=null, TAB='dash', FULL=false, ROLE='', MYTECH='';
 var THD=['อา','จ','อ','พ','พฤ','ศ','ส'];
 /* ===== สถานะ "กำลังทำงาน" — ใช้ร่วมกันทุกหน้า (admin / pos / receive / Booking) =====
@@ -1238,6 +1253,8 @@ function rsLoadSlots(){ if(!RS||!RS.booking||!RS.date) return;
 function renderResched(){ var box=document.getElementById('reschedBody'); if(!box) return;
   if(!RS||RS.loading){ box.innerHTML='<div class="mini">กำลังโหลด…</div>'; return; }
   var b=RS.booking, fee=b.resched_fee||{}, dep=Number(b.deposit)||0;
+  /* ข้อมูลเกณฑ์ขาดไม่ควรโชว์คำว่า undefined ให้ผู้จัดการที่กำลังตัดสินใจเรื่องเงิน */
+  if(fee.leadDays==null||fee.freeDays==null) fee={late:false,leadDays:null,freeDays:null,forfeit:0,pct:0,_unknown:true};
   var h='<div class="rsnow"><div class="mini" style="margin:0 0 4px">คิวเดิม</div>'+
     '<b>'+esc(b.name||'ลูกค้า')+'</b> · 📞 '+esc(b.phone||'-')+
     '<div>'+esc(b.date)+' '+esc(b.start)+'–'+esc(b.end)+' · ✂ '+esc(b.tech_name||'—')+'</div>'+
@@ -1246,7 +1263,7 @@ function renderResched(){ var box=document.getElementById('reschedBody'); if(!bo
     (Number(b.reschedule_count)>0?('<div class="mini" style="color:var(--warn);margin-top:2px">เคยเลื่อนมาแล้ว '+Number(b.reschedule_count)+' ครั้ง</div>'):'')+
     '</div>';
 
-  h+='<label class="lbl">วันใหม่</label>'+rsCal();
+  h+='<div class="rs2col"><div><label class="lbl" style="margin-top:0">วันใหม่</label>'+rsCal()+'</div><div>';
   h+='<label class="lbl">ช่าง</label><select class="in" onchange="rsSetTech(this.value)">'+
      '<option value="any"'+(RS.tech==='any'?' selected':'')+'>— ใครก็ได้ที่ว่าง —</option>'+
      (USERTECHS||[]).map(function(t){ return '<option value="'+esc(t.tech_id)+'"'+(String(t.tech_id)===String(RS.tech)?' selected':'')+'>'+esc(t.name)+(t.accepting===false?' · พักรับคิว':'')+'</option>'; }).join('')+
@@ -1262,8 +1279,9 @@ function renderResched(){ var box=document.getElementById('reschedBody'); if(!bo
   /* มัดจำ: ระบบคิดให้ตามเกณฑ์ แต่ผู้จัดการแก้ทับได้ */
   var sug=Number(fee.forfeit)||0;
   h+='<div class="rsfee"><div class="mini" style="margin:0 0 6px">'+
+    (fee._unknown?'⚠ ดึงเกณฑ์หักมัดจำไม่สำเร็จ — กรอกยอดหักเองตามดุลพินิจ':
     (fee.late?('⚠ เหลืออีก '+fee.leadDays+' วันถึงคิวเดิม (น้อยกว่าเกณฑ์ '+fee.freeDays+' วัน) → เข้าเกณฑ์หักมัดจำ '+fee.pct+'%')
-             :('✓ เหลืออีก '+fee.leadDays+' วันถึงคิวเดิม (เกณฑ์ '+fee.freeDays+' วัน) → ไม่เข้าเกณฑ์หักมัดจำ'))+'</div>'+
+             :('✓ เหลืออีก '+fee.leadDays+' วันถึงคิวเดิม (เกณฑ์ '+fee.freeDays+' วัน) → ไม่เข้าเกณฑ์หักมัดจำ')))+'</div>'+
     '<label class="lbl" style="margin-top:0">หักมัดจำครั้งนี้ (฿) · แก้ได้ตามดุลพินิจ</label>'+
     '<input type="number" class="in" id="rsFee" value="'+sug+'" min="0" max="'+dep+'" oninput="rsFeeHint()">'+
     '<div class="mini" id="rsFeeHint"></div>'+
@@ -1287,7 +1305,8 @@ function renderResched(){ var box=document.getElementById('reschedBody'); if(!bo
      '<input class="in" id="rsReason" placeholder="เช่น ลูกค้าติดธุระ / ช่างลาป่วย" oninput="rsValid()">';
 
   if(RS.start){ h+='<div class="rsdiff">'+esc(b.date)+' '+esc(b.start)+'  →  <b>'+esc(RS.date)+' '+esc(RS.start)+'</b></div>'; }
-  h+='<div class="row2" style="margin-top:14px"><button class="btn sec" onclick="closeResched()">ยกเลิก</button>'+
+  h+='</div>';                                   /* ปิดคอลัมน์ขวาของ rs2col */
+  h+='<div class="mfoot"><button class="btn sec" onclick="closeResched()">ยกเลิก</button>'+
      '<button class="btn" id="rsGo" onclick="doResched()" disabled style="opacity:.5">ยืนยันเลื่อนคิว</button></div>';
   box.innerHTML=h; rsFeeHint(); rsValid(); }
 function rsFeeHint(){ var el=document.getElementById('rsFeeHint'); if(!el||!RS||!RS.booking) return;

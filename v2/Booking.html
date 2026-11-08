@@ -423,8 +423,28 @@ window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(
 
 /* ================= LINE LIFF ================= */
 var LIFF_ID='2011962580-8W9zGtKI', LINE_PROFILE=null;
+/* ★ ที่อยู่หน้านี้แบบสะอาด — ตัดพารามิเตอร์ที่ LINE แปะมาตอน login ออก
+ * ถ้าไม่ตัด ครั้งต่อไปจะพา code/state เก่าติดไปด้วยแล้วล็อกอินไม่ผ่าน */
+function cleanSelfUrl(){
+  try{ var u=new URL(location.href);
+    ['code','state','liffClientId','liffRedirectUri','liff.state','error','error_description']
+      .forEach(function(k){ u.searchParams.delete(k); });
+    return u.toString();
+  }catch(e){ return location.href; } }
+/* ลบพารามิเตอร์ของ LINE ออกจากแถบที่อยู่หลังล็อกอินเสร็จ ให้ลูกค้าเห็นลิงก์สะอาด
+ * และถ้าเขาบุ๊กมาร์กไว้ จะได้ลิงก์ที่ใช้ซ้ำได้จริง */
+function tidyUrlAfterLogin(){
+  try{ var c=cleanSelfUrl(); if(c!==location.href) history.replaceState(null,'',c); }catch(e){} }
 function initLiff(){ if(!LIFF_ID||typeof liff==='undefined')return;
-  try{ liff.init({liffId:LIFF_ID}).then(function(){ if(!liff.isLoggedIn()&&!liff.isInClient()){liff.login();return null;} return liff.getProfile(); })
+  try{ liff.init({liffId:LIFF_ID}).then(function(){
+      if(!liff.isLoggedIn()&&!liff.isInClient()){
+        /* ❗ ต้องระบุ redirectUri เป็นหน้าปัจจุบันเสมอ
+         * ไม่ระบุ = LINE พากลับไปที่ Endpoint URL ที่ตั้งไว้ในคอนโซล ซึ่งเป็นลิงก์ระบบเก่า
+         * อาการ: เปิดหน้าค้างไว้นาน พอกลับมาแล้วเด้งไปลิงก์เก่าทุกครั้ง */
+        liff.login({ redirectUri: cleanSelfUrl() }); return null;
+      }
+      tidyUrlAfterLogin();
+      return liff.getProfile(); })
     .then(function(p){ if(p){LINE_PROFILE=p;applyLineProfile(p);} }).catch(function(){}); }catch(e){} }
 function applyLineProfile(p){ var ln=document.getElementById('cLine'); if(ln&&!ln.value)ln.value=p.displayName||'';
   var hi=document.getElementById('liffHi'); if(hi){ if(p.pictureUrl){document.getElementById('liffAv').style.backgroundImage='url("'+p.pictureUrl+'")';}
