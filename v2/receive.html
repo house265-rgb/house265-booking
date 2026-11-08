@@ -367,6 +367,10 @@ function api(action,payload){ var _b=_BUSYBTN; _busyOn(_b);
     body:JSON.stringify({action:action,token:TOKEN||'',payload:payload||{}})})
     .then(function(r){return r.json();})
     .then(function(j){ _busyOff(_b); return j; }, function(e){ _busyOff(_b); throw e; }); }
+/* วันที่ "วันนี้" ตามเวลาเครื่องผู้ใช้ — ห้ามใช้ toISOString() เพราะนั่นคือเวลา UTC
+ * ไทย UTC+7 ช่วงเที่ยงคืนถึง 7 โมงเช้า UTC จะยังเป็นเมื่อวาน ทำให้ปฏิทินเพี้ยนไป 1 วัน */
+function localToday(){ var d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(m){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m];}); }
 function digits(s){ var m=String(s||'').match(/\d+/); return m?m[0]:''; }
 /* ================= faceted filter (ใช้ร่วม: สต็อก/เลือกรุ่น/Batch) ================= */
@@ -416,7 +420,7 @@ function boot(){ api('bootstrap',{}).then(function(r){
         vb.title='หน้าเว็บ '+BUILD+' · เซิร์ฟเวอร์ '+srv; vb.style.opacity='.85'; }
       if(!okv) toast('⚠ เวอร์ชันไม่ตรงกัน — หน้าเว็บ '+BUILD+' · เซิร์ฟเวอร์ '+srv+' (deploy ใหม่ให้ครบทั้งคู่)',1);
     })();
-    document.getElementById('rDate').value=(DATA.settings && DATA.settings.today)|| new Date().toISOString().slice(0,10);
+    document.getElementById('rDate').value=(DATA.settings && DATA.settings.today)|| localToday();
     SHOP_LABEL_NAME=(DATA.settings&&DATA.settings.label_shop)||SHOP_LABEL_NAME;
     SHOP_LABEL_SHORT=(DATA.settings&&DATA.settings.label_shop_short)||SHOP_LABEL_SHORT;
     fillTypes(); fillColors(); fillTextures(); loadVariants(); loadSuppliers();  // สต็อก/batch โหลดตอนเปิดแท็บ (เพจเบา)

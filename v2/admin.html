@@ -6,6 +6,29 @@
 <style>
 :root{--bg:#111010;--surface:#1a1816;--surface2:#211f1c;--bg2:#161412;--elev:#262320;--line:#322e29;--fg:#efe9df;--muted:#b3aa9c;--faint:#7c7265;--gold:#c8a75a;--gold-soft:#e6cc7e;--gold-dim:#9c7f3f;--gold-ghost:rgba(200,167,90,.12);--ok:#79c08a;--crit:#d98a8a;--blue:#7fa8c8;--r:13px;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+/* ปฏิทินเลือกวันในหน้าต่างเลื่อนคิว — ใช้กติกาเดียวกับหน้าจองของลูกค้า
+ * ช่อง date ของเบราว์เซอร์บอกไม่ได้ว่าวันไหนร้านหยุดหรือคิวเต็ม จึงต้องวาดเอง */
+.cal-wrap{border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--bg2)}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.cal-head b{font-size:14px;font-weight:500}
+.cal-nav{background:transparent;border:1px solid var(--line);color:var(--fg);border-radius:8px;
+  width:30px;height:30px;cursor:pointer;font-family:inherit;font-size:15px}
+.cal-nav:disabled{opacity:.3;cursor:not-allowed}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
+.cal-dow{font-size:10.5px;color:var(--muted);padding:3px 0}
+.cal-day{padding:9px 0;border-radius:8px;font-size:14px;cursor:pointer;color:var(--fg);position:relative;
+  border:0;background:transparent;font-family:inherit}
+.cal-day:hover{background:var(--elev)}
+.cal-day.off,.cal-day.full,.cal-day.past{cursor:not-allowed}
+.cal-day.off{color:var(--faint);opacity:.4;text-decoration:line-through}
+.cal-day.past{color:var(--faint);opacity:.3}
+.cal-day.full{color:var(--faint);opacity:.55}
+.cal-day.off:hover,.cal-day.full:hover,.cal-day.past:hover{background:none}
+.cal-day.full::after{content:'เต็ม';position:absolute;left:0;right:0;bottom:1px;font-size:8px;opacity:.8}
+.cal-day.sel{background:linear-gradient(135deg,var(--gold-dim),var(--gold-soft));color:#000;font-weight:600}
+.cal-day.today{box-shadow:inset 0 0 0 1px var(--gold-dim)}
+.cal-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:10.5px;color:var(--muted);margin-top:8px}
+
 /* iOS/Safari: input[type=date|month|time] มีความกว้างขั้นต่ำในตัวที่ไม่ยอมหดตาม flex/grid
  * ทำให้ช่องล้นออกนอกคอลัมน์แล้วกรอบไปทับช่องข้าง ๆ บนไอแพดกับมือถือ
  * ต้องปลด min-width ทั้งที่ flex item และที่ตัว input เอง */
@@ -1136,13 +1159,65 @@ function openResched(id){ RS={id:id,booking:null,date:'',start:'',tech:'',slots:
     if(!r||!r.ok){ toast((r&&r.message)||'โหลดคิวไม่สำเร็จ',1); closeResched(); return; }
     RS.booking=r.data.booking; RS.loading=false;
     RS.tech=String(RS.booking.tech_id||''); RS.date=RS.booking.date;
-    renderResched(); rsLoadSlots();
+    RS.month=rsMonthKey(RS.date||(DASHDATA&&DASHDATA.today)||localToday());
+    renderResched(); rsLoadSlots(); rsLoadMonth();
   }).catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); closeResched(); }); }
 function closeResched(){ document.getElementById('reschedModal').classList.remove('show'); RS=null; }
-function rsSetDate(v){ RS.date=v; RS.start=''; renderResched(); rsLoadSlots(); }
-function rsSetTech(v){ RS.tech=v; RS.start=''; renderResched(); rsLoadSlots(); }
+function rsSetDate(v){ RS.date=v; RS.start=''; RS.month=rsMonthKey(v); renderResched(); rsLoadSlots(); }
+function rsSetTech(v){ RS.tech=v; RS.start=''; renderResched(); rsLoadSlots(); rsLoadMonth(); }
 function rsPick(t){ RS.start=t; renderResched(); }
 /* ดึงเวลาว่างจริงของวันนั้น (เช็กตารางช่าง วันหยุด คิวชน ให้เสร็จจากหลังบ้าน) */
+
+/* ---- ปฏิทินเลือกวันใหม่ (จาง = หยุด/เต็ม เหมือนหน้าจองลูกค้า) ---- */
+/* วันที่ "วันนี้" ตามเวลาเครื่องผู้ใช้ — ห้ามใช้ toISOString() เพราะนั่นคือเวลา UTC
+ * ไทย UTC+7 ช่วงเที่ยงคืนถึง 7 โมงเช้า UTC จะยังเป็นเมื่อวาน ทำให้ปฏิทินเพี้ยนไป 1 วัน */
+function localToday(){ var d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function rsMonthKey(d){ return d.slice(0,7); }
+function rsLoadMonth(){ if(!RS||!RS.booking||!RS.month) return;
+  var b=RS.booking, key=RS.month;
+  RS.days=null; renderResched();
+  api('bookMonth',{ month:key, mode:(b.variant_id?'new':'byob'), service_id:b.service_id,
+    variant_id:b.variant_id, qty_mad:b.qty_mad, tech_id:(RS.tech||'any') })
+    .then(function(r){ RS.days=(r&&r.ok&&r.data&&r.data.days)?r.data.days:{};
+      if(RS.month!==key) return;                    /* ผู้ใช้เปลี่ยนเดือนไปแล้ว ทิ้งผลเก่า */
+      renderResched(); })
+    .catch(function(){ RS.days={}; renderResched(); }); }
+function rsShiftMonth(n){ if(!RS||!RS.month)return;
+  var y=Number(RS.month.slice(0,4)), m=Number(RS.month.slice(5,7))-1+n;
+  var d=new Date(y,m,1); RS.month=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  RS.days=null; renderResched(); rsLoadMonth(); }
+function rsCal(){
+  var TH=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  var y=Number(RS.month.slice(0,4)), m=Number(RS.month.slice(5,7))-1;
+  var first=new Date(y,m,1), nDays=new Date(y,m+1,0).getDate(), lead=first.getDay();
+  var todayStr=(DASHDATA&&DASHDATA.today)||localToday();
+  var nowKey=todayStr.slice(0,7);
+  var h='<div class="cal-wrap"><div class="cal-head">'+
+    '<button type="button" class="cal-nav" onclick="rsShiftMonth(-1)"'+(RS.month<=nowKey?' disabled':'')+'>‹</button>'+
+    '<b>'+TH[m]+' '+(y+543)+'</b>'+
+    '<button type="button" class="cal-nav" onclick="rsShiftMonth(1)">›</button></div><div class="cal-grid">';
+  ['อา','จ','อ','พ','พฤ','ศ','ส'].forEach(function(d){ h+='<div class="cal-dow">'+d+'</div>'; });
+  for(var i=0;i<lead;i++) h+='<div></div>';
+  var loading=(RS.days===null);
+  for(var d=1;d<=nDays;d++){
+    var dk=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    var info=(RS.days||{})[dk]||{}, cls=['cal-day'], dis=false;
+    if(dk<todayStr){ cls.push('past'); dis=true; }
+    else if(!loading){
+      if(info.off){ cls.push('off'); dis=true; }
+      else if(info.full){ cls.push('full'); dis=true; }
+    }
+    if(dk===todayStr) cls.push('today');
+    if(dk===RS.date) cls.push('sel');
+    h+='<button type="button" class="'+cls.join(' ')+'"'+(dis?' disabled':'')+
+       ' title="'+(info.off?'ร้านหยุด/ไม่มีช่าง':(info.full?'คิวเต็ม':''))+'"'+
+       (dis?'':' onclick="rsSetDate(\''+dk+'\')"')+'>'+d+'</button>';
+  }
+  h+='</div><div class="cal-legend">'+(loading?'<span>กำลังตรวจวันว่าง…</span>':
+     '<span>⬜ ว่าง</span><span style="opacity:.55">เต็ม = คิวเต็ม</span><span style="opacity:.4;text-decoration:line-through">หยุด</span>')+
+     '</div></div>';
+  return h; }
 function rsLoadSlots(){ if(!RS||!RS.booking||!RS.date) return;
   RS.slots=null; renderResched();
   var b=RS.booking;
@@ -1163,7 +1238,7 @@ function renderResched(){ var box=document.getElementById('reschedBody'); if(!bo
     (Number(b.reschedule_count)>0?('<div class="mini" style="color:var(--warn);margin-top:2px">เคยเลื่อนมาแล้ว '+Number(b.reschedule_count)+' ครั้ง</div>'):'')+
     '</div>';
 
-  h+='<label class="lbl">วันใหม่</label><input type="date" class="in" value="'+esc(RS.date)+'" onchange="rsSetDate(this.value)">';
+  h+='<label class="lbl">วันใหม่</label>'+rsCal();
   h+='<label class="lbl">ช่าง</label><select class="in" onchange="rsSetTech(this.value)">'+
      '<option value="any"'+(RS.tech==='any'?' selected':'')+'>— ใครก็ได้ที่ว่าง —</option>'+
      (USERTECHS||[]).map(function(t){ return '<option value="'+esc(t.tech_id)+'"'+(String(t.tech_id)===String(RS.tech)?' selected':'')+'>'+esc(t.name)+(t.accepting===false?' · พักรับคิว':'')+'</option>'; }).join('')+

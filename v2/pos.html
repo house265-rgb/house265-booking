@@ -8,6 +8,21 @@
 <style>
 :root{--bg:#111010;--surface:#1a1816;--surface2:#211f1c;--bg2:#161412;--elev:#262320;--line:#322e29;--fg:#efe9df;--muted:#b3aa9c;--faint:#7c7265;--gold:#c8a75a;--gold-soft:#e6cc7e;--gold-dim:#9c7f3f;--gold-ghost:rgba(200,167,90,.12);--ok:#79c08a;--crit:#d98a8a;--r:13px;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+/* กล่องเตือนตอนสแกนพลาด — ต้องค้างจนพนักงานกดปิด toast เล็ก ๆ ที่หายเองทำให้พลาดได้ */
+#scanAlert{position:fixed;inset:0;z-index:9000;display:none;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.72);padding:20px;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
+#scanAlert.show{display:flex}
+#scanAlert .box{max-width:460px;width:100%;background:var(--bg2);border:2px solid var(--crit);
+  border-radius:16px;padding:22px;text-align:center;box-shadow:0 18px 60px rgba(0,0,0,.6)}
+#scanAlert .ic{font-size:44px;line-height:1;margin-bottom:10px}
+#scanAlert .ttl{font-size:20px;font-weight:600;color:var(--crit);margin-bottom:8px}
+#scanAlert .msg{font-size:15px;line-height:1.65;color:var(--fg);margin-bottom:6px}
+#scanAlert .code{font-family:'IBM Plex Mono',monospace;font-size:17px;color:var(--gold-soft);
+  background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 12px;display:inline-block;margin:8px 0 14px}
+#scanAlert .hint{font-size:12.5px;color:var(--muted);margin-bottom:16px;line-height:1.6}
+#scanAlert button{width:100%;padding:15px;border:0;border-radius:12px;background:var(--crit);
+  color:#fff;font-size:16px;font-weight:600;font-family:inherit;cursor:pointer}
+
 /* iOS/Safari: input[type=date|month|time] มีความกว้างขั้นต่ำในตัวที่ไม่ยอมหดตาม flex/grid
  * ทำให้ช่องล้นออกนอกคอลัมน์แล้วกรอบไปทับช่องข้าง ๆ บนไอแพดกับมือถือ
  * ต้องปลด min-width ทั้งที่ flex item และที่ตัว input เอง */
@@ -238,6 +253,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 </div></div></div>
 <div class="modal" id="imgModal"><div class="mbox" style="max-width:480px"><div class="mh" id="imTitle">สลิป</div><div class="mc" id="imBody" style="text-align:center">กำลังโหลด…</div></div></div>
 <div class="toast" id="toast"></div>
+<div id="scanAlert" role="alertdialog" aria-modal="true" onclick="if(event.target===this)closeScanAlert()"><div class="box"><div class="ic" id="saIc">⛔</div><div class="ttl" id="saTtl"></div><div class="msg" id="saMsg"></div><div class="code" id="saCode"></div><div class="hint" id="saHint"></div><button type="button" onclick="closeScanAlert()">รับทราบ · ปิดหน้าต่าง</button></div></div>
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
@@ -377,16 +393,38 @@ function onScan(code){ code=String(code).trim(); var now=Date.now();
   if(now-_lastScan<600) return;
   _lastScan=now; _lastCode=code; addScan(code); }
 function addManual(){ var el=document.getElementById('manualCode'); var c=el.value.trim(); if(!c)return; addScan(c); el.value=''; try{el.focus();}catch(e){} }
+
+/* เตือนแบบค้างจอ ปิดเองไม่ได้ — ใช้กับเคสที่พลาดแล้วเสียหาย เช่นสแกนซ้ำ/ของขายไปแล้ว
+ * toast เดิมเล็กและหายใน 2-3 วิ พนักงานที่กำลังก้มดูเครื่องสแกนมองไม่ทัน */
+function scanAlert(title,msg,code,hint,icon){
+  var el=document.getElementById('scanAlert'); if(!el){ toast(title+' '+msg,1); return; }
+  document.getElementById('saIc').textContent=icon||'⛔';
+  document.getElementById('saTtl').textContent=title;
+  document.getElementById('saMsg').innerHTML=msg||'';
+  var c=document.getElementById('saCode'); c.textContent=code||''; c.style.display=code?'inline-block':'none';
+  var h=document.getElementById('saHint'); h.innerHTML=hint||''; h.style.display=hint?'block':'none';
+  el.classList.add('show');
+  try{ if(navigator.vibrate) navigator.vibrate([90,60,90]); }catch(e){}
+}
+function closeScanAlert(){ var el=document.getElementById('scanAlert'); if(el) el.classList.remove('show');
+  var b=document.getElementById('manualCode'); if(b){ b.value=''; b.focus(); } }
+document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeScanAlert(); });
 function scanLog(msg,bad){ var el=document.getElementById('scanLog'); if(!el)return;
   el.innerHTML='<span style="color:'+(bad?'var(--crit)':'var(--ok)')+'">'+msg+'</span>'; }
 function addScan(code){ if(!code)return;
-  if(CART.filter(function(l){return l.kind==='product'&&l.barcode===code;}).length){ scanLog('⚠ '+code+' อยู่ในบิลแล้ว',1); toast('QR นี้อยู่ในบิลแล้ว',1); return; }
+  if(CART.filter(function(l){return l.kind==='product'&&l.barcode===code;}).length){ scanLog('⚠ '+code+' อยู่ในบิลแล้ว',1);
+    scanAlert('สแกนซ้ำ','QR ดวงนี้ถูกเพิ่มลงบิลนี้ไปแล้ว<br>ไม่ถูกเพิ่มซ้ำ',code,'ถ้าลูกค้าใช้ผมมากกว่า 1 มัด ต้องสแกน QR <b>คนละดวง</b> · 1 ดวง = 1 มัด','🔁');
+    return; }
   scanLog('⟳ กำลังอ่าน '+code+'…');
   api('scanUnit',{barcode:code}).then(function(r){ if(!r||!r.ok){ scanLog('✕ '+((r&&r.message)||'สแกนไม่สำเร็จ'),1); toast((r&&r.message)||'สแกนไม่สำเร็จ',1); return; }
     var d=r.data;
     /* คิวจองไม่ล็อกตัว QR แล้ว เหลือกันเฉพาะ sold/void ที่ขายไม่ได้จริง ๆ */
     if(d.status!=='available'){ var why=(d.status==='sold'?'ขายไปแล้ว':(d.status==='void'?'ถูกยกเลิก':d.status));
-      scanLog('✕ '+code+' '+why+' — ขายไม่ได้',1); toast('QR นี้ '+why+' — ขายไม่ได้',1); return; }
+      scanLog('✕ '+code+' '+why+' — ขายไม่ได้',1);
+      scanAlert('ขายไม่ได้','QR ดวงนี้ <b>'+why+'</b> แล้ว<br>ไม่ถูกเพิ่มลงบิล',code,
+        (d.status==='sold'?'ถ้าลูกค้าถือมัดนี้อยู่จริง แปลว่าสติกเกอร์อาจซ้ำกัน หรือมีการขายไปก่อนหน้าโดยไม่ได้ตัดสต็อก — ตรวจกับผู้จัดการก่อนขาย'
+                           :'ล็อตนี้ถูกยกเลิกไปแล้ว ให้หยิบมัดอื่นแทน'),'⛔');
+      return; }
     scanLog('✓ '+esc(d.hair_type||d.name||'')+' '+esc(String(d.length_in||''))+'นิ้ว '+esc(d.color||''));
     openProductFromScan(d); if(navigator.vibrate)navigator.vibrate(40);
   }).catch(function(){ scanLog('✕ เชื่อมต่อไม่สำเร็จ',1); toast('เชื่อมต่อไม่สำเร็จ',1); }); }
