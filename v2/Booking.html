@@ -685,7 +685,8 @@ function renderRmAddonBody(){ var body=document.getElementById('rmAddonBody'); i
 function rmAddonEst(){ if(!STATE.rmAddon.on||!STATE.rmAddon.removalId)return null;
   var rm=(CAT.removals||[]).filter(function(r){return String(r.removal_id)===String(STATE.rmAddon.removalId);})[0]; if(!rm)return null;
   var qty=Math.max(1,STATE.bundle||1);
-  return { total:Math.round(rm.price), durationMin:Math.round((Number(rm.dur_per_mad)||20)*qty)||30, removalId:String(rm.removal_id), name:rm.name, label:'ถอด '+rm.name }; }
+  /* งานถอดคิดเหมา ทั้งราคาและเวลา (ต้องตรงกับฝั่งเซิร์ฟเวอร์) */
+  return { total:Math.round(rm.price), durationMin:Math.round(Number(rm.dur_per_mad))||30, removalId:String(rm.removal_id), name:rm.name, label:'ถอด '+rm.name }; }
 function rmAddonValid(){ if(!rmAddonEligible())return true;
   if(!STATE.rmAddon.answered) return false;           /* ยังไม่ตอบ = ไปต่อไม่ได้ */
   if(!STATE.rmAddon.on) return true;
@@ -771,7 +772,7 @@ function sizePrice(len){ var s=svc(); if(!s)return 0; var d=digits(len); var hit
 function depositOf(total){ var S=CAT.settings||{}; var isFixed=(String(S.depositType||'').toLowerCase()==='fixed')||Number(S.depositValue)>100; var d=isFixed?Math.round(Number(S.depositValue)||0):Math.round(total*(Number(S.depositValue)||0)/100); return Math.min(Math.max(0,total),d); }
 function computeEst(){ var s=svc(); EST=null; var qty=Math.max(1,STATE.bundle||1);
   if(isRemoval()){ var rm=(CAT.removals||[]).filter(function(r){return String(r.removal_id)===String(STATE.removalId);})[0]; if(!rm)return; var t=Math.round(rm.price);
-    EST={total:t,deposit:depositOf(t),base:t,durationMin:Math.round((Number(rm.dur_per_mad)||20)*qty)||30,label:'ถอดผม: '+rm.name}; applyAddons(); return; }
+    EST={total:t,deposit:depositOf(t),base:t,durationMin:Math.round(Number(rm.dur_per_mad))||30,label:'ถอดผม: '+rm.name}; applyAddons(); return; }
   if(!s)return; var pm=Number(s.per_mad_min)||30;
   if(isMove()){ var mFirst=Math.round(Number(s.move_price)||0), mAdd=Math.round(Number(s.move_add)||0); var t2=mFirst+mAdd*(qty-1);
     EST={total:t2,deposit:depositOf(t2),base:t2,durationMin:Math.round((Number(s.move_base_min)||45)+pm*(qty-1)),label:'ขยับปม '+s.acct_name+' · '+qtyUnit(s,qty)}; applyAddons(); return; }
