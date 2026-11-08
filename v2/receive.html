@@ -245,7 +245,19 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
       <div class="labels noprint" id="labelPreview"></div>
       <div id="printArea"><div class="labels" id="labels"></div></div>
     </div>
-    <div class="card" id="noLabelYet"><div class="mini" style="margin:0">ยังไม่มีฉลากรอพิมพ์ — รับเข้าล็อตใหม่แล้วฉลากจะมาอยู่ที่แท็บนี้</div></div>
+    <div class="card" id="noLabelYet">
+      <h2>🏷️ ฉลาก QR ติดมัดผม</h2>
+      <div class="mini" style="margin:0 0 10px">สติกเกอร์ที่ติดบนมัดผมแต่ละมัด — มี QR สำหรับสแกนขายที่ POS พร้อมชื่อรุ่น สี ความยาว จำนวนช่อ และราคาขายเปล่า (ไม่พิมพ์ต้นทุน)<br>
+        <b>1 ดวง = 1 มัด (1 QR = 50g)</b> รับเข้า 10 มัด ก็ได้ฉลาก 10 ดวง</div>
+      <div class="mini" style="margin:0 0 12px;color:var(--gold-soft)">ยังไม่มีฉลากรออยู่ — ฉลากจะมาที่นี่อัตโนมัติเมื่อรับเข้าล็อตใหม่</div>
+      <label class="lbl">พิมพ์ซ้ำเฉพาะดวงเดียว (สติกเกอร์หลุด/ขาด)</label>
+      <div style="display:flex;gap:8px">
+        <input class="in" id="rpCode" placeholder="ใส่หรือสแกนรหัส QR เช่น H000001AB" style="flex:1;margin:0"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();reprintOne();}">
+        <button class="btn" style="width:auto;padding:0 16px;margin:0" onclick="reprintOne()">ดึงฉลาก</button>
+      </div>
+      <div class="mini" style="margin-top:8px">พิมพ์ซ้ำทั้งล็อต → ไปที่แท็บ <b>🧾 ล็อต</b> แล้วกด 🖨️ พิมพ์ซ้ำ ที่แถวนั้น · ทั้งสองแบบใช้รหัส QR เดิม ไม่สร้างใหม่ สต็อกไม่เปลี่ยน</div>
+    </div>
     </div>
 
     <!-- สต็อก -->
@@ -278,7 +290,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 <script>
 /* ===== ตั้งค่า: ใส่ลิงก์ /exec ของโปรเจกต์ระบบใหม่ ===== */
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P40-BKPRICE'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบนซ้าย ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P41-LABEL'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบนซ้าย ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 
 var TOKEN='', DATA=null, BUSY=false, LAST=null;
 /* ===== สถานะ "กำลังทำงาน" — ใช้ร่วมกันทุกหน้า (admin / pos / receive / Booking) =====
@@ -562,15 +574,31 @@ function renderBatches(){ var box=document.getElementById('batchBox'); if(!box) 
   order.forEach(function(d){
     var qd=0; grp[d].forEach(function(x){ qd+=Number(x.remaining)||0; });
     h+='<div class="daygrp">📅 '+esc(d)+' · '+grp[d].length+' ล็อต · เหลือ '+fmt(qd)+' QR</div>'+
-      '<div style="overflow-x:auto"><table style="min-width:520px"><tr><th>Batch</th><th>รุ่น</th><th class="r">รับ/เหลือ</th><th class="r">ต้นทุน/มัด</th><th class="r">จองออนไลน์</th></tr>'+
+      '<div style="overflow-x:auto"><table style="min-width:580px"><tr><th>Batch</th><th>รุ่น</th><th class="r">รับ/เหลือ</th><th class="r">ต้นทุน/มัด</th><th class="r">จองออนไลน์</th><th class="r">ฉลาก</th></tr>'+
       grp[d].map(function(x){ var on=(x.bookable!==false);
         return '<tr><td class="mono">'+esc(x.batch_id)+'</td><td>'+esc(x.variant_name)+'</td>'+
         '<td class="r mono">'+fmt(x.qty_received)+'/'+fmt(x.remaining)+'</td><td class="r mono">'+fmt(x.cost_per_mad)+'</td>'+
         '<td class="r"><button type="button" class="bkflag'+(on?' on':'')+'" onclick="toggleBatchBookable(\''+esc(x.batch_id)+'\','+(on?0:1)+')">'+
-          (on?'✅ จองได้':'🏪 หน้าร้าน')+'</button></td></tr>';}).join('')+'</table></div>'; });
+          (on?'✅ จองได้':'🏪 หน้าร้าน')+'</button></td>'+
+        '<td class="r"><button type="button" class="bkflag" onclick="reprintBatch(\''+esc(x.batch_id)+'\')">🖨️ พิมพ์ซ้ำ</button></td></tr>';}).join('')+'</table></div>'; });
   box.innerHTML=h; }
 function bClear(){ BF=''; var a=document.getElementById('bFrom'),c=document.getElementById('bTo');
   if(a)a.value=''; if(c)c.value=''; renderBatches(); }
+/* พิมพ์ฉลากซ้ำ — ใช้ตอนสติกเกอร์หลุด/ขาด/พิมพ์ไม่ติด (ไม่สร้าง QR ใหม่ ใช้รหัสเดิม) */
+function reprintBatch(id){ api('reprintLabels',{batch_id:id}).then(function(r){
+  if(!r||!r.ok){ toast((r&&r.message)||'พิมพ์ซ้ำไม่สำเร็จ',1); return; }
+  LAST=r.data; renderLabels(r.data);
+  var nl=document.getElementById('noLabelYet'); if(nl) nl.classList.add('hide');
+  rcTab('label'); toast('ดึงฉลากล็อต '+id+' มาแล้ว '+fmt(r.data.count)+' ดวง · กดพิมพ์ได้เลย');
+}).catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
+function reprintOne(){ var el=document.getElementById('rpCode'); var c=String(el.value||'').trim();
+  if(!c){ toast('ใส่รหัส QR',1); return; }
+  api('reprintLabels',{barcode:c}).then(function(r){
+    if(!r||!r.ok){ toast((r&&r.message)||'ไม่พบรหัสนี้',1); return; }
+    LAST=r.data; renderLabels(r.data); el.value='';
+    var nl=document.getElementById('noLabelYet'); if(nl) nl.classList.add('hide');
+    toast('ดึงฉลาก '+c+' มาแล้ว');
+  }).catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
 function toggleBatchBookable(id,to){
   api('setBatchBookable',{batch_id:id,bookable:(to?'TRUE':'FALSE')}).then(function(r){
     if(!r||!r.ok){ toast((r&&r.message)||'เปลี่ยนไม่สำเร็จ',1); return; }
