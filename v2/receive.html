@@ -192,9 +192,9 @@ button.is-busy,.is-busy{cursor:progress!important;opacity:.78}
           <input class="in" id="nvTexture" list="textureList" placeholder="เลือกหรือพิมพ์ลักษณะผม">
           <datalist id="textureList"><option value="ผมตรง"></option><option value="ผมหยิก"></option><option value="ผมดัดลอน"></option><option value="ผมลอนธรรมชาติ"></option><option value="ผมลอนใหญ่"></option><option value="ผมลอนเล็ก"></option><option value="ผมหยักศก"></option></datalist></div>
         <div class="row3" style="margin-top:8px">
-          <div><label class="lbl">กรัม/มัด</label><input class="in" id="nvG" type="number" placeholder="50"></div>
-          <div><label class="lbl">ช่อ/มัด</label><input class="in" id="nvS" type="number" placeholder=""></div>
-          <div><label class="lbl">ราคาขาย/มัด</label><input class="in" id="nvPrice" type="number" placeholder="0"></div>
+          <div><label class="lbl">กรัม/QR</label><input class="in" id="nvG" type="number" placeholder="50"></div>
+          <div><label class="lbl">ช่อ/QR</label><input class="in" id="nvS" type="number" placeholder=""></div>
+          <div><label class="lbl">ราคาขายเปล่า/QR</label><input class="in" id="nvPrice" type="number" placeholder="0"></div>
         </div>
       </div>
 
@@ -205,22 +205,23 @@ button.is-busy,.is-busy{cursor:progress!important;opacity:.78}
 
       <div id="produceMode">
         <div class="row2" style="margin-top:12px">
-          <div><label class="lbl">ปั้นได้ (มัดเล็ก)</label><input class="in" id="pQty" type="number" min="1" placeholder="0" oninput="prev()"></div>
-          <div><label class="lbl">ต้นทุนผมดิบ/มัด (฿) · ผมเพียวๆ</label><input class="in" id="pRaw" type="number" placeholder="0" oninput="prev()"></div>
+          <div><label class="lbl">ปั้นได้ (QR)</label><input class="in" id="pQty" type="number" min="1" placeholder="0" oninput="prev()"></div>
+          <div><label class="lbl">ต้นทุนผมดิบ/QR (฿) · ผมเพียวๆ</label><input class="in" id="pRaw" type="number" placeholder="0" oninput="prev()"></div>
         </div>
         <div class="row2" style="margin-top:8px">
-          <div><label class="lbl">ค่าปั้นช่อ/มัด (฿)</label><input class="in" id="pLabor" type="number" placeholder="0" oninput="prev()"></div>
-          <div><label class="lbl">ค่าวัสดุ/มัด (฿)</label><input class="in" id="pMat" type="number" placeholder="0" oninput="prev()"></div>
+          <div><label class="lbl">ค่าปั้นช่อ/QR (฿)</label><input class="in" id="pLabor" type="number" placeholder="0" oninput="prev()"></div>
+          <div><label class="lbl">ค่าวัสดุตอนปั้น/QR (฿)</label><input class="in" id="pMat" type="number" placeholder="0" oninput="prev()"></div>
         </div>
-        <label class="lbl" style="margin-top:8px">จำนวนเสีย/สูญ (มัด · บันทึกไว้เฉยๆ)</label><input class="in" id="pWaste" type="number" placeholder="0">
+        <label class="lbl" style="margin-top:8px">ค่าขนส่งทั้งล็อต (฿) · ระบบเฉลี่ยลงต่อ QR ให้</label><input class="in" id="pShip" type="number" placeholder="0" oninput="prev()">
+        <label class="lbl" style="margin-top:8px">จำนวนเสีย/สูญ (QR · บันทึกไว้เฉยๆ)</label><input class="in" id="pWaste" type="number" placeholder="0">
       </div>
 
       <div id="buyMode" class="hide">
         <div class="row2" style="margin-top:12px">
-          <div><label class="lbl">จำนวน (มัดเล็ก)</label><input class="in" id="rQty" type="number" min="1" placeholder="0" oninput="prev()"></div>
-          <div><label class="lbl">ต้นทุน/มัด (฿) · ผมเพียวๆ</label><input class="in" id="rCost" type="number" placeholder="0" oninput="prev()"></div>
+          <div><label class="lbl">จำนวน (QR)</label><input class="in" id="rQty" type="number" min="1" placeholder="0" oninput="prev()"></div>
+          <div><label class="lbl">ต้นทุนผม/QR (฿) · ผมเพียวๆ</label><input class="in" id="rCost" type="number" placeholder="0" oninput="prev()"></div>
         </div>
-        <label class="lbl" style="margin-top:8px">ค่าใช้จ่ายเพิ่ม (ขนส่ง ฯลฯ)</label><input class="in" id="rExtra" type="number" placeholder="0" oninput="prev()">
+        <label class="lbl" style="margin-top:8px">ค่าขนส่งทั้งล็อต (฿) · ระบบเฉลี่ยลงต่อ QR ให้</label><input class="in" id="rExtra" type="number" placeholder="0" oninput="prev()">
       </div>
 
       <div class="row2" style="margin-top:8px">
@@ -230,6 +231,11 @@ button.is-busy,.is-busy{cursor:progress!important;opacity:.78}
       <input class="in" id="supNew" placeholder="+ ผู้ขายใหม่ (ถ้ายังไม่มีในรายการ)" style="margin-top:8px">
 
       <div class="prev" id="rPrev">กรอกข้อมูลเพื่อดูสรุป</div>
+      <div class="bkpick" style="margin-top:14px">
+        <div class="bkq">💰 ราคา <b>ค่าต่อ</b> พิเศษของล็อตนี้ <span class="mini" style="display:inline">(ไม่บังคับ)</span></div>
+        <div class="bkhint">ผมเกรดพิเศษที่คิดค่าต่อแพงกว่าปกติ ใส่ราคาต่อ 1 QR ที่นี่ได้เลย — <b>เว้นว่าง = ใช้ราคามาตรฐานตามความยาวจาก ServiceSizes เหมือนเดิม</b></div>
+        <input class="in" id="rAttach" type="number" placeholder="เว้นว่าง = ราคามาตรฐาน" style="margin:0">
+      </div>
       <div class="bkpick" id="bkPick">
         <div class="bkq">ล็อตนี้ให้ลูกค้า<b>จองออนไลน์</b>ได้หรือไม่ <span style="color:var(--crit)">*</span></div>
         <div class="bkhint" id="bkHint">ต้องเลือกก่อนรับเข้า — เลือกแล้วไม่ต้องมาเปิด-ปิดทีหลัง</div>
@@ -319,7 +325,7 @@ button.is-busy,.is-busy{cursor:progress!important;opacity:.78}
 /* ===== ตั้งค่า: ใส่ลิงก์ /exec ของโปรเจกต์ระบบใหม่ ===== */
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
 
-var BUILD='P43-RESTORE'; /* เวอร์ชันหน้าเว็บ — เทียบกับ APP.VERSION ของหลังบ้าน แสดงที่มุมบนขวา */
+var BUILD='P44-COST'; /* เวอร์ชันหน้าเว็บ — เทียบกับ APP.VERSION ของหลังบ้าน แสดงที่มุมบนขวา */
 var TOKEN='', DATA=null, BUSY=false, LAST=null;
 
 /* ---- สถานะ "กำลังทำงาน" ----
@@ -479,16 +485,27 @@ function applyProduceDefaults(){ if(MODE!=='produce')return;
   if(s){ var lab=Number(s.comb_cost_per_mad)||0, mat=Number(s.material_cost_per_mad)||0;
     pl.value=lab||''; pm.value=mat||''; pl.placeholder=lab||'0'; pm.placeholder=mat||'0'; } }
 
+/* สรุปต้นทุนแบบไล่ทีละก้อน ให้ตรงกับคอลัมน์ในชีต Batches เป๊ะ ๆ จะได้ตรวจทานกันได้ */
+function costRow(label,v,strong){ return '<div style="display:flex;justify-content:space-between;gap:12px"><span>'+label+'</span><span'+(strong?' style="color:var(--gold-soft);font-weight:600"':'')+'>'+fmt(Math.round(v*100)/100)+' ฿</span></div>'; }
 function prev(){ var box=document.getElementById('rPrev');
+  var ship=Number(document.getElementById(MODE==='produce'?'pShip':'rExtra').value)||0;
   if(MODE==='produce'){ var q=Number(document.getElementById('pQty').value)||0, raw=Number(document.getElementById('pRaw').value)||0,
-      lab=Number(document.getElementById('pLabor').value)||0, mat=Number(document.getElementById('pMat').value)||0, perMad=raw+lab+mat;
-    if(q>0&&perMad>0){ var total=Math.round(perMad*q);
-      box.innerHTML='ปั้นได้ <b>'+fmt(q)+'</b> มัด · ต้นทุน/มัด <b>'+fmt(Math.round(perMad*100)/100)+'</b> ฿ (ผม '+fmt(raw)+' + ปั้น '+fmt(lab)+(mat?(' + วัสดุ '+fmt(mat)):'')+') · ต้นทุนรวม <b>'+fmt(total)+'</b> ฿ · จะสร้าง QR <b>'+fmt(q)+'</b> ดวง';
-    } else box.innerHTML='กรอกจำนวนปั้นได้ + ต้นทุน/มัด เพื่อดูสรุป'; return; }
-  var qq=Number(document.getElementById('rQty').value)||0, c=Number(document.getElementById('rCost').value)||0, e=Number(document.getElementById('rExtra').value)||0;
-  if(qq>0&&c>0){ var t=Math.round(qq*c+e), ef=Math.round(t/qq*100)/100;
-    box.innerHTML='รับเข้า <b>'+fmt(qq)+'</b> มัด · ต้นทุนรวม <b>'+fmt(t)+'</b> ฿ · ต้นทุน/มัด (รวมค่าใช้จ่าย) <b>'+fmt(ef)+'</b> ฿ · จะสร้าง QR <b>'+fmt(qq)+'</b> ดวง';
-  } else box.innerHTML='กรอกจำนวน + ต้นทุนเพื่อดูสรุป'; }
+      lab=Number(document.getElementById('pLabor').value)||0, mat=Number(document.getElementById('pMat').value)||0;
+    if(q>0&&(raw+lab)>0){ var shq=Math.round(ship/q*100)/100, per=Math.round((raw+lab+mat+shq)*100)/100;
+      box.innerHTML='<div style="font-size:12.5px;line-height:1.75">'
+        +costRow('① ผมดิบล้วน /QR',raw)+costRow('② ค่าปั้นช่อ /QR',lab)+costRow('③ ค่าวัสดุตอนปั้น /QR',mat)+costRow('④ ค่าขนส่งเฉลี่ย /QR',shq)
+        +'<div style="border-top:1px solid var(--line);margin:5px 0"></div>'
+        +costRow('🟰 ต้นทุนรวม /QR',per,1)+costRow('ต้นทุนทั้งล็อต ('+fmt(q)+' QR)',Math.round(per*q),1)
+        +'<div style="color:var(--faint);margin-top:5px">จะสร้าง QR '+fmt(q)+' ดวง</div></div>';
+    } else box.innerHTML='กรอกจำนวนปั้นได้ + ต้นทุนผมดิบ/ค่าปั้นช่อ เพื่อดูสรุป'; return; }
+  var qq=Number(document.getElementById('rQty').value)||0, c=Number(document.getElementById('rCost').value)||0;
+  if(qq>0&&c>0){ var shq2=Math.round(ship/qq*100)/100, per2=Math.round((c+shq2)*100)/100;
+    box.innerHTML='<div style="font-size:12.5px;line-height:1.75">'
+      +costRow('① ผมสำเร็จ /QR',c)+costRow('④ ค่าขนส่งเฉลี่ย /QR',shq2)
+      +'<div style="border-top:1px solid var(--line);margin:5px 0"></div>'
+      +costRow('🟰 ต้นทุนรวม /QR',per2,1)+costRow('ต้นทุนทั้งล็อต ('+fmt(qq)+' QR)',Math.round(per2*qq),1)
+      +'<div style="color:var(--faint);margin-top:5px">ซื้อสำเร็จไม่มีค่าปั้นช่อ/ค่าวัสดุ · จะสร้าง QR '+fmt(qq)+' ดวง</div></div>';
+  } else box.innerHTML='กรอกจำนวน + ต้นทุนผม/QR เพื่อดูสรุป'; }
 
 /* ---- ล็อตนี้ให้จองออนไลน์ได้ไหม (P36-LOTFLAG) · บังคับเลือกก่อนรับเข้า ---- */
 var BOOKABLE=null;   /* ต้องเลือกเอง ไม่มีค่าเริ่มต้น */
@@ -503,7 +520,8 @@ function doReceive(){ if(BUSY)return;
     var bp=document.getElementById('bkPick'); if(bp) bp.scrollIntoView({behavior:'smooth',block:'center'});
     toast('เลือกก่อนว่าล็อตนี้ให้จองออนไลน์ได้หรือไม่',1); return; }
   var vSel=document.getElementById('vSel').value;
-  var base={ received_date:document.getElementById('rDate').value, supplier_id:document.getElementById('supSel').value, bookable:(BOOKABLE?'TRUE':'FALSE') };
+  var base={ received_date:document.getElementById('rDate').value, supplier_id:document.getElementById('supSel').value, bookable:(BOOKABLE?'TRUE':'FALSE'),
+    attach_price_per_qr:Number(document.getElementById('rAttach').value)||0 };   /* 0 = ใช้ราคามาตรฐานจาก ServiceSizes */
   if(vSel==='__NEW__'){ var ht=document.getElementById('nvType').value; if(!ht){ toast('เลือกประเภท/เทคนิค',1); return; }
     var gr=document.getElementById('nvGrade').value.trim(), tx=document.getElementById('nvTexture').value.trim();
     var nm=[ht,(document.getElementById('nvLen').value||'')+'นิ้ว',(gr?('เกรด '+gr):''),tx,document.getElementById('nvColor').value].filter(Boolean).join(' ');
@@ -515,17 +533,18 @@ function doReceive(){ if(BUSY)return;
   if(MODE==='produce'){ var q=Number(document.getElementById('pQty').value)||0, raw=Number(document.getElementById('pRaw').value)||0, lab=Number(document.getElementById('pLabor').value)||0;
     if(!q){ toast('ใส่จำนวนที่ปั้นได้',1); return; } if(!(raw+lab>0)){ toast('ใส่ต้นทุนผมดิบ/ค่าปั้นช่อ ต่อมัด',1); return; }
     action='produceStock'; payload=Object.assign(base,{ finished_qty:q, raw_per_mad:raw, labor_per_mad:lab,
-      material_per_mad:Number(document.getElementById('pMat').value)||0, waste_qty:Number(document.getElementById('pWaste').value)||0 });
+      material_per_mad:Number(document.getElementById('pMat').value)||0, waste_qty:Number(document.getElementById('pWaste').value)||0,
+      ship_cost:Number(document.getElementById('pShip').value)||0 });
   } else { var q2=Number(document.getElementById('rQty').value)||0, c=Number(document.getElementById('rCost').value)||0;
-    if(!q2||!c){ toast('กรอกจำนวนและต้นทุน/มัด',1); return; }
-    action='receiveStock'; payload=Object.assign(base,{ qty:q2, cost_per_mad:c, extra_cost:Number(document.getElementById('rExtra').value)||0 }); }
+    if(!q2||!c){ toast('กรอกจำนวนและต้นทุนผม/QR',1); return; }
+    action='receiveStock'; payload=Object.assign(base,{ qty:q2, cost_per_mad:c, ship_cost:Number(document.getElementById('rExtra').value)||0 }); }
 
   var newSup=document.getElementById('supNew').value.trim();
   BUSY=true; var b=document.getElementById('btnReceive'); b.disabled=true; b.innerHTML='⏳ กำลังบันทึก…';
   var go=function(){ api(action,payload).then(function(r){ BUSY=false; b.disabled=false; b.innerHTML='รับเข้า + สร้าง QR';
       if(!r||!r.ok){ toast(((r&&r.message)||'ไม่สำเร็จ')+' · หลังบ้าน '+(DATA&&DATA.version||'เก่า⚠️'),1); return; }
       LAST=r.data; renderLabels(r.data); toast((MODE==='produce'?'ผลิต ':'รับเข้า ')+fmt(r.data.count)+' มัด · Batch '+r.data.batch_id+' ✓');
-      ['rQty','rCost','rExtra','pQty','pRaw','pLabor','pMat','pWaste'].forEach(function(id){var e=document.getElementById(id); if(e)e.value='';}); prev();
+      ['rQty','rCost','rExtra','rAttach','pQty','pRaw','pLabor','pMat','pWaste','pShip'].forEach(function(id){var e=document.getElementById(id); if(e)e.value='';}); prev();
       /* รีเซ็ตตัวเลือกจองออนไลน์ → ล็อตถัดไปต้องเลือกใหม่ ไม่ติดค่าเดิมมาโดยไม่รู้ตัว */
       BOOKABLE=null; [].forEach.call(document.querySelectorAll('#bkPick .bkopt'),function(b){ b.classList.remove('on'); });
       var hint1=document.getElementById('bkHint'); if(hint1){ hint1.classList.remove('warn'); hint1.innerText='ต้องเลือกก่อนรับเข้า — เลือกแล้วไม่ต้องมาเปิด-ปิดทีหลัง'; }
