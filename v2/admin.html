@@ -222,6 +222,11 @@ textarea.in{min-height:70px;resize:vertical;font-size:12px;font-family:'IBM Plex
 .statchip{display:inline-flex;gap:6px;align-items:center;background:var(--bg2);border:1px solid var(--line);border-radius:999px;padding:7px 13px;font-size:13px;margin:0 6px 6px 0}
 .statchip b{color:var(--gold-soft)}
 
+/* ตัวเลือกเวลา 24 ชม. */
+.tsel{display:flex;align-items:center;gap:6px}
+.tsel select{width:auto;flex:1 1 0;min-width:0;margin:0;text-align:center}
+.tcolon{color:var(--muted);font-weight:600}
+.t24{font-size:10px;color:var(--faint);white-space:nowrap;letter-spacing:.04em}
 /* ตารางรายการเดินบัญชี */
 .ledg{border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .lgh,.lgr{display:grid;grid-template-columns:44px 74px 1fr auto;gap:8px;padding:8px 10px;align-items:baseline}
@@ -249,6 +254,24 @@ textarea.in{min-height:70px;resize:vertical;font-size:12px;font-family:'IBM Plex
 @keyframes spin{to{transform:rotate(360deg)}}
 button.is-busy,.is-busy{cursor:progress!important;opacity:.78}
 button:disabled{cursor:not-allowed}
+
+/* ---- กล่องตัวเลือก/ช่องกรอก บนแท็บเล็ตและมือถือ ----
+ * ปัญหาเดิม: select ใช้หน้าตาของระบบปฏิบัติการ ความสูงและลูกศรไม่ตรงกับที่กำหนดไว้
+ *   ทำให้กรอบเหลื่อมและข้อความทับลูกศร · และ iOS จะซูมหน้าจอเองถ้าตัวอักษรเล็กกว่า 16px
+ *   ตอนซูมทุกอย่างจึงดูเพี้ยน/ทับกัน */
+select.in,select{-webkit-appearance:none;-moz-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%238a8278' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 11px center;background-size:11px 7px;
+  padding-right:32px;max-width:100%;text-overflow:ellipsis;line-height:1.3}
+select.in::-ms-expand,select::-ms-expand{display:none}
+input.in,select.in,textarea.in,input,select,textarea{max-width:100%}
+input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-appearance:none;appearance:none;min-height:44px}
+@media(max-width:1024px){
+  .in,input.in,select.in,textarea.in,input,select,textarea{font-size:16px}
+  select.in,select{min-height:46px}
+  .row2{gap:10px}
+}
+@media(max-width:400px){ .row2{grid-template-columns:1fr} }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
@@ -347,7 +370,7 @@ button:disabled{cursor:not-allowed}
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P34-LEDGER'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P35-BOOKFIX'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='', SCHED=null, SETTINGS=null, TAB='dash', FULL=false, ROLE='', MYTECH='';
 var THD=['อา','จ','อ','พ','พฤ','ศ','ส'];
 /* ===== สถานะ "กำลังทำงาน" — ใช้ร่วมกันทุกหน้า (admin / pos / receive / Booking) =====
@@ -1220,9 +1243,12 @@ function renderSettings(){ var box=document.getElementById('setBody'); var gs={}
   var ICON={'ร้าน':'🏪','เวลาทำการ':'🕐','การชำระเงิน':'💳','มัดจำ':'💰','ค่ามือช่าง':'✂️','บัญชี':'📒','ฉลาก':'🏷️','ข้อความ':'💬','อื่นๆ':'📦','ระบบ':'🔒'};
   var h='<div class="card" style="margin-bottom:6px"><h2>⚙️ ตั้งค่าระบบ</h2><div class="mini" style="margin:0">แก้ไขได้จากที่นี่โดยไม่ต้องเปิด Google Sheet · กด "บันทึกการตั้งค่า" ด้านล่างเมื่อแก้เสร็จ</div></div>';
   /* ---- วิดเจ็ตเวลาทำการร้าน ---- */
-  var openT=setVal('openTime')||'10:00', closeT=setVal('closeTime')||'19:00';
+  /* แสดงค่าที่บันทึกไว้จริง ไม่ใช่ค่าเริ่มต้น — ถ้าเคยบันทึกแล้วต้องค้างให้ตรวจสอบได้ */
+  var openT=hhmm(setVal('openTime')), closeT=hhmm(setVal('closeTime'));
   h+='<div class="sect open"><div class="sect-h" onclick="toggleSect(this)"><span class="sect-t"><span class="ic">🕐</span>เวลาทำการร้าน</span><span class="chev">▾</span></div><div class="sect-b">'+
-    '<div class="row2"><div><label class="lbl">เวลาเปิด</label><input type="time" id="shOpen" class="in" value="'+esc(openT)+'"></div><div><label class="lbl">เวลาปิด</label><input type="time" id="shClose" class="in" value="'+esc(closeT)+'"></div></div>'+
+    '<div class="mini" style="margin:-2px 0 10px">ค่าที่บันทึกไว้ตอนนี้: <b style="color:var(--gold-soft)">'+(hhmm(setVal('openTime'))||'ยังไม่ได้ตั้ง')+' – '+(hhmm(setVal('closeTime'))||'ยังไม่ได้ตั้ง')+'</b>'+
+      ((hhmm(setVal('openTime'))&&hhmm(setVal('closeTime')))?'':' <span style="color:var(--warn)">· ถ้าไม่ตั้ง ระบบจะยึดตารางเวลาช่างรายคนแทน</span>')+'</div>'+
+    '<div class="row2"><div><label class="lbl">เวลาเปิด</label>'+timeSel('shOpen',openT)+'</div><div><label class="lbl">เวลาปิด</label>'+timeSel('shClose',closeT)+'</div></div>'+
     '<label class="lbl">วันหยุดประจำสัปดาห์</label><div class="wk" id="shWeekly"></div>'+
     '<label class="lbl">วันหยุดเฉพาะวัน (คั่น ,)</label><input class="in" id="shHoliday" value="'+esc(setVal('holidayDates'))+'" placeholder="YYYY-MM-DD,…">'+
     '<button class="btn" style="margin-top:12px" onclick="saveShop()">บันทึกเวลาทำการ</button></div></div>';
@@ -1230,16 +1256,37 @@ function renderSettings(){ var box=document.getElementById('setBody'); var gs={}
     gs[g].forEach(function(s){ var id='set_'+s.key;
       h+='<label class="lbl">'+esc(s.label)+(s.note?(' <span style="color:var(--faint)">· '+esc(s.note)+'</span>'):'')+'</label>';
       if(s.type==='long') h+='<textarea class="in" id="'+id+'" data-key="'+esc(s.key)+'"'+(s.ro?' readonly':'')+'>'+esc(s.value)+'</textarea>';
-      else h+='<input class="in" id="'+id+'" data-key="'+esc(s.key)+'" type="'+(s.type==='number'?'number':(s.type==='time'?'time':'text'))+'" value="'+esc(s.value)+'"'+(s.ro?' readonly style="opacity:.6"':'')+'>';
+      else if(s.type==='time'&&!s.ro) h+='<div data-key="'+esc(s.key)+'" data-time="'+id+'">'+timeSel(id,s.value)+'</div>';
+      else h+='<input class="in" id="'+id+'" data-key="'+esc(s.key)+'" type="'+(s.type==='number'?'number':'text')+'" value="'+esc(s.value)+'"'+(s.ro?' readonly style="opacity:.6"':'')+'>';
     }); h+='</div></div>'; });
   h+='<div class="savebar"><button class="btn" onclick="saveSettings()">💾 บันทึกการตั้งค่า</button></div>';
   box.innerHTML=h;
   /* ปุ่มวันหยุดประจำสัปดาห์ */
   var off=String(setVal('weeklyOff')||'').split(/[^0-9]+/).filter(String).map(Number);
   var wk=document.getElementById('shWeekly'); if(wk){ for(var i=0;i<7;i++){ (function(i){ var el=document.createElement('button'); el.type='button'; el.className='wkd'+(off.indexOf(i)>=0?' on':''); el.innerText=THD[i]; el.dataset.d=i; el.onclick=function(){el.classList.toggle('on');}; wk.appendChild(el); })(i); } } }
+/* ตัวเลือกเวลาแบบ 24 ชม. — ไม่ใช้ <input type="time"> เพราะเบราว์เซอร์บางเครื่องโชว์ AM/PM
+ * ตามภาษาเครื่อง ทำให้สับสนกับเวลาในชีตที่เป็น 24 ชม. · สองช่องนี้ให้ค่าเป็น "HH:MM" เสมอ */
+function hhmm(v){ v=String(v==null?'':v).trim(); var m=v.match(/(\d{1,2}):(\d{2})/); if(!m) return '';
+  return ('0'+(Number(m[1])%24)).slice(-2)+':'+m[2]; }
+function timeSel(id,val,step){ val=hhmm(val); step=step||5;
+  var hh=val?val.slice(0,2):'', mm=val?val.slice(3,5):'', o1='', o2='';
+  o1='<option value=""'+(hh?'':' selected')+'>--</option>';
+  for(var h=0;h<24;h++){ var hs=('0'+h).slice(-2); o1+='<option value="'+hs+'"'+(hs===hh?' selected':'')+'>'+hs+'</option>'; }
+  o2='<option value=""'+(mm?'':' selected')+'>--</option>';
+  for(var m2=0;m2<60;m2+=step){ var ms=('0'+m2).slice(-2); o2+='<option value="'+ms+'"'+(ms===mm?' selected':'')+'>'+ms+'</option>'; }
+  if(mm&&['00','05','10','15','20','25','30','35','40','45','50','55'].indexOf(mm)<0) o2+='<option value="'+mm+'" selected>'+mm+'</option>';
+  return '<div class="tsel" data-tid="'+id+'"><select class="in" id="'+id+'_h">'+o1+'</select>'+
+    '<span class="tcolon">:</span><select class="in" id="'+id+'_m">'+o2+'</select><span class="t24">24 ชม.</span></div>'; }
+function timeVal(id){ var h=(document.getElementById(id+'_h')||{}).value||'', m=(document.getElementById(id+'_m')||{}).value||'';
+  return (h&&m)?(h+':'+m):''; }
 function saveShop(){ var off=[]; [].forEach.call(document.getElementById('shWeekly').children,function(c){ if(c.classList.contains('on'))off.push(c.dataset.d); });
-  api('saveShopHours',{openTime:document.getElementById('shOpen').value,closeTime:document.getElementById('shClose').value,weeklyOff:off.join(','),holidayDates:document.getElementById('shHoliday').value.trim()}).then(function(r){ if(r&&r.ok){ toast('บันทึกเวลาทำการแล้ว'); loadSettings(); } else toast('บันทึกไม่สำเร็จ',1); }); }
-function saveSettings(){ var vals={}; [].forEach.call(document.querySelectorAll('#setBody [data-key]'),function(el){ if(el.readOnly)return; vals[el.getAttribute('data-key')]=el.value; });
+  var o=timeVal('shOpen'), c=timeVal('shClose');
+  if((o&&!c)||(!o&&c)){ toast('กรอกเวลาเปิดและเวลาปิดให้ครบ หรือเว้นว่างทั้งคู่',1); return; }
+  if(o&&c&&c<=o){ toast('เวลาปิดต้องหลังเวลาเปิด',1); return; }
+  api('saveShopHours',{openTime:o,closeTime:c,weeklyOff:off.join(','),holidayDates:document.getElementById('shHoliday').value.trim()}).then(function(r){ if(r&&r.ok){ toast('บันทึกเวลาทำการแล้ว'); loadSettings(); } else toast('บันทึกไม่สำเร็จ',1); }); }
+function saveSettings(){ var vals={}; [].forEach.call(document.querySelectorAll('#setBody [data-key]'),function(el){ if(el.readOnly)return;
+    var tid=el.getAttribute('data-time');
+    vals[el.getAttribute('data-key')] = tid ? timeVal(tid) : el.value; });
   api('saveSettings',{values:vals}).then(function(r){ if(r&&r.ok){ toast('บันทึกการตั้งค่าแล้ว ('+r.data.saved+' รายการ)'); } else toast((r&&r.message)||'บันทึกไม่สำเร็จ',1); }); }
 
 /* ---- จัดการผู้ใช้ ---- */

@@ -120,6 +120,24 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(17,16,16,.92);backdr
 @keyframes spin{to{transform:rotate(360deg)}}
 button.is-busy,.is-busy{cursor:progress!important;opacity:.78}
 button:disabled{cursor:not-allowed}
+
+/* ---- กล่องตัวเลือก/ช่องกรอก บนแท็บเล็ตและมือถือ ----
+ * ปัญหาเดิม: select ใช้หน้าตาของระบบปฏิบัติการ ความสูงและลูกศรไม่ตรงกับที่กำหนดไว้
+ *   ทำให้กรอบเหลื่อมและข้อความทับลูกศร · และ iOS จะซูมหน้าจอเองถ้าตัวอักษรเล็กกว่า 16px
+ *   ตอนซูมทุกอย่างจึงดูเพี้ยน/ทับกัน */
+select.in,select{-webkit-appearance:none;-moz-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%238a8278' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 11px center;background-size:11px 7px;
+  padding-right:32px;max-width:100%;text-overflow:ellipsis;line-height:1.3}
+select.in::-ms-expand,select::-ms-expand{display:none}
+input.in,select.in,textarea.in,input,select,textarea{max-width:100%}
+input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-appearance:none;appearance:none;min-height:44px}
+@media(max-width:1024px){
+  .in,input.in,select.in,textarea.in,input,select,textarea{font-size:16px}
+  select.in,select{min-height:46px}
+  .row2{gap:10px}
+}
+@media(max-width:400px){ .row2{grid-template-columns:1fr} }
 </style></head>
 <body>
 
@@ -215,8 +233,8 @@ button:disabled{cursor:not-allowed}
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P34-LEDGER'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
-var TOKEN='',DATA=null,FULL=false,CART=[],CAT='ขายผม',PAY='เงินสด',BUSY=false,RMAP={},USERTECH='';
+var BUILD='P35-BOOKFIX'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var TOKEN='',DATA=null,FULL=false,CART=[],CAT='ต่อผม',PAY='เงินสด',BUSY=false,RMAP={},USERTECH='';
 window._disc=0; window._recv=0; window._split=false; window._p2m='พร้อมเพย์'; window._p2a=0; window._slips=[];
 window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName='';
 /* ===== สถานะ "กำลังทำงาน" — ใช้ร่วมกันทุกหน้า (admin / pos / receive / Booking) =====
@@ -295,26 +313,43 @@ function laborFor(technique,sizeOrLen){ var zs=sizesFor(technique); if(!zs.lengt
 function sizeLabelFor(technique,len){ var zs=sizesFor(technique); var d=digits(len); var hit=zs.filter(function(z){return digits(z.size)===d;})[0]; return hit?hit.size:(len?(len+'นิ้ว'):''); }
 function commPerMad(technique){ if(!FULL)return 0; return (RMAP[String(technique).trim()]||{comm:0}).comm||0; }
 /* ---- categories ---- */
-var CATS=['ขายผม','ถอดผม','ขยับปม','สินค้าอื่นๆ'];
+/* "ต่อผม" = สแกนแล้วคิดราคาบริการต่อ มีช่าง มีค่ามือ
+ * "สินค้าอื่นๆ" = สแกนแล้วคิดราคาขายผมเปล่า ไม่ต้องระบุช่าง ไม่มีค่ามือ
+ * แยกให้ชัดตั้งแต่แท็บ จะได้ไม่เลือกโหมดผิดตอนปิดบิล */
+var CATS=['ต่อผม','ถอดผม','ขยับปม','สินค้าอื่นๆ'];
+var SCANMODE='ext';
 function buildCats(){ document.getElementById('cats').innerHTML=CATS.map(function(c){ return '<button class="cat'+(CAT===c?' on':'')+'" onclick="setCat(\''+c+'\')">'+esc(c)+'</button>'; }).join(''); }
-function setCat(c){ CAT=c; buildCats(); renderMenu(); }
+function setCat(c){ if(SCANNING)stopScan(); CAT=c; buildCats(); renderMenu(); }
+/* โฟกัสช่องรหัสทันที เครื่องยิงบาร์โค้ดจะยิงเข้าได้เลยโดยไม่ต้องแตะจอ */
+function afterMenu(){ var el=document.getElementById('manualCode');
+  if(el && !('ontouchstart' in window)) { try{ el.focus(); }catch(e){} } }
 function tile(icon,name,price,sub,onclick,disabled){ return '<button class="tile" '+(disabled?'disabled':('onclick="'+onclick+'"'))+'>'+(disabled?'':'<span class="add">＋</span>')+'<div class="ph">'+icon+'</div><div class="nm">'+esc(name)+'</div><div class="pr">'+price+'</div>'+(sub?('<div class="sub">'+sub+'</div>'):'')+'</button>'; }
 
+function scanBox(mode,title,sub){ SCANMODE=mode;
+  return '<div class="scanbox"><b style="font-weight:500">📷 '+title+'</b>'+
+    '<div class="mini" style="margin-top:4px">'+sub+'</div>'+
+    '<div style="display:flex;gap:8px;margin-top:10px">'+
+      '<input class="in" id="manualCode" inputmode="text" autocomplete="off" placeholder="ยิงเครื่องสแกน หรือพิมพ์รหัส QR" '+
+        'onkeydown="if(event.key===\'Enter\'){event.preventDefault();addManual();}" style="flex:1;margin:0">'+
+      '<button class="btn" style="width:auto;padding:0 16px;margin:0" onclick="addManual()">เพิ่ม</button></div>'+
+    '<button class="btn sec" id="scanBtn" style="margin-top:8px" onclick="toggleScan()">📷 เปิดกล้องสแกน</button>'+
+    '<div id="reader"></div>'+
+    '<div id="scanLog" class="mini" style="margin-top:8px"></div>'+
+    '</div>'; }
 function renderMenu(){ var box=document.getElementById('menuBody');
-  if(CAT==='ขายผม'){
-    var h='<div class="scanbox"><b style="font-weight:500">📷 สแกน / ค้นหา QR ผม</b>'+
-      '<div class="mini" style="margin-top:4px">1 QR = 50g (หน่วยขายเล็กสุด) · ระบบดึงประเภท/ขนาด/สี/ราคาให้อัตโนมัติ แล้วเลือก "ขายเปล่า" หรือ "ต่อผม"</div>'+
-      '<div id="reader"></div>'+
-      '<button class="btn sec" id="scanBtn" style="margin-top:10px" onclick="toggleScan()">เปิดกล้องสแกน</button>'+
-      '<label class="lbl" style="margin-top:12px">หรือพิมพ์/วางรหัส QR แล้วกดเพิ่ม</label>'+
-      '<div style="display:flex;gap:8px"><input class="in" id="manualCode" placeholder="เช่น H000001AB" onkeydown="if(event.key===\'Enter\')addManual()" style="flex:1"><button class="btn" style="width:auto;padding:0 18px" onclick="addManual()">เพิ่ม</button></div>'+
-      '</div>';
+  if(CAT==='ต่อผม'){
+    var h=scanBox('ext','สแกน QR ผม — เพื่อต่อผม',
+      'คิด <b>ราคาบริการต่อผม</b> · ต้องระบุช่าง · มีค่ามือช่าง<br>1 QR = 50g (หน่วยขายเล็กสุด)');
     h+='<div style="margin:6px 2px 8px"><b style="font-weight:500;font-size:14px">✂️ บริการต่อผม — ลูกค้าเอาผมมาเอง</b><div class="mini">ไม่ใช้สต็อกร้าน · ไม่ต้องสแกน · คิดค่าบริการ + ค่ามือช่าง</div></div>';
     h+='<div class="grid">'+(acctList().length?acctList().map(function(a){ var sv=svcByAcct(a); var p0=Math.round((Number(sv&&sv.byob_base)||0)+(Number(sv&&sv.byob_per_bundle)||0)); return tile('✂️', a, 'เริ่ม '+fmt(p0), '1 ชุด = '+qtyTag(a,1), "openLine('service','"+esc(a)+"')"); }).join(''):'<div class="empty" style="grid-column:1/-1">ยังไม่มีเทคนิคบริการ — ตรวจชีต Services คอลัมน์ active ต้องเป็น TRUE (หรือรัน fixActiveBlank ในตัวแก้ไข)</div>')+'</div>';
-    box.innerHTML=h; return;
+    box.innerHTML=h; afterMenu(); return;
   }
-  if(CAT==='สินค้าอื่นๆ'){ box.innerHTML='<div class="grid">'+tile('➕','รายการกำหนดเอง','ตั้งราคาเอง','',"openLine('custom','')")+'</div>'+
-    '<div class="mini" style="margin-top:12px">💡 ส่วนนี้สำหรับสินค้าที่ไม่ใช่ผมต่อ เช่น แชมพู / ทรีตเมนต์ / ผลิตภัณฑ์ดูแลผม — อนาคตเพิ่มเป็นรายการสำเร็จรูป มีราคา/สต็อก/บาร์โค้ดได้ (บอกได้เลยถ้าอยากให้ทำส่วนนี้ต่อ)</div>'; return; }
+  if(CAT==='สินค้าอื่นๆ'){
+    var h2=scanBox('plain','สแกน QR ผม — ขายผมเปล่า',
+      'คิด <b>ราคาขายผมเปล่า</b> · ไม่ต้องระบุช่าง · ไม่มีค่ามือช่าง');
+    h2+='<div class="grid">'+tile('➕','รายการกำหนดเอง','ตั้งราคาเอง','',"openLine('custom','')")+'</div>'+
+      '<div class="mini" style="margin-top:12px">💡 สินค้าที่ไม่ใช่ผม เช่น แชมพู / ทรีตเมนต์ — เพิ่มเป็นรายการกำหนดเองไปก่อนได้</div>';
+    box.innerHTML=h2; afterMenu(); return; }
   if(CAT==='ถอดผม'){ box.innerHTML='<div class="grid">'+((DATA.removals||[]).map(function(r){ return tile('🧴',String(r.name),fmt(r.price)+' ฿','',"openLine('removal','"+esc(r.removal_id)+"')"); }).join('')||'<div class="empty" style="grid-column:1/-1">ยังไม่มีงานถอด</div>')+'</div>'; return; }
   /* ขยับปม */
   box.innerHTML='<div class="grid">'+(DATA.services||[]).map(function(s){ return tile('💆', String(s.acct_name), fmt(s.move_price)+' ฿','',"openLine('move','"+esc(s.acct_name)+"')"); }).join('')+'</div>';
@@ -326,17 +361,27 @@ function toggleScan(){ if(SCANNING){ stopScan(); return; }
   if(typeof Html5Qrcode==='undefined'){ toast('ไลบรารีสแกนยังไม่พร้อม ลองพิมพ์รหัสแทน',1); return; }
   document.getElementById('reader').style.display='block'; document.getElementById('scanBtn').innerText='ปิดกล้อง';
   SCANNER=new Html5Qrcode('reader'); SCANNING=true;
-  SCANNER.start({facingMode:'environment'},{fps:10,qrbox:200},function(txt){ onScan(txt); },function(){}).catch(function(e){ SCANNING=false; document.getElementById('scanBtn').innerText='เปิดกล้องสแกน'; toast('เปิดกล้องไม่ได้ ('+e+') · พิมพ์รหัสแทนได้',1); }); }
+  SCANNER.start({facingMode:'environment'},{fps:15,qrbox:{width:260,height:260},aspectRatio:1.0},function(txt){ onScan(txt); },function(){}).catch(function(e){ SCANNING=false; document.getElementById('scanBtn').innerText='เปิดกล้องสแกน'; toast('เปิดกล้องไม่ได้ ('+e+') · พิมพ์รหัสแทนได้',1); }); }
 function stopScan(){ if(SCANNER&&SCANNING){ SCANNER.stop().then(function(){SCANNER.clear();}).catch(function(){}); } SCANNING=false; document.getElementById('reader').style.display='none'; var b=document.getElementById('scanBtn'); if(b)b.innerText='เปิดกล้องสแกน'; }
-var _lastScan=0;
-function onScan(code){ var now=Date.now(); if(now-_lastScan<1200)return; _lastScan=now; addScan(String(code).trim()); }
-function addManual(){ var el=document.getElementById('manualCode'); var c=el.value.trim(); if(!c)return; addScan(c); el.value=''; el.focus(); }
+var _lastScan=0, _lastCode='';
+function onScan(code){ code=String(code).trim(); var now=Date.now();
+  if(code===_lastCode && now-_lastScan<2500) return;   /* กันอ่านซ้ำตัวเดิมรัว ๆ */
+  if(now-_lastScan<600) return;
+  _lastScan=now; _lastCode=code; addScan(code); }
+function addManual(){ var el=document.getElementById('manualCode'); var c=el.value.trim(); if(!c)return; addScan(c); el.value=''; try{el.focus();}catch(e){} }
+function scanLog(msg,bad){ var el=document.getElementById('scanLog'); if(!el)return;
+  el.innerHTML='<span style="color:'+(bad?'var(--crit)':'var(--ok)')+'">'+msg+'</span>'; }
 function addScan(code){ if(!code)return;
-  if(CART.filter(function(l){return l.kind==='product'&&l.barcode===code;}).length){ toast('QR นี้อยู่ในบิลแล้ว',1); return; }
-  api('scanUnit',{barcode:code}).then(function(r){ if(!r||!r.ok){ toast((r&&r.message)||'สแกนไม่สำเร็จ',1); return; }
-    var d=r.data; if(d.status!=='available'){ toast('QR นี้ '+(d.status==='sold'?'ขายไปแล้ว':d.status)+' — ขายไม่ได้',1); return; }
+  if(CART.filter(function(l){return l.kind==='product'&&l.barcode===code;}).length){ scanLog('⚠ '+code+' อยู่ในบิลแล้ว',1); toast('QR นี้อยู่ในบิลแล้ว',1); return; }
+  scanLog('⟳ กำลังอ่าน '+code+'…');
+  api('scanUnit',{barcode:code}).then(function(r){ if(!r||!r.ok){ scanLog('✕ '+((r&&r.message)||'สแกนไม่สำเร็จ'),1); toast((r&&r.message)||'สแกนไม่สำเร็จ',1); return; }
+    var d=r.data;
+    /* คิวจองไม่ล็อกตัว QR แล้ว เหลือกันเฉพาะ sold/void ที่ขายไม่ได้จริง ๆ */
+    if(d.status!=='available'){ var why=(d.status==='sold'?'ขายไปแล้ว':(d.status==='void'?'ถูกยกเลิก':d.status));
+      scanLog('✕ '+code+' '+why+' — ขายไม่ได้',1); toast('QR นี้ '+why+' — ขายไม่ได้',1); return; }
+    scanLog('✓ '+esc(d.hair_type||d.name||'')+' '+esc(String(d.length_in||''))+'นิ้ว '+esc(d.color||''));
     openProductFromScan(d); if(navigator.vibrate)navigator.vibrate(40);
-  }).catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
+  }).catch(function(){ scanLog('✕ เชื่อมต่อไม่สำเร็จ',1); toast('เชื่อมต่อไม่สำเร็จ',1); }); }
 
 /* ===================================================================
  * PRODUCT POPUP (ขายผม จากสแกน) — ราคาเดียวตามเคส (เปล่า/ต่อ) · เทคนิคล็อกตามประเภทผม
@@ -346,7 +391,8 @@ function newProductBase(d){ var technique=techniqueFor(d.hair_type); var len=Str
   return { kind:'product', barcode:d.barcode, variant_id:d.variant_id, name:String(d.name||d.hair_type||''),
     hair_type:String(d.hair_type||''), length_in:len, color:String(d.color||''), grade:String(d.grade||''), texture:String(d.texture||''),
     plainPrice:Number(d.sell_price)||0, extPrice:laborFor(technique,len), cost:(d.cost!=null?Number(d.cost):null),
-    mode:'plain', technique:technique, size:sizeLabelFor(technique,len), techs:[{name:USERTECH||'',split:100}] }; }
+    mode:(SCANMODE==='plain'?'plain':'ext'), lockMode:true,
+    technique:technique, size:sizeLabelFor(technique,len), techs:[{name:USERTECH||'',split:100}] }; }
 function openProductFromScan(d){ LEDIT=null; LD=newProductBase(d); renderProduct(); openModal(); }
 function openProductEdit(i){ LEDIT=i; LD=JSON.parse(JSON.stringify(CART[i])); if(!LD.techs||!LD.techs.length)LD.techs=[{name:USERTECH||'',split:100}]; renderProduct(); openModal(); }
 function openModal(){ document.getElementById('lineModal').classList.add('show'); }
@@ -369,7 +415,9 @@ function renderProduct(){ var l=LD, ext=(l.mode==='ext'), multi=l.techs.length>1
      '<span class="pill">สี <b>'+esc(l.color||'ดำ')+'</b></span>'+
      '<span class="pill">รหัส <b>'+esc(l.barcode)+'</b></span>'+
      '</div>';
-  h+='<div class="seg"><button class="'+(!ext?'on':'')+'" onclick="pdMode(\'plain\')">ขายเปล่า</button><button class="'+(ext?'on':'')+'" onclick="pdMode(\'ext\')">✂️ ต่อผม (มีช่าง)</button></div>';
+  if(l.lockMode){ h+='<div class="lockpill" style="margin-bottom:10px">'+(ext?'✂️ ต่อผม — คิดค่าบริการ + ค่ามือช่าง':'🏷️ ขายผมเปล่า — ไม่มีช่าง ไม่มีค่ามือ')+
+      ' <span class="faint" style="font-size:12px">(ตามแท็บที่สแกน)</span></div>'; }
+  else h+='<div class="seg"><button class="'+(!ext?'on':'')+'" onclick="pdMode(\'plain\')">ขายเปล่า</button><button class="'+(ext?'on':'')+'" onclick="pdMode(\'ext\')">✂️ ต่อผม (มีช่าง)</button></div>';
   if(!ext){
     h+='<label class="lbl">ราคาขายเปล่า /QR (฿) <span class="faint" style="font-size:11px">· 1 QR = '+qtyTag(l.technique||l.hair_type,1)+'</span></label><input class="in" type="number" style="text-align:right;font-size:17px;margin-bottom:6px" value="'+l.plainPrice+'" oninput="LD.plainPrice=parseFloat(this.value)||0;pdRefreshTotal()">';
   } else {

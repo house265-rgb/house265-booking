@@ -76,6 +76,24 @@ td.r,th.r{text-align:right}
 @keyframes spin{to{transform:rotate(360deg)}}
 button.is-busy,.is-busy{cursor:progress!important;opacity:.78}
 button:disabled{cursor:not-allowed}
+
+/* ---- กล่องตัวเลือก/ช่องกรอก บนแท็บเล็ตและมือถือ ----
+ * ปัญหาเดิม: select ใช้หน้าตาของระบบปฏิบัติการ ความสูงและลูกศรไม่ตรงกับที่กำหนดไว้
+ *   ทำให้กรอบเหลื่อมและข้อความทับลูกศร · และ iOS จะซูมหน้าจอเองถ้าตัวอักษรเล็กกว่า 16px
+ *   ตอนซูมทุกอย่างจึงดูเพี้ยน/ทับกัน */
+select.in,select{-webkit-appearance:none;-moz-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%238a8278' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 11px center;background-size:11px 7px;
+  padding-right:32px;max-width:100%;text-overflow:ellipsis;line-height:1.3}
+select.in::-ms-expand,select::-ms-expand{display:none}
+input.in,select.in,textarea.in,input,select,textarea{max-width:100%}
+input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-appearance:none;appearance:none;min-height:44px}
+@media(max-width:1024px){
+  .in,input.in,select.in,textarea.in,input,select,textarea{font-size:16px}
+  select.in,select{min-height:46px}
+  .row2{gap:10px}
+}
+@media(max-width:400px){ .row2{grid-template-columns:1fr} }
 </style></head>
 <body>
 
