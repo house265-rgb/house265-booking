@@ -264,7 +264,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P45-AUDIT2'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P46-DEPOSIT'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='',DATA=null,FULL=false,CART=[],CAT='ต่อผม',PAY='เงินสด',BUSY=false,RMAP={},USERTECH='';
 window._disc=0; window._recv=0; window._split=false; window._p2m='พร้อมเพย์'; window._p2a=0; window._slips=[];
 window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName='';
@@ -936,7 +936,7 @@ function checkoutToCart(bk,v){ if(!bk)return;
   /* รายการหลัก */
   if(bk.variant_id){ var ht=(v&&v.hair_type)||'', len=String((v&&v.length_in)||bk.size||''), technique=techniqueFor(ht);
     var perMad=laborFor(technique,len)||0; if(!perMad && Number(bk.suggest_total)&&qty) perMad=Math.round(Number(bk.suggest_total)/qty);
-    QGUIDE.push({ type:'ต่อผม (ตัดสต็อก)', scan:true, line:{ kind:'product', variant_id:bk.variant_id, barcode:'', name:(v&&v.name)||('ต่อผม '+ht),
+    QGUIDE.push({ type:'ต่อผม (ใช้ผมของร้าน)', scan:true, line:{ kind:'product', variant_id:bk.variant_id, barcode:'', name:(v&&v.name)||('ต่อผม '+ht),
       hair_type:ht, length_in:len, color:(v&&v.color)||'', grade:(v&&v.grade)||'', texture:(v&&v.texture)||'', plainPrice:perMad, extPrice:perMad, cost:null,
       mode:'ext', technique:technique, size:sizeLabelFor(technique,len), techs:defTech.slice(), qty_mad:qty } });
   } else { var svc=svcById(bk.service_id)||svcByAcct(bk.detail)||{}; var it=svc.acct_name||bk.service_id||'บริการต่อผม';
@@ -945,7 +945,7 @@ function checkoutToCart(bk,v){ if(!bk)return;
   /* ซื้อผมเพิ่ม */
   if(bk.addon_variant_id){ var av=bk.addon_variant||{}, aq=Math.max(1,Math.round(Number(bk.addon_qty)||1)), aht=av.hair_type||'', alen=String(av.length_in||''), atech=techniqueFor(aht);
     var aprice=laborFor(atech,alen)||0;
-    QGUIDE.push({ type:'ซื้อผมเพิ่ม (ตัดสต็อก)', scan:true, line:{ kind:'product', variant_id:bk.addon_variant_id, barcode:'', name:(av.name||('ผมซื้อเพิ่ม '+aht)),
+    QGUIDE.push({ type:'ซื้อผมเพิ่ม (ใช้ผมของร้าน)', scan:true, line:{ kind:'product', variant_id:bk.addon_variant_id, barcode:'', name:(av.name||('ผมซื้อเพิ่ม '+aht)),
       hair_type:aht, length_in:alen, color:av.color||'', grade:av.grade||'', texture:av.texture||'', plainPrice:aprice, extPrice:aprice, cost:null,
       mode:'plain', technique:atech, size:sizeLabelFor(atech,alen), techs:defTech.slice(), qty_mad:aq } }); }
   /* ถอดผมเก่า */
@@ -958,7 +958,7 @@ function checkoutToCart(bk,v){ if(!bk)return;
   toast('ดึงคิวแล้ว · หยิบของจริง/สแกน QR ตามไกด์ไลน์ แล้วเลือกช่าง'); }
 /* ไกด์ไลน์ตามจอง (อ้างอิง) — โชว์เหนือบิล · กด "เพิ่ม" เพื่อนำลงบิล แล้วแก้/สแกนทับได้ */
 function guideSpec(g){ var l=g.line, p=[];
-  if(l.kind==='product'){ p.push(l.hair_type||l.name); p.push(g.scan?'ตัดสต็อก':'');
+  if(l.kind==='product'){ p.push(l.hair_type||l.name); p.push(g.scan?'ใช้ผมของร้าน · ต้องสแกน QR':'');
     if(l.length_in)p.push(l.length_in+'นิ้ว'); if(l.grade)p.push('เกรด '+l.grade); if(l.texture)p.push(l.texture); if(l.color)p.push('สี '+l.color);
     p.push(qtyTag(l.hair_type,Math.round(l.qty_mad||1))); }
   else if(l.kind==='removal'){ p.push(l.item); p.push(qtyTag(l.technique||l.item,l.qty||1)); }
