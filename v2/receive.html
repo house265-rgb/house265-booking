@@ -9,9 +9,12 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:'Kanit',sans-serif;font-weight:300;font-variant-numeric:tabular-nums}
 .mono{font-family:'IBM Plex Mono',monospace}
-header.top{position:sticky;top:0;z-index:20;background:rgba(17,16,16,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
-.brand b{font-weight:600;font-size:18px}.brand b .n{color:var(--gold-soft)}.brand .tag{font-family:'IBM Plex Mono';font-size:10px;letter-spacing:.3em;color:var(--gold);text-transform:uppercase;margin-left:8px}
-.who{display:flex;gap:8px;align-items:center}.chip{background:var(--surface2);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--muted)}
+header.top{position:sticky;top:0;z-index:20;background:rgba(17,16,16,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.brand{display:flex;flex-direction:column;line-height:1.1;min-width:0}
+.brand b{font-weight:600;font-size:18px;white-space:nowrap}.brand b .n{color:var(--gold-soft)}
+.brand .tag{font-family:'IBM Plex Mono';font-size:9.5px;letter-spacing:.08em;color:var(--gold);margin:2px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.who{display:flex;gap:8px;align-items:center;flex:0 0 auto}
+.chip{background:var(--surface2);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--muted);white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis}
 .lo{background:none;border:1px solid var(--line);color:var(--muted);border-radius:10px;padding:7px 11px;font-size:12px;cursor:pointer}
 .wrap{max-width:860px;margin:0 auto;padding:16px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px}
@@ -116,6 +119,21 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 #batchBox{overflow-x:auto;-webkit-overflow-scrolling:touch}
 #batchBox table{min-width:520px}
 #batchBox th,#batchBox td{white-space:nowrap}
+
+/* แท็บหน้า Receive — แยกส่วนไม่ให้ยาวเป็นพรืดหน้าเดียว */
+.tabbar{display:flex;gap:7px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 0 10px;margin-bottom:2px}
+.tb{flex:0 0 auto;padding:9px 15px;border-radius:999px;border:1px solid var(--line);background:var(--surface2,#1c1a18);
+  color:var(--muted);font-family:inherit;font-size:13.5px;cursor:pointer;white-space:nowrap}
+.tb.on{border-color:var(--gold,#b09036);background:var(--gold-ghost,rgba(176,144,54,.14));color:var(--gold-soft,#e0c580)}
+.pane.hide{display:none}
+/* ตัวกรองหลายมิติ */
+.fbar{display:flex;flex-wrap:wrap;gap:6px}
+.fg{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-right:10px}
+.fg>.fgl{font-size:10.5px;color:var(--faint);letter-spacing:.04em;margin-right:2px}
+.fchip{padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--muted);
+  font-family:inherit;font-size:12px;cursor:pointer;white-space:nowrap}
+.fchip.on{border-color:var(--gold,#b09036);background:var(--gold-ghost,rgba(176,144,54,.14));color:var(--gold-soft,#e0c580)}
+.daygrp{margin-top:12px;font-size:12px;color:var(--gold-soft);border-bottom:1px solid var(--line);padding-bottom:4px}
 </style></head>
 <body>
 
@@ -128,12 +146,19 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <div id="app" class="hide">
   <header class="top">
-    <div class="brand"><b>House<span class="n">265</span></b><span class="tag">รับผมเข้า</span></div>
-    <div class="who"><span class="mini" id="verBadge" style="opacity:.55;margin-right:2px"></span><span class="chip" id="uInfo">—</span><button class="lo" onclick="doLogout()">ออก</button></div>
+    <div class="brand"><b>House<span class="n">265</span></b><span class="tag" id="brandTag">รับผมเข้า</span></div>
+    <div class="who"><span class="chip" id="uInfo">—</span><button class="lo" onclick="doLogout()">ออก</button></div>
   </header>
   <div class="wrap">
+    <nav class="tabbar" id="tabbar">
+      <button class="tb on" data-p="recv" onclick="rcTab('recv')">📦 รับเข้า</button>
+      <button class="tb" data-p="label" onclick="rcTab('label')">🏷️ ฉลาก</button>
+      <button class="tb" data-p="stock" onclick="rcTab('stock')">📊 สต็อก</button>
+      <button class="tb" data-p="batch" onclick="rcTab('batch')">🧾 ล็อต</button>
+    </nav>
 
     <!-- รับเข้า -->
+    <div class="pane" id="pane-recv">
     <div class="card">
       <h2>📦 รับผมเข้า (สร้าง Batch + QR)</h2>
       <label class="lbl">รุ่นสินค้า (Variant)</label>
@@ -200,8 +225,10 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
       </div>
       <button class="btn" id="btnReceive" style="margin-top:12px" onclick="doReceive()">รับเข้า + สร้าง QR</button>
     </div>
+    </div>
 
     <!-- ผลลัพธ์ + ฉลาก -->
+    <div class="pane hide" id="pane-label">
     <div class="card hide" id="resultCard">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <h2 style="margin:0">🏷️ ฉลาก QR (<span id="lblCount">0</span> ดวง)</h2>
@@ -218,17 +245,30 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
       <div class="labels noprint" id="labelPreview"></div>
       <div id="printArea"><div class="labels" id="labels"></div></div>
     </div>
-
-    <!-- สต็อก -->
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><h2 style="margin:0">📊 สต็อกคงเหลือ</h2><button class="lo" onclick="loadStock()">รีเฟรช</button></div>
-      <div id="stockBox"><div class="mini">กำลังโหลด…</div></div>
+    <div class="card" id="noLabelYet"><div class="mini" style="margin:0">ยังไม่มีฉลากรอพิมพ์ — รับเข้าล็อตใหม่แล้วฉลากจะมาอยู่ที่แท็บนี้</div></div>
     </div>
 
-    <!-- batch ล่าสุด -->
+    <!-- สต็อก -->
+    <div class="pane hide" id="pane-stock">
     <div class="card">
-      <h2>🧾 Batch ล่าสุด</h2>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><h2 style="margin:0">📊 สต็อกคงเหลือ</h2><button class="lo" onclick="loadStock()">รีเฟรช</button></div>
+      <div class="fbar" id="stockFilter"></div>
+      <input class="in" id="stockQ" placeholder="ค้นหา ชื่อรุ่น / ความยาว / สี" oninput="renderStock()" style="margin:8px 0">
+      <div id="stockBox"><div class="mini">กำลังโหลด…</div></div>
+    </div>
+    </div>
+
+    <!-- ล็อต -->
+    <div class="pane hide" id="pane-batch">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><h2 style="margin:0">🧾 ล็อตที่รับเข้า</h2><button class="lo" onclick="loadBatches()">รีเฟรช</button></div>
+      <div class="row2">
+        <div><label class="lbl">ตั้งแต่</label><input type="date" class="in" id="bFrom" onchange="renderBatches()"></div>
+        <div><label class="lbl">ถึง</label><input type="date" class="in" id="bTo" onchange="renderBatches()"></div>
+      </div>
+      <div class="fbar" id="batchFilter" style="margin-top:8px"></div>
       <div id="batchBox"><div class="mini">กำลังโหลด…</div></div>
+    </div>
     </div>
 
   </div>
@@ -238,6 +278,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 <script>
 /* ===== ตั้งค่า: ใส่ลิงก์ /exec ของโปรเจกต์ระบบใหม่ ===== */
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
+var BUILD='P39-RECEIVE'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบนซ้าย ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 
 var TOKEN='', DATA=null, BUSY=false, LAST=null;
 /* ===== สถานะ "กำลังทำงาน" — ใช้ร่วมกันทุกหน้า (admin / pos / receive / Booking) =====
@@ -291,8 +332,15 @@ function boot(){ api('bootstrap',{}).then(function(r){
     if(!r||!r.ok){ if(r&&r.code==='AUTH'){ setTok(''); location.reload(); return; } toast((r&&r.message)||'โหลดไม่สำเร็จ',1); return; }
     DATA=r.data; if(!DATA.user.full){ document.body.innerHTML='<div style="padding:40px;text-align:center;color:#b3aa9c">หน้านี้สำหรับผู้จัดการ/เจ้าของเท่านั้น</div>'; return; }
     document.getElementById('app').classList.remove('hide');
-    document.getElementById('uInfo').innerText=(DATA.user.name||'')+' · '+(DATA.user.role==='owner'?'เจ้าของ':'ผู้จัดการ');
-    document.getElementById('verBadge').innerText='ระบบ '+(DATA.version||'เก่า⚠️');
+    /* ป้ายเวอร์ชันมุมบนซ้าย เหมือน POS/Admin — เขียว = หน้าเว็บกับเซิร์ฟเวอร์ตรงกัน */
+    (function(){ var srv=String(DATA.version||'-'), okv=(srv.indexOf(BUILD)>=0);
+      var who={owner:'เจ้าของร้าน',manager:'ผู้จัดการ',staff:'ช่าง'}[DATA.user.role]||'ผู้ใช้';
+      var el=document.getElementById('brandTag');
+      if(el){ el.innerHTML='รับเข้า · '+esc(who)+' · <span style="color:'+(okv?'var(--ok)':'var(--crit)')+'">'+esc(BUILD)+'</span>';
+        el.title='หน้าเว็บ '+BUILD+' · เซิร์ฟเวอร์ '+srv; }
+      try{ document.title='House265 · รับผมเข้า'; }catch(e){}
+      if(!okv) toast('⚠ เวอร์ชันไม่ตรงกัน — หน้าเว็บ '+BUILD+' · เซิร์ฟเวอร์ '+srv+' (ต้อง Deploy Core.gs เป็น New version)',1); })();
+    document.getElementById('uInfo').innerText=String(DATA.user.nickname||DATA.user.name||'ผู้ใช้');
     document.getElementById('rDate').value=(DATA.settings && DATA.settings.today)|| new Date().toISOString().slice(0,10);
     fillTypes(); fillColors(); loadVariants(); loadSuppliers(); loadStock(); loadBatches();
   }).catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
@@ -369,7 +417,9 @@ function doReceive(){ if(BUSY)return;
   BUSY=true; var b=document.getElementById('btnReceive'); b.disabled=true; b.innerHTML='⏳ กำลังบันทึก…';
   var go=function(){ api(action,payload).then(function(r){ BUSY=false; b.disabled=false; b.innerHTML='รับเข้า + สร้าง QR';
       if(!r||!r.ok){ toast(((r&&r.message)||'ไม่สำเร็จ')+' · หลังบ้าน '+(DATA&&DATA.version||'เก่า⚠️'),1); return; }
-      LAST=r.data; renderLabels(r.data); toast((MODE==='produce'?'ผลิต ':'รับเข้า ')+fmt(r.data.count)+' มัด · Batch '+r.data.batch_id+' ✓');
+      LAST=r.data; renderLabels(r.data);
+      var nl=document.getElementById('noLabelYet'); if(nl) nl.classList.add('hide');
+      rcTab('label');   /* ฉลากอยู่คนละแท็บแล้ว พาไปให้เลย ไม่ต้องเลื่อนหา */ toast((MODE==='produce'?'ผลิต ':'รับเข้า ')+fmt(r.data.count)+' มัด · Batch '+r.data.batch_id+' ✓');
       ['rQty','rCost','rExtra','pQty','pRaw','pLabor','pMat','pWaste'].forEach(function(id){var e=document.getElementById(id); if(e)e.value='';}); prev();
       /* ล้างตัวเลือกให้ล็อตถัดไปต้องเลือกใหม่ กันติดค่าจากล็อตก่อน */
       BOOKABLE=null; [].forEach.call(document.querySelectorAll('#bkPick .bkopt'),function(b){ b.classList.remove('on'); });
@@ -439,25 +489,88 @@ function printLabels(){
   }catch(e){ go(); }
 }
 
-function loadStock(){ api('stockSummary',{}).then(function(r){ if(!r||!r.ok)return; var v=r.data.variants||[];
-  if(!v.length){ document.getElementById('stockBox').innerHTML='<div class="mini">ยังไม่มีสินค้า</div>'; return; }
-  var h='<table><tr><th>รุ่น</th><th class="r">รับเข้ารวม/เหลือ</th><th class="r">พร้อมขาย</th><th class="r">จอง</th><th class="r">ขายแล้ว</th></tr>';
-  h+=v.map(function(x){return '<tr><td>'+esc(x.name)+'<div><span class="tag2">'+esc(x.hair_type||'')+'</span> '+esc(x.length_in||'')+'</div></td>'+
-    '<td class="r mono">'+fmt(x.remaining)+'</td><td class="r mono" style="color:var(--gold-soft)">'+fmt(x.available)+'</td><td class="r mono">'+fmt(x.reserved)+'</td><td class="r mono">'+fmt(x.sold)+'</td></tr>';}).join('');
-  document.getElementById('stockBox').innerHTML=h+'</table>'; }); }
+/* ---- แท็บ ---- */
+function rcTab(p){
+  [].forEach.call(document.querySelectorAll('#tabbar .tb'),function(b){ b.classList.toggle('on', b.getAttribute('data-p')===p); });
+  ['recv','label','stock','batch'].forEach(function(k){
+    var el=document.getElementById('pane-'+k); if(el) el.classList.toggle('hide', k!==p); });
+  if(p==='stock') renderStock(); if(p==='batch') renderBatches();
+  window.scrollTo({top:0,behavior:'smooth'}); }
+
+/* ---- สต็อก: ตัวกรองหลายมิติ (ประเภท / ความยาว / สี) + ค้นหา ---- */
+var STOCK=[], SF={type:'',len:'',color:''};
+function loadStock(){ api('stockSummary',{}).then(function(r){ if(!r||!r.ok)return;
+  STOCK=r.data.variants||[]; renderStock(); }); }
+function sfSet(k,v){ SF[k]=(SF[k]===v?'':v); renderStock(); }
+function uniq(arr){ var o={},out=[]; arr.forEach(function(x){ x=String(x==null?'':x).trim(); if(x&&!o[x]){o[x]=1;out.push(x);} }); return out; }
+function stockFiltered(){ var q=String((document.getElementById('stockQ')||{}).value||'').trim().toLowerCase();
+  return STOCK.filter(function(x){
+    if(SF.type && String(x.hair_type||'').trim()!==SF.type) return false;
+    if(SF.len && String(x.length_in||'').trim()!==SF.len) return false;
+    if(SF.color && String(x.color||'').trim()!==SF.color) return false;
+    if(q){ var hay=(x.name+' '+x.hair_type+' '+x.length_in+' '+x.color+' '+(x.grade||'')+' '+(x.texture||'')).toLowerCase();
+      if(hay.indexOf(q)<0) return false; }
+    return true; }); }
+function renderStock(){ var box=document.getElementById('stockBox'); if(!box) return;
+  var fb=document.getElementById('stockFilter');
+  if(fb){ var g=function(label,key,vals){ if(vals.length<2) return '';
+      return '<div class="fg"><span class="fgl">'+label+'</span>'+vals.map(function(v){
+        return '<button type="button" class="fchip'+(SF[key]===v?' on':'')+'" onclick="sfSet(\''+key+'\',\''+esc(String(v)).replace(/'/g,"\\'")+'\')">'+esc(String(v))+'</button>'; }).join('')+'</div>'; };
+    fb.innerHTML = g('ประเภท','type',uniq(STOCK.map(function(x){return x.hair_type;})))
+                 + g('ความยาว','len',uniq(STOCK.map(function(x){return x.length_in;})).sort(function(a,b){return Number(a)-Number(b);}))
+                 + g('สี','color',uniq(STOCK.map(function(x){return x.color;})))
+                 + ((SF.type||SF.len||SF.color)?'<button type="button" class="fchip" onclick="SF={type:\'\',len:\'\',color:\'\'};renderStock()">ล้างตัวกรอง</button>':''); }
+  var v=stockFiltered();
+  if(!v.length){ box.innerHTML='<div class="mini">'+(STOCK.length?'ไม่มีรุ่นตามเงื่อนไขนี้':'ยังไม่มีสินค้า')+'</div>'; return; }
+  var tA=0,tB=0,tR=0,tS=0;
+  v.forEach(function(x){ tA+=Number(x.available)||0; tB+=Number(x.bookable!=null?x.bookable:x.available)||0;
+    tR+=Number(x.reserved)||0; tS+=Number(x.sold)||0; });
+  var h='<div class="mini" style="margin-bottom:6px">'+v.length+' รุ่น · พร้อมขาย <b style="color:var(--gold-soft)">'+fmt(tA)+'</b> QR · จองออนไลน์ได้อีก <b>'+fmt(tB)+'</b> · คิวกันไว้ '+fmt(tR)+' · ขายแล้ว '+fmt(tS)+'</div>'+
+    '<div style="overflow-x:auto"><table style="min-width:540px"><tr><th>รุ่น</th><th class="r">รับเข้า/เหลือ</th><th class="r">พร้อมขาย</th><th class="r">จองออนไลน์ได้</th><th class="r">หน้าร้านเท่านั้น</th><th class="r">คิวกันไว้</th><th class="r">ขายแล้ว</th></tr>';
+  h+=v.map(function(x){ var bk=Number(x.bookable!=null?x.bookable:x.available)||0, so=Number(x.shopOnly)||0;
+    return '<tr><td>'+esc(x.name)+'<div><span class="tag2">'+esc(x.hair_type||'')+'</span> '+esc(x.length_in||'')+(x.color?(' · '+esc(x.color)):'')+'</div></td>'+
+    '<td class="r mono">'+fmt(x.remaining)+'</td><td class="r mono" style="color:var(--gold-soft)">'+fmt(x.available)+'</td>'+
+    '<td class="r mono">'+fmt(bk)+'</td><td class="r mono" style="color:var(--muted)">'+fmt(so)+'</td>'+
+    '<td class="r mono">'+fmt(x.reserved)+'</td><td class="r mono">'+fmt(x.sold)+'</td></tr>';}).join('');
+  box.innerHTML=h+'</table></div>'; }
 
 var BATCHES=[];
 function loadBatches(){ api('batchesList',{}).then(function(r){ if(!r||!r.ok)return; BATCHES=r.data.batches||[]; renderBatches(); }); }
-function renderBatches(){ var b=BATCHES;
-  if(!b.length){ document.getElementById('batchBox').innerHTML='<div class="mini">ยังไม่มี Batch</div>'; return; }
-  var h='<div class="mini" style="margin-bottom:6px">แตะปุ่มขวาสุดเพื่อเปิด/ปิดการจองออนไลน์ของล็อตนั้น — ใช้ตอนผมมาตรฐานหมดแล้วต้องปล่อยล็อตพิเศษให้จองชั่วคราว</div>'+
-    '<table><tr><th>Batch</th><th>รุ่น</th><th>วันที่</th><th class="r">รับ/เหลือ</th><th class="r">ต้นทุน/มัด</th><th class="r">จองออนไลน์</th></tr>';
-  h+=b.slice(0,30).map(function(x){ var on=(x.bookable!==false);
-    return '<tr><td class="mono">'+esc(x.batch_id)+'</td><td>'+esc(x.variant_name)+'</td><td>'+esc(x.received_date)+'</td>'+
-    '<td class="r mono">'+fmt(x.qty_received)+'/'+fmt(x.remaining)+'</td><td class="r mono">'+fmt(x.cost_per_mad)+'</td>'+
-    '<td class="r"><button type="button" class="bkflag'+(on?' on':'')+'" onclick="toggleBatchBookable(\''+esc(x.batch_id)+'\','+(on?0:1)+')">'+
-      (on?'✅ จองได้':'🏪 หน้าร้าน')+'</button></td></tr>';}).join('');
-  document.getElementById('batchBox').innerHTML=h+'</table>'; }
+var BF='';   /* ตัวกรองสถานะการจอง */
+function bfSet(v){ BF=(BF===v?'':v); renderBatches(); }
+function dOnly(v){ return String(v||'').slice(0,10); }
+function renderBatches(){ var box=document.getElementById('batchBox'); if(!box) return;
+  var from=String((document.getElementById('bFrom')||{}).value||''), to=String((document.getElementById('bTo')||{}).value||'');
+  var fb=document.getElementById('batchFilter');
+  if(fb) fb.innerHTML='<div class="fg"><span class="fgl">การจอง</span>'+
+    '<button type="button" class="fchip'+(BF==='on'?' on':'')+'" onclick="bfSet(\'on\')">✅ จองออนไลน์ได้</button>'+
+    '<button type="button" class="fchip'+(BF==='off'?' on':'')+'" onclick="bfSet(\'off\')">🏪 ขายหน้าร้านเท่านั้น</button></div>'+
+    ((from||to||BF)?'<button type="button" class="fchip" onclick="bClear()">ล้างตัวกรอง</button>':'');
+  var b=BATCHES.filter(function(x){ var d=dOnly(x.received_date);
+    if(from && d<from) return false; if(to && d>to) return false;
+    if(BF==='on' && x.bookable===false) return false;
+    if(BF==='off' && x.bookable!==false) return false;
+    return true; });
+  if(!b.length){ box.innerHTML='<div class="mini">'+(BATCHES.length?'ไม่มีล็อตตามเงื่อนไขนี้':'ยังไม่มีล็อต')+'</div>'; return; }
+  b=b.slice().sort(function(x,y){ return dOnly(y.received_date)<dOnly(x.received_date)?-1:1; });
+  /* จัดกลุ่มตามวันที่รับเข้า */
+  var grp={},order=[]; b.forEach(function(x){ var d=dOnly(x.received_date)||'(ไม่ระบุวัน)';
+    if(!grp[d]){grp[d]=[];order.push(d);} grp[d].push(x); });
+  var totQ=0,totC=0; b.forEach(function(x){ totQ+=Number(x.remaining)||0; totC+=(Number(x.remaining)||0)*(Number(x.cost_per_mad)||0); });
+  var h='<div class="mini" style="margin-bottom:4px">'+b.length+' ล็อต · เหลือรวม <b style="color:var(--gold-soft)">'+fmt(totQ)+'</b> QR · มูลค่าต้นทุนคงเหลือ <b>฿'+fmt(Math.round(totC))+'</b></div>'+
+    '<div class="mini" style="margin:0 0 6px">แตะปุ่มขวาสุดเพื่อเปิด/ปิดการจองออนไลน์ของล็อตนั้น — ใช้ตอนผมมาตรฐานหมดแล้วต้องปล่อยล็อตพิเศษให้จองชั่วคราว</div>';
+  order.forEach(function(d){
+    var qd=0; grp[d].forEach(function(x){ qd+=Number(x.remaining)||0; });
+    h+='<div class="daygrp">📅 '+esc(d)+' · '+grp[d].length+' ล็อต · เหลือ '+fmt(qd)+' QR</div>'+
+      '<div style="overflow-x:auto"><table style="min-width:520px"><tr><th>Batch</th><th>รุ่น</th><th class="r">รับ/เหลือ</th><th class="r">ต้นทุน/มัด</th><th class="r">จองออนไลน์</th></tr>'+
+      grp[d].map(function(x){ var on=(x.bookable!==false);
+        return '<tr><td class="mono">'+esc(x.batch_id)+'</td><td>'+esc(x.variant_name)+'</td>'+
+        '<td class="r mono">'+fmt(x.qty_received)+'/'+fmt(x.remaining)+'</td><td class="r mono">'+fmt(x.cost_per_mad)+'</td>'+
+        '<td class="r"><button type="button" class="bkflag'+(on?' on':'')+'" onclick="toggleBatchBookable(\''+esc(x.batch_id)+'\','+(on?0:1)+')">'+
+          (on?'✅ จองได้':'🏪 หน้าร้าน')+'</button></td></tr>';}).join('')+'</table></div>'; });
+  box.innerHTML=h; }
+function bClear(){ BF=''; var a=document.getElementById('bFrom'),c=document.getElementById('bTo');
+  if(a)a.value=''; if(c)c.value=''; renderBatches(); }
 function toggleBatchBookable(id,to){
   api('setBatchBookable',{batch_id:id,bookable:(to?'TRUE':'FALSE')}).then(function(r){
     if(!r||!r.ok){ toast((r&&r.message)||'เปลี่ยนไม่สำเร็จ',1); return; }
