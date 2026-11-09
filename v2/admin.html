@@ -435,7 +435,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P48-LIFF'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P49-NOSHOW'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='', SCHED=null, SETTINGS=null, TAB='dash', FULL=false, ROLE='', MYTECH='';
 var THD=['อา','จ','อ','พ','พฤ','ศ','ส'];
 /* ===== สถานะ "กำลังทำงาน" — ใช้ร่วมกันทุกหน้า (admin / pos / receive / Booking) =====
@@ -1166,8 +1166,13 @@ function qBk(b){ var parts=[];
     '<div class="bd">'+spec+'</div>'+
     '<div class="bd">📞 '+esc(b.phone||'-')+' · มัดจำ '+fmt(b.deposit)+' ฿ · ยอด '+fmt(b.suggest_total)+' ฿</div>'+
     (Number(b.reschedule_count)>0?('<div class="bd" style="color:var(--warn)">🔁 เลื่อนมาแล้ว '+Number(b.reschedule_count)+' ครั้ง</div>'):'')+
+    /* ผิดนัด: ผู้จัดการยกเลิกให้ได้ ถ้าพนักงานกดผิดคิวหรือลูกค้ามาสาย */
+    (b.status==='ไม่มาตามนัด'
+      ?('<div class="bd" style="color:var(--crit);margin-top:6px">🚫 บันทึกว่าลูกค้าผิดนัดแล้ว</div>'+
+        '<button type="button" class="btn sec" style="margin-top:6px;width:auto;padding:7px 14px;font-size:13px" onclick="openUndoNoShow(\''+esc(b.booking_id)+'\')">↩ ยกเลิกผิดนัด</button>')
+      :'')+
     /* คิวที่จบแล้วเลื่อนไม่ได้ — เดิมปุ่มหายไปเฉย ๆ ทำให้เข้าใจว่าฟังก์ชันพัง ตอนนี้บอกเหตุผลไว้ */
-    ((b.status==='ยกเลิก'||b.status==='เช็คเอาต์')
+    ((b.status==='ยกเลิก'||b.status==='เช็คเอาต์'||b.status==='ไม่มาตามนัด')
       ?('<div class="bd" style="color:var(--faint);margin-top:6px">🔒 '+(b.status==='เช็คเอาต์'?'เช็คเอาต์แล้ว':'ยกเลิกแล้ว')+' — เลื่อนคิวไม่ได้</div>'):
       ('<div style="margin-top:7px"><button class="btn sec" style="width:auto;padding:5px 12px;font-size:12px" onclick="openResched(\''+esc(b.booking_id)+'\')">🔁 เลื่อนคิว</button></div>'))+
     '</div></div>'; }
@@ -1176,6 +1181,17 @@ function qBk(b){ var parts=[];
  * ใช้แถวคิวเดิม มัดจำและสลิปโอนเงินเดิมจึงติดไปด้วย ไม่ต้องให้ลูกค้าโอนใหม่
  * ลูกค้าเลื่อนเองไม่ได้ ต้องโทรมาให้ร้านเลื่อนให้ (หน้าจองไม่มีปุ่มนี้) */
 var RS=null;
+/* ยกเลิกผิดนัด — เฉพาะเจ้าของ/ผู้จัดการ · ไม่ลบของเก่า ออกบิลกลับรายการให้ตรวจย้อนหลังได้ */
+function openUndoNoShow(id){
+  var reason=prompt('ยกเลิกผิดนัดของคิว '+id+'\n\nระบบจะออกบิลกลับรายการ ยกเลิกค่าคอมที่ยังไม่จ่าย และคืนสถานะคิว\nบิลเดิมจะไม่ถูกลบ เพื่อให้ตรวจย้อนหลังได้\n\nเหตุผล:');
+  if(reason===null) return;
+  reason=String(reason).trim();
+  if(!reason){ toast('ต้องใส่เหตุผล',1); return; }
+  api('undoNoShow',{booking_id:id,reason:reason}).then(function(r){
+    if(!r||!r.ok){ toast((r&&r.message)||'ยกเลิกไม่สำเร็จ',1); return; }
+    toast('ยกเลิกผิดนัดแล้ว · ยกเลิกค่าคอม '+r.data.commissions_cancelled+' รายการ');
+    loadQueue();
+  }).catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
 function openResched(id){ RS={id:id,booking:null,date:'',start:'',tech:'',slots:[],loading:true};
   document.getElementById('reschedModal').classList.add('show'); renderResched();
   api('bookingDetail',{booking_id:id}).then(function(r){
