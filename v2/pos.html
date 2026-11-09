@@ -264,8 +264,8 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P49-NOSHOW'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
-var TOKEN='',DATA=null,FULL=false,CART=[],CAT='ต่อผม',PAY='เงินสด',BUSY=false,RMAP={},USERTECH='';
+var BUILD='P50-ONECOMM'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var TOKEN='',DATA=null,FULL=false,CART=[],CAT='ต่อผม',PAY='เงินสด',BUSY=false,USERTECH='';
 window._disc=0; window._recv=0; window._split=false; window._p2m='พร้อมเพย์'; window._p2a=0; window._slips=[];
 window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName='';
 /* ===== สถานะ "กำลังทำงาน" — ใช้ร่วมกันทุกหน้า (admin / pos / receive / Booking) =====
@@ -322,7 +322,6 @@ function boot(){ api('bootstrap',{}).then(function(r){ if(!r||!r.ok){ if(r&&r.co
     document.getElementById('app').classList.remove('hide');
     document.getElementById('uInfo').innerText=(DATA.user.name||'')+' · '+(DATA.user.role==='owner'?'เจ้าของ':DATA.user.role==='manager'?'ผู้จัดการ':'ช่าง');
     document.getElementById('navToday').style.display=FULL?'flex':'none';
-    (DATA.rates||[]).forEach(function(x){ RMAP[String(x.ref).trim()]={equip:Number(x.equip_per_mad)||0,comm:Number(x.comm_per_mad)||0}; });
     var me=(DATA.technicians||[]).filter(function(t){return String(t.tech_id)===String(DATA.user.tech_id);})[0]; USERTECH=me?me.name:'';
     buildCats(); renderMenu(); renderCart();
   }).catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
@@ -342,7 +341,26 @@ function acctList(){ return (DATA.services||[]).map(function(s){return String(s.
 function techniqueFor(ht){ ht=String(ht||''); var al=acctList(); if(al.indexOf(ht)>=0)return ht; var hit=al.filter(function(a){return a.indexOf(ht)>=0||ht.indexOf(a)>=0;})[0]; return hit||ht; }
 function laborFor(technique,sizeOrLen){ var zs=sizesFor(technique); if(!zs.length)return 0; var d=digits(sizeOrLen); var hit=zs.filter(function(z){return digits(z.size)===d;})[0]; return hit?hit.price:(zs[0].price||0); }
 function sizeLabelFor(technique,len){ var zs=sizesFor(technique); var d=digits(len); var hit=zs.filter(function(z){return digits(z.size)===d;})[0]; return hit?hit.size:(len?(len+'นิ้ว'):''); }
-function commPerMad(technique){ if(!FULL)return 0; return (RMAP[String(technique).trim()]||{comm:0}).comm||0; }
+/* ---- ค่ามือช่าง: ถามเซิร์ฟเวอร์เสมอ ----
+ * สูตรเดียวอยู่ที่ Core.gs → lineLabor_ (ตัวเดียวกับที่ใช้บันทึกบิลจริง)
+ * ⛔ ห้ามคำนวณค่ามือ/ค่าอุปกรณ์ฝั่งหน้าเว็บ — เลขที่ผู้จัดการเห็นต้องเป็นเลขเดียวกับที่บันทึก */
+var CQ={seq:0,tmr:null,cache:{}};
+function cqKey(t,i,q){ return String(t||'')+'|'+String(i||'')+'|'+Math.max(1,Math.round(Number(q)||1)); }
+function commBoxHtml(t,i,q,hint){ var k=cqKey(t,i,q), c=CQ.cache[k];
+  return '<div class="mini" id="commBox" data-k="'+esc(k)+'" data-h="'+esc(hint||'')+'"><b>ค่ามือช่าง:</b> '+
+    (c==null?'<span class="faint">กำลังคิด…</span>':(fmt(c)+(hint||'')))+'</div>'; }
+function commPaint(k){ var e=document.getElementById('commBox'); if(!e||e.getAttribute('data-k')!==k)return;
+  var c=CQ.cache[k]; if(c==null)return;
+  e.innerHTML='<b>ค่ามือช่าง:</b> '+fmt(c)+(e.getAttribute('data-h')||''); }
+function commAsk(t,i,q){ if(!FULL)return; var k=cqKey(t,i,q);
+  if(CQ.cache[k]!=null){ commPaint(k); return; }
+  clearTimeout(CQ.tmr);
+  CQ.tmr=setTimeout(function(){ var s=++CQ.seq;      /* กันคำตอบเก่ามาช้าแล้วทับของใหม่ */
+    api('lineQuote',{line_type:t,item:i,qty:Math.max(1,Math.round(Number(q)||1)),seq:s}).then(function(j){
+      if(!j||!j.ok||!j.data)return; if(Number(j.data.seq)!==CQ.seq)return;
+      CQ.cache[k]=Math.round(Number(j.data.comm)||0); commPaint(k);
+    }).catch(function(){ var e=document.getElementById('commBox');
+      if(e&&e.getAttribute('data-k')===k)e.innerHTML='<b>ค่ามือช่าง:</b> <span class="faint">เชื่อมต่อไม่ได้</span>'; }); },180); }
 /* ---- categories ---- */
 /* "ต่อผม" = สแกนแล้วคิดราคาบริการต่อ มีช่าง มีค่ามือ
  * "สินค้าอื่นๆ" = สแกนแล้วคิดราคาขายผมเปล่า ไม่ต้องระบุช่าง ไม่มีค่ามือ
@@ -481,12 +499,13 @@ function renderProduct(){ var l=LD, ext=(l.mode==='ext'), multi=l.techs.length>1
     h+='<button class="btn sec" style="width:auto;padding:6px 12px;font-size:12px;margin:2px 0 10px" onclick="pdAddTech()">+ เพิ่มช่างร่วม</button>';
   }
   h+='<div class="tot grand" style="font-size:15px"><span>'+(ext?'ราคาขายต่อผม':'ราคาขายเปล่า')+(pdQ()>1?(' <span class="faint" style="font-size:12px">× '+pdQ()+' QR ('+qtyTag(l.technique||l.hair_type,pdQ())+')</span>'):'')+'</span><b id="pdTot" style="font-size:20px">'+fmt(pdTotal())+'</b></div>';
-  if(FULL && ext){ var comm=Math.round(commPerMad(l.technique));
-    h+='<div class="mini"><b>ค่ามือช่าง:</b> '+fmt(comm)+'</div>'; }
+  var cqT='product_ext', cqI=(l.technique||l.hair_type||''), cqQ=pdQ();
+  if(FULL && ext) h+=commBoxHtml(cqT,cqI,cqQ,'');
   h+='<div style="margin-top:12px"><label class="lbl">ส่วนลดพิเศษเฉพาะรายการนี้ (฿)</label><input class="in" type="number" id="lmDisc" value="'+(Number(l.disc)||'')+'" placeholder="0 (เว้นว่าง=ไม่ลด)"></div>';
   h+='<div class="row2" style="margin-top:16px"><button class="btn sec" onclick="closeLine()">ยกเลิก</button><button class="btn" onclick="confirmProduct()">'+(LEDIT!=null?'บันทึก':'＋ เพิ่มลงบิล')+'</button></div>';
   document.getElementById('lmBody').innerHTML=h;
   document.getElementById('lmTitle').innerText=(LEDIT!=null?'แก้ไขรายการ':esc(l.name||'ขายผม'));
+  if(FULL && ext) commAsk(cqT,cqI,cqQ);
 }
 function pdRefreshTotal(){ var e=document.getElementById('pdTot'); if(e)e.innerText=fmt(pdTotal()); }
 function confirmProduct(){ var l=LD; var price=pdTotal(); if(!(price>0)){ toast('ใส่ราคา',1); return; }
@@ -519,11 +538,8 @@ function lmRmTech(i){ LD.techs.splice(i,1); if(!LD.techs.length)LD.techs=[{name:
 function lmName(i,v){ LD.techs[i].name=v; }
 function lmSplit(i,v){ LD.techs[i].split=v; renderLine(); }
 function lmEven(){ var n=LD.techs.length; if(n<=1){if(n)LD.techs[0].split=100;return;} var b=Math.floor(100/n); LD.techs.forEach(function(t,k){t.split=b+(k===0?(100-b*n):0);}); }
-function lineComm(item,type,qty){ if(!FULL)return 0; qty=Math.max(1,qty||1);
-  if(type==='removal') return (RMAP[String(item).trim()]||{comm:0}).comm||0; /* เหมาต่อหัว */
-  if(type==='move'){ var t=String(item).replace('ขยับปม',''); var a=RMAP[t]||{comm:0}, b=RMAP['ถอด'+t]||{comm:0}; return (a.comm||0)*qty + (b.comm||0); /* ต่อ=ต่อ QR · ถอด=เหมา */ }
-  return ((RMAP[String(item).trim()]||{comm:0}).comm||0)*qty; }
 function renderLine(){ var l=LD, multi=l.techs.length>1, sum=lmSum(); var h='';
+  var cqHint=(l.kind==='move'?' <span class="faint">(ต่อ×จำนวน + ถอดเหมา)</span>':(l.kind==='removal'?' <span class="faint">(เหมา)</span>':''));
   if(l.kind==='custom'){ h+='<label class="lbl">ชื่อรายการ</label><input class="in" value="'+esc(l.item)+'" oninput="LD.item=this.value" placeholder="เช่น แชมพู / ทรีตเมนต์" style="margin-bottom:11px">'; }
   var qtyBlock='';
   if(l.kind==='removal'){ qtyBlock='<div style="flex:0 0 auto"><label class="lbl">งานถอด</label><div class="lockpill" style="margin:0">🧴 ราคาเหมา (ไม่คิดตามจำนวน)</div></div>'; }
@@ -533,11 +549,11 @@ function renderLine(){ var l=LD, multi=l.techs.length>1, sum=lmSum(); var h='';
   h+='<label class="lbl">ช่างที่ทำ'+(multi?(' · รวม '+sum+'%'+(Math.round(sum)!==100?' ⚠':'')):'')+'</label>';
   h+=l.techs.map(function(t,i){ return '<div class="tw"><select class="in" style="flex:1" onchange="lmName('+i+',this.value)">'+techOpts(t.name)+'</select>'+(multi?('<input class="in" type="number" style="width:56px;text-align:center" value="'+(t.split||0)+'" onchange="lmSplit('+i+',parseFloat(this.value)||0)"><span class="faint">%</span><button class="x" onclick="lmRmTech('+i+')">✕</button>'):'')+'</div>'; }).join('');
   h+='<button class="btn sec" style="width:auto;padding:6px 12px;font-size:12px;margin:2px 0 10px" onclick="lmAddTech()">+ เพิ่มช่างร่วม</button>';
-  if(FULL){ var comm=Math.round(lineComm(l.item,l.kind,l.qty));
-    h+='<div class="mini"><b>ค่ามือช่าง:</b> '+fmt(comm)+(l.kind==='move'?' <span class="faint">(ต่อ×จำนวน + ถอดเหมา)</span>':(l.kind==='removal'?' <span class="faint">(เหมา)</span>':''))+'</div>'; }
+  if(FULL) h+=commBoxHtml(l.kind,l.item,l.qty,cqHint);
   h+='<div style="margin-top:12px"><label class="lbl">ส่วนลดพิเศษเฉพาะรายการนี้ (฿)</label><input class="in" type="number" id="lmDisc" value="'+(Number(l.disc)||'')+'" placeholder="0 (เว้นว่าง=ไม่ลด)"></div>';
   h+='<div class="row2" style="margin-top:16px"><button class="btn sec" onclick="closeLine()">ยกเลิก</button><button class="btn" onclick="confirmLine()">'+(LEDIT!=null?'บันทึก':'＋ เพิ่มลงบิล')+'</button></div>';
-  document.getElementById('lmBody').innerHTML=h; document.getElementById('lmTitle').innerText=(LEDIT!=null?'แก้ไขรายการ':esc(l.item||'รายการ')); }
+  document.getElementById('lmBody').innerHTML=h; document.getElementById('lmTitle').innerText=(LEDIT!=null?'แก้ไขรายการ':esc(l.item||'รายการ'));
+  if(FULL) commAsk(l.kind,l.item,l.qty); }
 function confirmLine(){ var l=LD; if(!l.item){ toast('กรอกชื่อรายการ',1); return; } if(!(Number(l.price)>0)){ toast('ใส่ราคา',1); return; }
   var tc=l.techs.filter(function(t){return t.name;}); if(tc.length>1&&Math.round(lmSum())!==100){ toast('สัดส่วนช่างต้องรวม 100%',1); return; }
   l.disc=Number((document.getElementById('lmDisc')||{}).value)||0;
