@@ -585,7 +585,7 @@ function cartDue(){ return Math.max(0, cartSub()-(window._disc||0)-cartDeposit()
 function pnorm(s){ return String(s==null?'':s).trim(); }
 function lineAttrs(l){ if(l.kind==='product') return { technique:l.hair_type||'', size:l.length_in||'', grade:l.grade||'', texture:l.texture||'', color:l.color||'', qty:prodQty(l), techs:(l.techs||[]).map(function(t){return t.name;}).filter(Boolean), amount:lineTotal(l) };
   return { technique:String(l.item||'').replace('ขยับปม',''), size:l.size||'', grade:'', texture:'', color:'', qty:(Number(l.qty)||1), techs:(l.techs||[]).map(function(t){return t.name;}).filter(Boolean), amount:lineTotal(l) }; }
-/* min_bundle = จำนวน "มัด" (มัดเต็ม 100g = 2 QR) · a.qty = จำนวน QR → มัด = QR×0.5 · ตรวจรวมทั้งบิล ไม่ใช่รายบรรทัด */
+/* min_qr = ขั้นต่ำเป็นจำนวน QR เหมือนทุกอย่างในระบบ (1 มัดใหญ่ = 2 QR) · ตรวจรวมทั้งบิล ไม่ใช่รายบรรทัด */
 function promoMatch(p,a){ if(p.tech&&a.techs.indexOf(p.tech)<0)return false;
   if(p.technique&&pnorm(a.technique)!==pnorm(p.technique))return false;
   if(p.size&&digits(a.size)!==digits(p.size))return false;
@@ -597,7 +597,7 @@ function promoDiscount(p){ var attrs=CART.map(lineAttrs);
   var hasCond=p.tech||p.technique||p.size||p.grade||p.color||p.texture;
   var match=hasCond?attrs.filter(function(a){return promoMatch(p,a);}):attrs; if(!match.length)return 0;
   var qty=match.reduce(function(s,a){return s+a.qty;},0); /* รวม QR ของรายการที่เข้าเงื่อนไข */
-  if(p.min_bundle){ var mad=qty*0.5; if(mad < Number(p.min_bundle)) return 0; } /* ต้องครบจำนวนมัดขั้นต่ำก่อน */
+  if(p.min_qr && qty < Number(p.min_qr)) return 0;   /* ขั้นต่ำนับเป็น QR (1 มัดใหญ่ = 2 QR) */
   var base=match.reduce(function(s,a){return s+a.amount;},0), disc=0;
   if(p.type==='percent')disc=Math.round(base*p.value/100); else disc=(p.per==='mad')?Math.round(p.value*qty):Math.round(p.value);
   return Math.min(disc, cartSub()); }

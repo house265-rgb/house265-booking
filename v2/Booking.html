@@ -955,7 +955,8 @@ function promoMatchBk(p){ var a=bkSelAttrs();
   if(p.grade && pnorm(p.grade)!==pnorm(a.grade))return false;
   if(p.color && pnorm(p.color)!==pnorm(a.color))return false;
   if(p.texture && pnorm(p.texture)!==pnorm(a.texture))return false;
-  if(p.min_bundle && a.qty<p.min_bundle)return false;
+  /* ขั้นต่ำนับเป็น QR เหมือนทุกอย่างในระบบ (1 มัดใหญ่ = 2 QR) · ห้ามแปลงหน่วยก่อนเทียบ */
+  if(p.min_qr && a.qty<Number(p.min_qr))return false;
   return true; }
 function matchingPromos(){ return (CAT.promos||[]).filter(function(p){return p.show_text&&promoMatchBk(p);}); }
 
