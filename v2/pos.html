@@ -264,7 +264,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P52-QFIX'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P54-PHONE'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='',DATA=null,FULL=false,CART=[],CAT='ต่อผม',PAY='เงินสด',BUSY=false,USERTECH='';
 window._disc=0; window._recv=0; window._split=false; window._p2m='พร้อมเพย์'; window._p2a=0; window._slips=[];
 window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName='';
@@ -918,10 +918,15 @@ function loadQueue(){ var box=document.getElementById('queueBox'); if(!box)retur
 var THMON=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'], THDOW=['อา','จ','อ','พ','พฤ','ศ','ส'];
 function qDateLabel(d){ if(!d||d==='-')return 'ไม่ระบุวัน'; var p=d.split('-'); if(p.length<3)return d; var dt=new Date(+p[0],+p[1]-1,+p[2]);
   var today=todayStr(); var rel=(d===today)?' (วันนี้)':''; return THDOW[dt.getDay()]+' '+(+p[2])+' '+THMON[+p[1]-1]+rel; }
+/* จำนวนท้ายบรรทัด: detail มักเขียนจำนวนไว้อยู่แล้ว ("...30นิ้ว · 300 ช่อ | ถอด:...")
+ * จึงต่อท้ายเฉพาะตอนที่ยังไม่มี — ถ้าสองค่าไม่ตรงกันจะเห็นทั้งคู่ ซึ่งเป็นสัญญาณว่าข้อมูลเพี้ยน ไม่ใช่ของซ้ำ */
+function qtyChip(b){ if(!b.qty_mad) return '';
+  var t=qtyTag(b.technique,b.qty_mad);
+  return (t && String(b.detail||'').indexOf(t)>=0) ? '' : (' · '+esc(t)); }
 function qRow(b){ return '<div class="sliprow" style="cursor:pointer;align-items:flex-start" onclick="openQueueBooking(\''+esc(b.booking_id)+'\')">'+
   '<div style="text-align:center;min-width:54px"><b style="color:var(--gold-soft);font-size:16px">'+esc(b.start||'--')+'</b><div class="mini">'+esc(b.end||'')+'</div></div>'+
   '<div class="meta"><b style="font-weight:500">'+esc(b.name||'ลูกค้า')+'</b> <span class="faint">'+esc(b.booking_id)+'</span>'+
-  '<div class="mini" style="margin-top:2px">'+esc(b.detail||'')+(b.qty_mad?(' · '+qtyTag(b.technique,b.qty_mad)):'')+(b.tech_name?(' · '+esc(b.tech_name)):'')+'</div>'+
+  '<div class="mini" style="margin-top:2px">'+esc(b.detail||'')+qtyChip(b)+(b.tech_name?(' · '+esc(b.tech_name)):'')+'</div>'+
   '<div style="margin-top:5px">'+qStatusBadge(b.status)+(b.deposit>0?(' <span class="mini">มัดจำ '+fmt(b.deposit)+'฿</span>'):'')+'</div></div>'+
   '<div style="text-align:right;white-space:nowrap"><b style="color:var(--gold-soft);font-size:16px">'+fmt(b.suggest_total)+'</b> <span class="faint">฿</span><div class="mini" style="color:var(--gold)">จัดการ ›</div></div></div>'; }
 function openQueueBooking(id){ QCANCEL=false; var body=document.getElementById('lmBody'); document.getElementById('lmTitle').innerText='คิว '+id;
