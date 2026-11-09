@@ -264,7 +264,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P50-ONECOMM'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P51-QUNIT'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='',DATA=null,FULL=false,CART=[],CAT='ต่อผม',PAY='เงินสด',BUSY=false,USERTECH='';
 window._disc=0; window._recv=0; window._split=false; window._p2m='พร้อมเพย์'; window._p2a=0; window._slips=[];
 window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName='';
@@ -335,10 +335,15 @@ function svcByAcct(a){ return (DATA.services||[]).filter(function(s){return Stri
 /* หน่วยขาย: 1 QR = 50g = หน่วยเล็กสุด · แสดงเป็น ช่อ/มัด ตามเทค (เหมือนหน้าจองลูกค้า) */
 function sellUnitOf(acct){ var s=svcByAcct(techniqueFor(acct)); var su=String((s&&s.sell_unit)||'').trim(); if(su==='ช่อ'||su==='มัด')return su; return (Number(s&&s.strands_per_mad)>0)?'ช่อ':'มัด'; }
 function amtPerQrOf(acct){ var s=svcByAcct(techniqueFor(acct)); return (sellUnitOf(acct)==='ช่อ')?(Number(s&&s.strands_per_mad)||100):0.5; }
-function qtyTag(acct,qr){ var n=Math.round(amtPerQrOf(acct)*(Number(qr)||0)*100)/100; return n+' '+sellUnitOf(acct); }
+/* ไม่รู้เทคนิค = บอกเป็น QR ตรง ๆ ดีกว่าเดาอัตราแปลงของบริการอื่นมาใช้ */
+function qtyTag(acct,qr){ var t=techniqueFor(acct); if(!t||!svcByAcct(t)) return (Math.round((Number(qr)||0)*100)/100)+' QR';
+  var n=Math.round(amtPerQrOf(acct)*(Number(qr)||0)*100)/100; return n+' '+sellUnitOf(acct); }
 function sizesFor(acct){ var s=svcByAcct(acct); if(!s)return []; return (DATA.serviceSizes||[]).filter(function(z){return String(z.service_id)===String(s.service_id);}).map(function(z){return {size:String(z.size),price:Number(z.price)||0};}); }
 function acctList(){ return (DATA.services||[]).map(function(s){return String(s.acct_name);}); }
-function techniqueFor(ht){ ht=String(ht||''); var al=acctList(); if(al.indexOf(ht)>=0)return ht; var hit=al.filter(function(a){return a.indexOf(ht)>=0||ht.indexOf(a)>=0;})[0]; return hit||ht; }
+/* ⚠ ชื่อว่างห้าม fuzzy — '' อยู่ใน indexOf ของทุกสตริง เดิมจึงไปคว้าบริการตัวแรกในรายการมาใช้เงียบ ๆ
+ * ผลคือคิวที่ไม่รู้เทคนิคถูกแปลงหน่วยด้วยอัตรา ช่อ/QR ของบริการอื่น (ขนนก 4 QR โชว์ 200 ช่อ แทน 400 ช่อ) */
+function techniqueFor(ht){ ht=String(ht||'').trim(); if(!ht)return ''; var al=acctList(); if(al.indexOf(ht)>=0)return ht;
+  var hit=al.filter(function(a){return a && (a.indexOf(ht)>=0||ht.indexOf(a)>=0);})[0]; return hit||ht; }
 function laborFor(technique,sizeOrLen){ var zs=sizesFor(technique); if(!zs.length)return 0; var d=digits(sizeOrLen); var hit=zs.filter(function(z){return digits(z.size)===d;})[0]; return hit?hit.price:(zs[0].price||0); }
 function sizeLabelFor(technique,len){ var zs=sizesFor(technique); var d=digits(len); var hit=zs.filter(function(z){return digits(z.size)===d;})[0]; return hit?hit.size:(len?(len+'นิ้ว'):''); }
 /* ---- ค่ามือช่าง: ถามเซิร์ฟเวอร์เสมอ ----
@@ -937,14 +942,15 @@ function openQueueBooking(id){ QCANCEL=false; var body=document.getElementById('
   }).catch(function(){ body.innerHTML='<div class="empty">เชื่อมต่อไม่สำเร็จ</div>'; }); }
 function renderQueueActions(){ var w=document.getElementById('qAct'); if(!w||!QBK)return; var bk=QBK;
   if(QCANCEL){ w.innerHTML='<div class="warn">ยืนยันยกเลิกคิวนี้? ระบบจะคืนสต็อกที่กันไว้ให้อัตโนมัติ</div><div class="row2" style="margin-top:8px"><button class="btn sec" onclick="QCANCEL=false;renderQueueActions()">ไม่ยกเลิก</button><button class="btn" style="background:var(--crit);color:#fff" onclick="doCancelBooking()">ยืนยันยกเลิก</button></div>'; return; }
-  if(bk.status==='เช็คเอาต์'){ w.innerHTML='<div class="mini" style="text-align:center">คิวนี้เช็คเอาต์ไปแล้ว</div><button class="btn sec" style="margin-top:10px" onclick="closeLine()">ปิด</button>'; return; }
-  if(bk.status==='ยกเลิก'){ w.innerHTML='<div class="mini" style="text-align:center">คิวนี้ถูกยกเลิก</div><button class="btn sec" style="margin-top:10px" onclick="closeLine()">ปิด</button>'; return; }
+  if(bk.status==='เช็คเอาต์'){ w.innerHTML='<div class="mini" style="text-align:center">คิวนี้เช็คเอาต์ไปแล้ว</div><button class="btn sec" style="margin-top:10px;color:var(--gold-soft)" onclick="closeLine()">ปิด</button>'; return; }
+  if(bk.status==='ยกเลิก'){ w.innerHTML='<div class="mini" style="text-align:center">คิวนี้ถูกยกเลิก</div><button class="btn sec" style="margin-top:10px;color:var(--gold-soft)" onclick="closeLine()">ปิด</button>'; return; }
   if(bk.status==='ไม่มาตามนัด'){ w.innerHTML='<div class="mini" style="text-align:center">คิวนี้บันทึกว่า<b style="color:var(--crit)">ลูกค้าผิดนัด</b>แล้ว<br>ถ้ากดผิด ให้ผู้จัดการยกเลิกให้ที่หน้า Admin</div>'+
-    '<button class="btn sec" style="margin-top:10px" onclick="closeLine()">ปิด</button>'; return; }
+    '<button class="btn sec" style="margin-top:10px;color:var(--gold-soft)" onclick="closeLine()">ปิด</button>'; return; }
   if(QNOSHOW){ renderNoShow(); return; }
   w.innerHTML='<button class="btn" onclick="checkoutToCart(QBK,QBV)">✅ เช็คเอาท์ — ทำบิล</button>'+
-    '<div class="row2" style="margin-top:8px"><button class="btn sec" onclick="closeLine()">ปิด</button><button class="btn sec" style="color:var(--crit)" onclick="QCANCEL=true;renderQueueActions()">ยกเลิกคิว</button></div>'+
-    '<button class="btn sec" style="margin-top:8px;color:var(--gold-soft)" onclick="openNoShow()">🚫 ลูกค้าผิดนัด — ไม่มาตามนัด</button>'; }
+    '<div class="row2" style="margin-top:8px"><button class="btn sec" style="color:var(--crit)" onclick="openNoShow()">🚫 ผิดนัด</button>'+
+    '<button class="btn sec" style="color:var(--crit)" onclick="QCANCEL=true;renderQueueActions()">ยกเลิกคิว</button></div>'+
+    '<button class="btn sec" style="margin-top:8px;color:var(--gold-soft)" onclick="closeLine()">ปิด</button>'; }
 
 /* ---- ลูกค้าผิดนัด ----
  * ค่าคอมคิดที่เซิร์ฟเวอร์เสมอ หน้าเว็บแค่แสดง (กฎเดียวกับราคาจอง) */
@@ -963,20 +969,25 @@ function nsTech(v){ if(QNOSHOW){ QNOSHOW.tech=v; } }
 function renderNoShow(){
   var w=document.getElementById('qAct'); if(!w) return;
   if(QNOSHOW.loading){ w.innerHTML='<div class="mini" style="text-align:center">กำลังคำนวณค่าคอม…</div>'; return; }
-  var q=QNOSHOW.quote, techs=(DATA&&DATA.techs)||[];
+  /* ⚠ bootstrap ส่งมาในชื่อ technicians — เดิมอ่าน DATA.techs จึงได้ลิสต์ว่างตลอด เลือกช่างไม่ได้เลย */
+  var q=QNOSHOW.quote, techs=((DATA&&DATA.technicians)||[]).filter(function(t){ return String(t.name||'').trim(); });
   var h='<div class="warn" style="margin-bottom:10px">บันทึกว่า<b>ลูกค้าไม่มาตามนัด</b> — ร้านยึดมัดจำ ช่างได้ค่าคอมตามเกณฑ์</div>';
-  h+='<label class="lbl">ช่างที่ได้ค่าคอม</label><select class="in" onchange="nsTech(this.value)">'+
-     techs.map(function(t){ return '<option value="'+esc(t.tech_id)+'"'+(String(t.tech_id)===String(QNOSHOW.tech)?' selected':'')+'>'+esc(t.name)+'</option>'; }).join('')+'</select>';
+  h+='<label class="lbl">ช่างที่ได้ค่าคอม</label>';
+  h+= techs.length
+    ? ('<select class="in" onchange="nsTech(this.value)"><option value="">— เลือกช่าง —</option>'+
+       techs.map(function(t){ return '<option value="'+esc(t.tech_id)+'"'+(String(t.tech_id)===String(QNOSHOW.tech)?' selected':'')+'>'+esc(t.name)+'</option>'; }).join('')+'</select>')
+    : '<div class="warn" style="margin:0">ยังไม่มีรายชื่อช่างในระบบ — ให้ผู้จัดการเพิ่มช่างก่อน</div>';
   h+='<div style="margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--bg2)">'+
      '<div style="display:flex;justify-content:space-between;align-items:baseline"><span class="mini" style="margin:0">ค่าคอมที่ช่างได้</span>'+
      '<b style="font-size:22px;color:var(--gold-soft)">'+fmt(q.comm)+' ฿</b></div>'+
      '<div class="mini" style="margin:4px 0 0">'+esc(q.comm_label||'')+'</div>'+
      (q.comm_note?('<div class="mini" style="margin:2px 0 0;color:var(--faint)">'+esc(q.comm_note)+'</div>'):'')+
-     '<div style="border-top:1px solid var(--line);margin:9px 0 7px"></div>'+
-     '<div class="mini" style="margin:0">มัดจำที่ยึดได้ <b>'+fmt(q.deposit)+'</b> ฿ · '+
-       (q.shop>=0?('ร้านได้ <b style="color:var(--ok)">'+fmt(q.shop)+'</b> ฿')
-                 :('<b style="color:var(--crit)">ร้านรับส่วนขาด '+fmt(Math.abs(q.shop))+' ฿</b>'))+'</div></div>';
-  if(q.deposit<q.comm) h+='<div class="mini" style="margin-top:8px;color:var(--crit)">⚠ มัดจำไม่พอจ่ายค่าคอม ช่างยังได้เต็ม ส่วนที่ขาดร้านรับเอง</div>';
+     /* ยอดฝั่งร้านโชว์เฉพาะตอนติดลบ — ปกติพนักงานไม่ต้องเห็นว่าร้านได้เท่าไหร่ */
+     (Number(q.shop)<0
+       ? ('<div style="border-top:1px solid var(--line);margin:9px 0 7px"></div>'+
+          '<div class="mini" style="margin:0;color:var(--crit)">มัดจำ <b>'+fmt(q.deposit)+'</b> ฿ ไม่พอจ่ายค่าคอม · <b>ร้านรับส่วนขาด '+fmt(Math.abs(q.shop))+' ฿</b></div>')
+       : '')+'</div>';
+  if(Number(q.shop)<0) h+='<div class="mini" style="margin-top:8px;color:var(--crit)">⚠ ช่างยังได้ค่าคอมเต็มจำนวน ส่วนที่ขาดร้านรับเอง</div>';
   h+='<label class="lbl" style="margin-top:10px">เหตุผล (ไม่บังคับ)</label>'+
      '<input class="in" id="nsReason" placeholder="เช่น โทรไม่รับ / แจ้งยกเลิกกระชั้น">';
   h+='<div class="row2" style="margin-top:12px"><button class="btn sec" onclick="closeNoShow()">ย้อนกลับ</button>'+
