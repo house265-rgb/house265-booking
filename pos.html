@@ -1,0 +1,1064 @@
+<!doctype html><html lang="th"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<title>House265 · POS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<style>
+:root{--bg:#111010;--surface:#1a1816;--surface2:#211f1c;--bg2:#161412;--elev:#262320;--line:#322e29;--fg:#efe9df;--muted:#b3aa9c;--faint:#7c7265;--gold:#c8a75a;--gold-soft:#e6cc7e;--gold-dim:#9c7f3f;--gold-ghost:rgba(200,167,90,.12);--ok:#79c08a;--crit:#d98a8a;--r:13px;color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+/* บนมือถือ ปุ่มเล็ก ๆ (ชิปกรอง, ปุ่มล้าง) กดพลาดง่าย — บังคับความสูงขั้นต่ำให้กดด้วยนิ้วได้
+ * 34px เป็นค่าต่ำสุดที่ยังไม่ทำให้แถวชิปสูงจนเปลืองจอ */
+@media (max-width:520px){
+  button,.chip,.bkflag,.tabbtn,.gchip,.seg>*,a[onclick]{min-height:34px}
+  button,.bkflag,.chip{display:inline-flex;align-items:center;justify-content:center}
+}
+
+/* กล่องเตือนตอนสแกนพลาด — ต้องค้างจนพนักงานกดปิด toast เล็ก ๆ ที่หายเองทำให้พลาดได้ */
+#scanAlert{position:fixed;inset:0;z-index:9000;display:none;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.72);padding:20px;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
+#scanAlert.show{display:flex}
+#scanAlert .box{max-width:460px;width:100%;background:var(--bg2);border:2px solid var(--crit);
+  border-radius:16px;padding:22px;text-align:center;box-shadow:0 18px 60px rgba(0,0,0,.6)}
+#scanAlert .ic{font-size:44px;line-height:1;margin-bottom:10px}
+#scanAlert .ttl{font-size:20px;font-weight:600;color:var(--crit);margin-bottom:8px}
+#scanAlert .msg{font-size:15px;line-height:1.65;color:var(--fg);margin-bottom:6px}
+#scanAlert .code{font-family:'IBM Plex Mono',monospace;font-size:17px;color:var(--gold-soft);
+  background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 12px;display:inline-block;margin:8px 0 14px}
+#scanAlert .hint{font-size:12.5px;color:var(--muted);margin-bottom:16px;line-height:1.6}
+#scanAlert button{width:100%;padding:15px;border:0;border-radius:12px;background:var(--crit);
+  color:#fff;font-size:16px;font-weight:600;font-family:inherit;cursor:pointer}
+
+/* iOS/Safari: input[type=date|month|time] มีความกว้างขั้นต่ำในตัวที่ไม่ยอมหดตาม flex/grid
+ * ทำให้ช่องล้นออกนอกคอลัมน์แล้วกรอบไปทับช่องข้าง ๆ บนไอแพดกับมือถือ
+ * ต้องปลด min-width ทั้งที่ flex item และที่ตัว input เอง */
+*{min-width:0}
+input[type=date],input[type=month],input[type=time],input[type=datetime-local]{
+  -webkit-appearance:none;appearance:none;min-width:0;max-width:100%;box-sizing:border-box}
+.drow .f,.row2>*,.grid2>*,.g2>*{min-width:0}
+
+body{margin:0;background:var(--bg);color:var(--fg);font-family:'Kanit',sans-serif;font-weight:300;font-variant-numeric:tabular-nums;padding-bottom:calc(70px + env(safe-area-inset-bottom));overflow-wrap:anywhere}
+.mono{font-family:'IBM Plex Mono',monospace}
+button{cursor:pointer;font-family:inherit}
+header.top{position:sticky;top:0;z-index:20;background:rgba(17,16,16,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.brand{display:flex;flex-direction:column;line-height:1.1;min-width:0}
+.brand b{font-weight:600;font-size:17px;white-space:nowrap}.brand b .n{color:var(--gold-soft)}
+.brand .tag{font-family:'IBM Plex Mono';font-size:9.5px;letter-spacing:.08em;color:var(--gold);margin:2px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip{background:var(--surface2);border:1px solid var(--line);border-radius:999px;padding:6px 11px;font-size:13px;color:var(--muted);white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis}
+.lo{background:none;border:1px solid var(--line);color:var(--muted);border-radius:10px;padding:7px 10px;font-size:12px}
+.saleGrid{display:block}
+@media(min-width:900px){ .saleGrid{display:grid;grid-template-columns:1fr 380px;gap:16px;align-items:start;max-width:1100px;margin:0 auto;padding:16px} .cart{position:sticky;top:76px} }
+.menu{padding:14px}
+.cats{display:flex;gap:8px;overflow-x:auto;padding-bottom:10px}
+.cat{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:9px 15px;font-size:14px}
+.cat.on{border-color:var(--gold);color:var(--gold-soft);background:var(--gold-ghost)}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(min-width:1100px){ .grid{grid-template-columns:repeat(3,1fr)} }
+.tile{position:relative;background:linear-gradient(170deg,var(--surface2),var(--surface));border:1px solid var(--line);border-radius:var(--r);padding:14px;text-align:left}
+.tile:disabled{opacity:.42}
+.tile .ph{font-size:24px}.tile .nm{font-weight:500;margin-top:6px;line-height:1.25}.tile .pr{font-family:'IBM Plex Mono';font-size:13px;color:var(--gold-soft);margin-top:3px}
+.tile .sub{font-size:11px;color:var(--faint);margin-top:2px}
+.tile .add{position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:50%;background:var(--gold-ghost);border:1px solid var(--gold-dim);color:var(--gold-soft);display:flex;align-items:center;justify-content:center;font-size:17px}
+.scanbox{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:14px}
+#reader{width:100%;max-width:320px;margin:10px auto;border-radius:10px;overflow:hidden;display:none}
+.cart{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin:14px}
+@media(min-width:900px){ .cart{margin:0} }
+.ch{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.ch b{font-weight:500}
+.lbl{font-size:11px;color:var(--faint);margin:0 0 5px;display:block}
+.in,select.in{width:100%;padding:11px 12px;border:1px solid var(--line);background:var(--bg2);color:var(--fg);border-radius:10px;font-size:15px;font-family:inherit}
+.in:focus{border-color:var(--gold);outline:none}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.sc{border:1px solid var(--line);background:var(--bg2);color:var(--muted);border-radius:9px;padding:7px 11px;font-size:13px}
+.sc.on{border-color:var(--gold);color:var(--gold-soft);background:var(--gold-ghost)}
+.seg{display:flex;gap:0;border:1px solid var(--line);border-radius:11px;overflow:hidden;margin-bottom:12px}
+.seg button{flex:1;background:var(--bg2);color:var(--muted);border:none;padding:11px;font-size:14px;font-weight:400}
+.seg button.on{background:var(--gold-ghost);color:var(--gold-soft);font-weight:500}
+.stp{display:inline-flex;align-items:center;gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.stp button{width:40px;height:40px;background:var(--surface);color:var(--gold-soft);font-size:21px;border:none}.stp .v{min-width:46px;text-align:center}
+.tw{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+.faint{color:var(--faint)}
+.mini{font-size:11px;color:var(--faint);margin-top:8px;line-height:1.5}.mini b{color:var(--muted);font-weight:400}
+.idrow{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.idrow .pill{background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:5px 9px;font-size:12px;color:var(--muted)}
+.idrow .pill b{color:var(--fg);font-weight:500}
+.lockpill{display:inline-flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:9px 12px;font-size:14px;color:var(--gold-soft);margin-bottom:12px}
+.tot{display:flex;justify-content:space-between;padding:5px 0;font-size:14px;color:var(--muted)}.tot b{color:var(--fg);font-family:'IBM Plex Mono'}
+.tot.grand{border-top:1px solid var(--line);margin-top:6px;padding-top:11px;font-size:16px;color:var(--fg)}.tot.grand b{font-size:22px;color:var(--gold-soft);font-weight:600}
+.pm{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px}
+.pm button{padding:11px 4px;border:1px solid var(--line);background:var(--bg2);color:var(--muted);border-radius:11px;font-size:13px;display:flex;flex-direction:column;align-items:center;gap:3px}
+.pm button.on{border-color:var(--gold);color:var(--gold-soft);background:var(--gold-ghost)}
+.pm button:disabled{opacity:.4}
+.paylogos{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:11px;margin:12px 0 2px}
+.plogo{font-size:12px;font-weight:700;display:inline-flex;align-items:center;height:21px;padding:0 9px;border-radius:5px;background:#fff;line-height:1;font-family:Arial,Helvetica,sans-serif}
+.plogo.pp{color:#003d7a}.plogo.pp i{color:#00a7a0;font-style:normal;margin-left:1px}
+.plogo.visa{color:#1a1f71;font-style:italic;letter-spacing:.06em}
+.plogo.mc{padding:0 8px}.plogo.mc .c{width:14px;height:14px;border-radius:50%;display:inline-block}.plogo.mc .o{background:#f79e1b;margin-left:-6px}.plogo.mc .r{background:#eb001b}
+.plogo.spay{color:#ee4d2d;gap:4px}.plogo.spay .ic{background:#ee4d2d;color:#fff;width:16px;height:15px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
+.plogo.line{background:#06c755;color:#fff}
+.chkline{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;color:var(--muted)}
+.chkline input{width:17px;height:17px;accent-color:var(--gold)}
+.btn{background:linear-gradient(100deg,var(--gold-dim),var(--gold-soft));color:#231b08;padding:14px;font-weight:600;width:100%;border:none;border-radius:12px;font-size:15px}
+.btn:disabled{opacity:.5}.btn.sec{background:none;border:1px solid var(--line);color:var(--muted);font-weight:500}
+.x{background:none;border:1px solid var(--line);color:var(--crit);border-radius:8px;padding:4px 9px;font-size:12px}
+.warn{background:rgba(217,138,138,.12);border:1px solid var(--crit);color:var(--crit);border-radius:9px;padding:8px 11px;font-size:12px;margin-top:8px}
+.empty{text-align:center;color:var(--faint);padding:34px 12px;line-height:1.7}
+.tabbar{position:fixed;bottom:0;left:0;right:0;z-index:30;display:flex;background:rgba(17,16,16,.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);height:60px;padding-bottom:env(safe-area-inset-bottom);box-sizing:content-box}
+.tabbar button{flex:1;background:none;border:none;color:var(--faint);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px}
+.tabbar button.on{color:var(--gold-soft)}.tabbar .ic{font-size:19px}
+.page{display:none}.page.on{display:block}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+.modal.show{display:flex}.mbox{background:var(--surface);border:1px solid var(--line);border-radius:16px;width:100%;max-width:420px;max-height:92vh;overflow:auto}
+.mh{background:linear-gradient(100deg,var(--gold-dim),var(--gold-soft));color:#231b08;padding:14px;text-align:center;font-weight:600}.mc{padding:16px}
+.slipthumb{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.slipthumb .t{position:relative;width:64px;height:64px;border-radius:9px;overflow:hidden;border:1px solid var(--line)}
+.slipthumb .t img{width:100%;height:100%;object-fit:cover}
+.slipthumb .t button{position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.7);color:#fff;border:none;font-size:11px;line-height:1}
+.sliprow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.qdhead{display:flex;justify-content:space-between;align-items:center;margin:14px 0 2px;padding-bottom:5px;border-bottom:1px solid var(--gold-dim)}
+.qdhead b{color:var(--gold-soft);font-size:14px}.qdhead span{font-size:12px;color:var(--faint)}
+.sliprow .meta{flex:1;min-width:0}
+.badge{display:inline-block;font-size:11px;border-radius:6px;padding:2px 8px;border:1px solid}
+.badge.ok{color:var(--ok);border-color:#3c6b4a;background:rgba(121,192,138,.1)}
+.badge.bad{color:var(--crit);border-color:#7a3c3c;background:rgba(217,138,138,.1)}
+.badge.warn{color:var(--gold-soft);border-color:var(--gold-dim);background:var(--gold-ghost)}
+.chipbtn{background:var(--surface2);border:1px solid var(--line);color:var(--muted);border-radius:999px;padding:7px 14px;font-size:13px;cursor:pointer;font-family:inherit}
+.promobar{margin-top:8px;padding:10px 12px;background:var(--gold-ghost);border:1px solid var(--gold-dim);border-radius:11px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.promopick{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:11px;margin-bottom:8px;cursor:pointer;background:var(--bg2)}
+.promopick:active{border-color:var(--gold);background:var(--gold-ghost)}
+.chipbtn:active{border-color:var(--gold)}
+.hr2{border-top:1px dashed var(--line);margin:10px 0}
+.sgrid{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.slipthumbbtn{display:flex;flex-direction:column;align-items:center;gap:3px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--fg);cursor:pointer;font-family:inherit;text-align:center;min-width:78px}
+.slipthumbbtn:active{border-color:var(--gold)}
+.toast{position:fixed;left:50%;bottom:74px;transform:translateX(-50%);background:var(--elev);border:1px solid var(--gold-dim);color:var(--fg);padding:12px 18px;border-radius:12px;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:.2s;z-index:60;max-width:90vw;text-align:center}
+.toast.show{opacity:1}.toast.err{border-color:var(--crit)}
+#rcpt,.rcpt{background:#fff;color:#141414;font-family:'IBM Plex Mono';font-size:12px;line-height:1.55;padding:14px;border-radius:10px}
+.rcpt h3,#rcpt h3{text-align:center;margin:0}.rcpt .c,#rcpt .c{text-align:center}.rcpt .rr,#rcpt .rr{display:flex;justify-content:space-between}.rcpt .rr.sub,#rcpt .rr.sub{color:#777;font-size:10.5px;padding-left:8px}.rcpt .hr,#rcpt .hr{border-top:1px dashed #999;margin:6px 0}.rcpt .big,#rcpt .big{font-size:15px;font-weight:bold}
+.hide{display:none}
+
+/* แถบความคืบหน้า + สปินเนอร์ในปุ่ม (สถานะกำลังทำงาน) */
+#busybar{position:fixed;top:0;left:0;height:3px;width:0;z-index:9999;pointer-events:none;
+  background:linear-gradient(90deg,var(--gold-dim,#6b5a28),var(--gold-soft,#e0c580),var(--gold,#b09036));
+  opacity:0;transition:opacity .15s}
+#busybar.on{opacity:1;width:100%;animation:bbar 1.1s ease-in-out infinite}
+@keyframes bbar{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.spin{display:inline-block;width:12px;height:12px;margin-right:7px;vertical-align:-1px;
+  border:2px solid currentColor;border-right-color:transparent;border-radius:50%;
+  animation:spin .6s linear infinite;opacity:.9}
+@keyframes spin{to{transform:rotate(360deg)}}
+button.is-busy,.is-busy{cursor:progress!important;opacity:.78}
+button:disabled{cursor:not-allowed}
+
+/* ---- กล่องตัวเลือก/ช่องกรอก บนแท็บเล็ตและมือถือ ----
+ * ปัญหาเดิม: select ใช้หน้าตาของระบบปฏิบัติการ ความสูงและลูกศรไม่ตรงกับที่กำหนดไว้
+ *   ทำให้กรอบเหลื่อมและข้อความทับลูกศร · และ iOS จะซูมหน้าจอเองถ้าตัวอักษรเล็กกว่า 16px
+ *   ตอนซูมทุกอย่างจึงดูเพี้ยน/ทับกัน */
+select.in,select{-webkit-appearance:none;-moz-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%238a8278' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 11px center;background-size:11px 7px;
+  padding-right:32px;max-width:100%;text-overflow:ellipsis;line-height:1.3}
+select.in::-ms-expand,select::-ms-expand{display:none}
+input.in,select.in,textarea.in,input,select,textarea{max-width:100%}
+input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-appearance:none;appearance:none;min-height:44px}
+@media(max-width:1024px){
+  .in,input.in,select.in,textarea.in,input,select,textarea{font-size:16px}
+  select.in,select{min-height:46px}
+  .row2{gap:10px}
+}
+@media(max-width:400px){ .row2{grid-template-columns:1fr} }
+</style></head>
+<body>
+
+<div class="modal" id="loginModal"><div class="mbox"><div class="mh">เข้าสู่ระบบ · House265 POS</div><div class="mc">
+  <label class="lbl">ชื่อผู้ใช้</label><input id="luser" class="in" autocapitalize="none" placeholder="admin" onkeydown="if(event.key==='Enter')doLogin()">
+  <label class="lbl" style="margin-top:10px">รหัสผ่าน</label><input id="lpass" type="password" class="in" onkeydown="if(event.key==='Enter')doLogin()">
+  <div id="loginErr" style="color:var(--crit);font-size:12px;min-height:16px;margin:6px 0"></div>
+  <button class="btn" onclick="doLogin()">เข้าสู่ระบบ</button>
+</div></div></div>
+
+<div id="app" class="hide">
+  <header class="top">
+    <div class="brand"><b>House<span class="n">265</span></b><span class="tag">POS</span></div>
+    <div style="display:flex;gap:8px;align-items:center"><span class="chip" id="uInfo">—</span><button class="lo" onclick="doLogout()">ออก</button></div>
+  </header>
+
+  <div class="page on" id="pageSale"><div class="saleGrid">
+    <div class="menu">
+      <div class="cats" id="cats"></div>
+      <div id="menuBody"></div>
+    </div>
+    <aside class="cart" id="cart">
+      <div class="ch"><b>🧾 บิลขาย</b><button class="x" style="color:var(--muted)" onclick="clearCart()">ล้าง</button></div>
+      <div id="cartBody"></div>
+    </aside>
+  </div></div>
+
+  <div class="page" id="pageQueue"><div style="max-width:740px;margin:0 auto;padding:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-size:20px;font-weight:600">คิวจอง</div>
+      <button class="lo" onclick="loadQueue()">↻ รีเฟรช</button>
+    </div>
+    <div class="cart" style="margin:0 0 12px">
+      <div class="row2"><div><label class="lbl">วันที่</label><input id="qDate" class="in" type="date" onchange="loadQueue()"></div>
+        <div><label class="lbl">สถานะ</label><select id="qStatus" class="in" onchange="loadQueue()"><option value="">รอทำ (ค้างอยู่)</option><option value="รอ">รอยืนยัน</option><option value="ยืนยัน">ยืนยันแล้ว</option><option value="เช็คเอาต์">เช็คเอาต์แล้ว</option><option value="ยกเลิก">ยกเลิก</option><option value="all">ทั้งหมด</option></select></div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
+        <button class="chipbtn" onclick="qPreset(0)">วันนี้</button>
+        <button class="chipbtn" onclick="qPreset(1)">พรุ่งนี้</button>
+        <button class="chipbtn" onclick="qPreset('all')">ทุกวัน</button>
+      </div>
+    </div>
+    <div id="qSum" class="mini" style="margin:0 0 8px"></div>
+    <div id="queueBox" class="cart" style="margin:0"><div class="empty">กำลังโหลด…</div></div>
+  </div></div>
+
+  <div class="page" id="pageToday"><div style="max-width:700px;margin:0 auto;padding:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-size:20px;font-weight:600">สรุปวันนี้</div>
+      <button class="lo" onclick="loadToday()">↻ รีเฟรช</button>
+    </div>
+    <div id="todayBox" class="cart" style="margin:0"><div class="empty">กำลังโหลด…</div></div>
+  </div></div>
+
+  <div class="page" id="pageSlips"><div style="max-width:740px;margin:0 auto;padding:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-size:20px;font-weight:600">บิลย้อนหลัง · เทียบสลิป</div>
+      <button class="lo" onclick="loadHistory()">↻ รีเฟรช</button>
+    </div>
+    <div class="cart" style="margin:0 0 12px">
+      <label class="lbl">ค้นหา (ชื่อลูกค้า · เบอร์โทร · LINE · เลขบิล)</label>
+      <input id="hQ" class="in" placeholder="เช่น สมหญิง / 0812345678 / S000007" onkeydown="if(event.key==='Enter')loadHistory()">
+      <div class="row2" style="margin-top:8px">
+        <div><label class="lbl">ตั้งแต่วันที่</label><input id="hFrom" class="in" type="date" onchange="loadHistory()"></div>
+        <div><label class="lbl">ถึงวันที่</label><input id="hTo" class="in" type="date" onchange="loadHistory()"></div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px">
+        <button class="chipbtn" onclick="histPreset('today')">วันนี้</button>
+        <button class="chipbtn" onclick="histPreset('7')">7 วัน</button>
+        <button class="chipbtn" onclick="histPreset('month')">เดือนนี้</button>
+        <button class="chipbtn" onclick="histPreset('all')">ทุกวัน</button>
+        <button class="btn" style="width:auto;padding:9px 18px;margin-left:auto" onclick="loadHistory()">🔎 ค้นหา</button>
+      </div>
+    </div>
+    <div id="histSum" class="mini" style="margin:0 0 8px"></div>
+    <div id="histBox" class="cart" style="margin:0"><div class="empty">เลือกช่วงวันที่ หรือพิมพ์คำค้น แล้วกดค้นหา</div></div>
+  </div></div>
+
+  <nav class="tabbar">
+    <button id="navSale" class="on" onclick="setPage('Sale')"><span class="ic">🧾</span>ขาย</button>
+    <button id="navQueue" onclick="setPage('Queue')"><span class="ic">📅</span>คิว</button>
+    <button id="navToday" onclick="setPage('Today')"><span class="ic">📊</span>สรุป</button>
+    <button id="navSlips" onclick="setPage('Slips')"><span class="ic">📁</span>บิล</button>
+  </nav>
+</div>
+
+<div class="modal" id="lineModal"><div class="mbox" style="max-width:440px"><div class="mh" id="lmTitle">รายการ</div><div class="mc" id="lmBody"></div></div></div>
+<div class="modal" id="rcptModal"><div class="mbox"><div class="mh">บันทึกการขายแล้ว ✓</div><div class="mc">
+  <div id="rcpt"></div>
+  <div class="row2" style="margin-top:14px"><button class="btn sec" onclick="closeRcpt()">ปิด</button><button class="btn" onclick="printRcpt()">🖨️ ใบเสร็จ</button></div>
+</div></div></div>
+<div class="modal" id="imgModal"><div class="mbox" style="max-width:480px"><div class="mh" id="imTitle">สลิป</div><div class="mc" id="imBody" style="text-align:center">กำลังโหลด…</div></div></div>
+<div class="toast" id="toast"></div>
+<div id="scanAlert" role="alertdialog" aria-modal="true" onclick="if(event.target===this)closeScanAlert()"><div class="box"><div class="ic" id="saIc">⛔</div><div class="ttl" id="saTtl"></div><div class="msg" id="saMsg"></div><div class="code" id="saCode"></div><div class="hint" id="saHint"></div><button type="button" onclick="closeScanAlert()">รับทราบ · ปิดหน้าต่าง</button></div></div>
+
+<script>
+var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
+var BUILD='P54-PHONE'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var TOKEN='',DATA=null,FULL=false,CART=[],CAT='ต่อผม',PAY='เงินสด',BUSY=false,USERTECH='';
+window._disc=0; window._recv=0; window._split=false; window._p2m='พร้อมเพย์'; window._p2a=0; window._slips=[];
+window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName='';
+/* ===== สถานะ "กำลังทำงาน" — ใช้ร่วมกันทุกหน้า (admin / pos / receive / Booking) =====
+ * ปัญหาเดิม: กดปุ่มแล้วเงียบ ไม่รู้ว่าระบบรับคำสั่งหรือยัง จึงกดซ้ำ
+ * วิธี: ดักคลิกระดับเอกสาร จำปุ่มที่เพิ่งกด แล้วให้ api() ล็อกปุ่มนั้น + ใส่สปินเนอร์
+ *       จนกว่าจะได้คำตอบ พร้อมแถบความคืบหน้าบนสุดของจอสำหรับงานที่ไม่ได้มาจากปุ่ม
+ * ไม่ต้องแก้ onclick เดิมสักอัน และกันกดซ้ำให้อัตโนมัติ */
+var _BUSY=0, _BUSYBTN=null;
+document.addEventListener('click', function(e){
+  var t=e.target; if(!t||!t.closest) { _BUSYBTN=null; return; }
+  _BUSYBTN=t.closest('button,.btn,.qbtn,.gbtn,.chip-btn');
+  setTimeout(function(){ _BUSYBTN=null; }, 0);   /* ใช้ได้เฉพาะจังหวะเดียวกับการคลิกเท่านั้น */
+}, true);
+function _busyBar(on){ var b=document.getElementById('busybar');
+  if(!b){ b=document.createElement('div'); b.id='busybar'; document.body.appendChild(b); }
+  b.className = on ? 'on' : ''; }
+function _busyOn(btn){ _BUSY++; _busyBar(true);
+  if(!btn) return;
+  btn.__bn=(btn.__bn||0)+1;
+  if(btn.__bn===1){ btn.__bhtml=btn.innerHTML; btn.disabled=true; btn.classList.add('is-busy');
+    btn.innerHTML='<span class="spin"></span>'+btn.__bhtml; } }
+function _busyOff(btn){ _BUSY=Math.max(0,_BUSY-1); if(!_BUSY) _busyBar(false);
+  if(!btn) return;
+  btn.__bn=Math.max(0,(btn.__bn||1)-1);
+  if(btn.__bn===0 && btn.__bhtml!=null){ btn.innerHTML=btn.__bhtml; btn.__bhtml=null;
+    btn.disabled=false; btn.classList.remove('is-busy'); } }
+function api(a,p){ var _b=_BUSYBTN; _busyOn(_b);
+  return fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:a,token:TOKEN||'',payload:p||{}})})
+    .then(function(r){return r.json();})
+    .then(function(j){ _busyOff(_b); return j; }, function(e){ _busyOff(_b); throw e; }); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(m){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m];}); }
+function fmt(v){ return (Number(v)||0).toLocaleString('en-US'); }
+function digits(s){ return String(s==null?'':s).replace(/[^0-9]/g,''); }
+var _tt; function toast(m,err){ var t=document.getElementById('toast'); t.innerHTML=m; t.className='toast show'+(err?' err':''); clearTimeout(_tt); _tt=setTimeout(function(){t.className='toast'+(err?' err':'');},2800); }
+function getTok(){ try{return sessionStorage.getItem('h265_ptok')||'';}catch(e){return '';} }
+function setTok(t){ try{ t?sessionStorage.setItem('h265_ptok',t):sessionStorage.removeItem('h265_ptok'); }catch(e){} }
+
+window.onload=function(){ TOKEN=getTok(); if(API_URL.indexOf('XXX')>=0) document.getElementById('loginErr').innerText='⚠️ ยังไม่ได้ตั้ง API_URL'; if(TOKEN) boot(); else document.getElementById('loginModal').classList.add('show'); };
+function doLogin(){ var u=document.getElementById('luser').value.trim(), p=document.getElementById('lpass').value;
+  if(!u||!p){ document.getElementById('loginErr').innerText='กรอกชื่อผู้ใช้และรหัสผ่าน'; return; }
+  document.getElementById('loginErr').innerText='กำลังเข้าสู่ระบบ…';
+  api('login',{username:u,password:p}).then(function(r){ if(!r||!r.ok){ document.getElementById('loginErr').innerText=(r&&r.message)||'เข้าสู่ระบบไม่สำเร็จ'; return; }
+    TOKEN=r.data.token; setTok(TOKEN); document.getElementById('loginModal').classList.remove('show'); boot();
+  }).catch(function(){ document.getElementById('loginErr').innerText='เชื่อมต่อไม่สำเร็จ'; }); }
+function doLogout(){ api('logout',{}); TOKEN=''; setTok(''); location.reload(); }
+
+function boot(){ api('bootstrap',{}).then(function(r){ if(!r||!r.ok){ if(r&&r.code==='AUTH'){ setTok(''); location.reload(); return; } toast((r&&r.message)||'โหลดไม่สำเร็จ',1); return; }
+    DATA=r.data; FULL=!!DATA.user.full;
+    /* ตัวบอกเวอร์ชัน: หน้าเว็บ vs เซิร์ฟเวอร์ — ไม่ตรง = Deploy ไม่ครบ */
+    (function(){ var srv=String(DATA.version||'-'), okv=(srv.indexOf(BUILD)>=0);
+      var who={owner:'เจ้าของร้าน',manager:'ผู้จัดการ',staff:'ช่าง'}[DATA.user.role]||'ผู้ใช้';
+      var el=document.querySelector('.brand .tag'); if(el){ el.innerHTML='POS · '+esc(who)+' · <span style="color:'+(okv?'var(--ok)':'var(--crit)')+'">'+esc(BUILD)+'</span>'; el.title='หน้าเว็บ '+BUILD+' · เซิร์ฟเวอร์ '+srv; }
+      if(!okv) toast('⚠ เวอร์ชันไม่ตรงกัน — หน้าเว็บ '+BUILD+' · เซิร์ฟเวอร์ '+srv+' (ต้อง Deploy Core.gs เป็น New version)',1); })();
+    document.getElementById('app').classList.remove('hide');
+    document.getElementById('uInfo').innerText=(DATA.user.name||'')+' · '+(DATA.user.role==='owner'?'เจ้าของ':DATA.user.role==='manager'?'ผู้จัดการ':'ช่าง');
+    document.getElementById('navToday').style.display=FULL?'flex':'none';
+    var me=(DATA.technicians||[]).filter(function(t){return String(t.tech_id)===String(DATA.user.tech_id);})[0]; USERTECH=me?me.name:'';
+    buildCats(); renderMenu(); renderCart();
+  }).catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
+
+function setPage(p){ ['Sale','Queue','Today','Slips'].forEach(function(x){ document.getElementById('page'+x).classList.toggle('on',x===p); document.getElementById('nav'+x).classList.toggle('on',x===p); });
+  if(p==='Today')loadToday(); if(p==='Slips'){ initHistDates(); loadHistory(); } if(p==='Queue'){ initQueueDate(); loadQueue(); } window.scrollTo(0,0); }
+function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
+
+/* ---- catalog helpers ---- */
+function svcByAcct(a){ return (DATA.services||[]).filter(function(s){return String(s.acct_name)===a;})[0]; }
+/* หน่วยขาย: 1 QR = 50g = หน่วยเล็กสุด · แสดงเป็น ช่อ/มัด ตามเทค (เหมือนหน้าจองลูกค้า) */
+function sellUnitOf(acct){ var s=svcByAcct(techniqueFor(acct)); var su=String((s&&s.sell_unit)||'').trim(); if(su==='ช่อ'||su==='มัด')return su; return (Number(s&&s.strands_per_mad)>0)?'ช่อ':'มัด'; }
+function amtPerQrOf(acct){ var s=svcByAcct(techniqueFor(acct)); return (sellUnitOf(acct)==='ช่อ')?(Number(s&&s.strands_per_mad)||100):0.5; }
+/* ไม่รู้เทคนิค = บอกเป็น QR ตรง ๆ ดีกว่าเดาอัตราแปลงของบริการอื่นมาใช้ */
+function qtyTag(acct,qr){ var t=techniqueFor(acct); if(!t||!svcByAcct(t)) return (Math.round((Number(qr)||0)*100)/100)+' QR';
+  var n=Math.round(amtPerQrOf(acct)*(Number(qr)||0)*100)/100; return n+' '+sellUnitOf(acct); }
+function sizesFor(acct){ var s=svcByAcct(acct); if(!s)return []; return (DATA.serviceSizes||[]).filter(function(z){return String(z.service_id)===String(s.service_id);}).map(function(z){return {size:String(z.size),price:Number(z.price)||0};}); }
+function acctList(){ return (DATA.services||[]).map(function(s){return String(s.acct_name);}); }
+/* ⚠ ชื่อว่างห้าม fuzzy — '' อยู่ใน indexOf ของทุกสตริง เดิมจึงไปคว้าบริการตัวแรกในรายการมาใช้เงียบ ๆ
+ * ผลคือคิวที่ไม่รู้เทคนิคถูกแปลงหน่วยด้วยอัตรา ช่อ/QR ของบริการอื่น (ขนนก 4 QR โชว์ 200 ช่อ แทน 400 ช่อ) */
+function techniqueFor(ht){ ht=String(ht||'').trim(); if(!ht)return ''; var al=acctList(); if(al.indexOf(ht)>=0)return ht;
+  var hit=al.filter(function(a){return a && (a.indexOf(ht)>=0||ht.indexOf(a)>=0);})[0]; return hit||ht; }
+function laborFor(technique,sizeOrLen){ var zs=sizesFor(technique); if(!zs.length)return 0; var d=digits(sizeOrLen); var hit=zs.filter(function(z){return digits(z.size)===d;})[0]; return hit?hit.price:(zs[0].price||0); }
+function sizeLabelFor(technique,len){ var zs=sizesFor(technique); var d=digits(len); var hit=zs.filter(function(z){return digits(z.size)===d;})[0]; return hit?hit.size:(len?(len+'นิ้ว'):''); }
+/* ---- ค่ามือช่าง: ถามเซิร์ฟเวอร์เสมอ ----
+ * สูตรเดียวอยู่ที่ Core.gs → lineLabor_ (ตัวเดียวกับที่ใช้บันทึกบิลจริง)
+ * ⛔ ห้ามคำนวณค่ามือ/ค่าอุปกรณ์ฝั่งหน้าเว็บ — เลขที่ผู้จัดการเห็นต้องเป็นเลขเดียวกับที่บันทึก */
+var CQ={seq:0,tmr:null,cache:{}};
+function cqKey(t,i,q){ return String(t||'')+'|'+String(i||'')+'|'+Math.max(1,Math.round(Number(q)||1)); }
+function commBoxHtml(t,i,q,hint){ var k=cqKey(t,i,q), c=CQ.cache[k];
+  return '<div class="mini" id="commBox" data-k="'+esc(k)+'" data-h="'+esc(hint||'')+'"><b>ค่ามือช่าง:</b> '+
+    (c==null?'<span class="faint">กำลังคิด…</span>':(fmt(c)+(hint||'')))+'</div>'; }
+function commPaint(k){ var e=document.getElementById('commBox'); if(!e||e.getAttribute('data-k')!==k)return;
+  var c=CQ.cache[k]; if(c==null)return;
+  e.innerHTML='<b>ค่ามือช่าง:</b> '+fmt(c)+(e.getAttribute('data-h')||''); }
+function commAsk(t,i,q){ if(!FULL)return; var k=cqKey(t,i,q);
+  if(CQ.cache[k]!=null){ commPaint(k); return; }
+  clearTimeout(CQ.tmr);
+  CQ.tmr=setTimeout(function(){ var s=++CQ.seq;      /* กันคำตอบเก่ามาช้าแล้วทับของใหม่ */
+    api('lineQuote',{line_type:t,item:i,qty:Math.max(1,Math.round(Number(q)||1)),seq:s}).then(function(j){
+      if(!j||!j.ok||!j.data)return; if(Number(j.data.seq)!==CQ.seq)return;
+      CQ.cache[k]=Math.round(Number(j.data.comm)||0); commPaint(k);
+    }).catch(function(){ var e=document.getElementById('commBox');
+      if(e&&e.getAttribute('data-k')===k)e.innerHTML='<b>ค่ามือช่าง:</b> <span class="faint">เชื่อมต่อไม่ได้</span>'; }); },180); }
+/* ---- categories ---- */
+/* "ต่อผม" = สแกนแล้วคิดราคาบริการต่อ มีช่าง มีค่ามือ
+ * "สินค้าอื่นๆ" = สแกนแล้วคิดราคาขายผมเปล่า ไม่ต้องระบุช่าง ไม่มีค่ามือ
+ * แยกให้ชัดตั้งแต่แท็บ จะได้ไม่เลือกโหมดผิดตอนปิดบิล */
+var CATS=['ต่อผม','ถอดผม','ขยับปม','สินค้าอื่นๆ'];
+var SCANMODE='ext';
+function buildCats(){ document.getElementById('cats').innerHTML=CATS.map(function(c){ return '<button class="cat'+(CAT===c?' on':'')+'" onclick="setCat(\''+c+'\')">'+esc(c)+'</button>'; }).join(''); }
+function setCat(c){ if(SCANNING)stopScan(); CAT=c; buildCats(); renderMenu(); }
+/* โฟกัสช่องรหัสทันที เครื่องยิงบาร์โค้ดจะยิงเข้าได้เลยโดยไม่ต้องแตะจอ */
+function afterMenu(){ var el=document.getElementById('manualCode');
+  if(el && !('ontouchstart' in window)) { try{ el.focus(); }catch(e){} } }
+function tile(icon,name,price,sub,onclick,disabled){ return '<button class="tile" '+(disabled?'disabled':('onclick="'+onclick+'"'))+'>'+(disabled?'':'<span class="add">＋</span>')+'<div class="ph">'+icon+'</div><div class="nm">'+esc(name)+'</div><div class="pr">'+price+'</div>'+(sub?('<div class="sub">'+sub+'</div>'):'')+'</button>'; }
+
+function scanBox(mode,title,sub){ SCANMODE=mode;
+  return '<div class="scanbox"><b style="font-weight:500">📷 '+title+'</b>'+
+    '<div class="mini" style="margin-top:4px">'+sub+'</div>'+
+    '<div style="display:flex;gap:8px;margin-top:10px">'+
+      '<input class="in" id="manualCode" inputmode="text" autocomplete="off" placeholder="ยิงเครื่องสแกน หรือพิมพ์รหัส QR" '+
+        'onkeydown="if(event.key===\'Enter\'){event.preventDefault();addManual();}" style="flex:1;margin:0">'+
+      '<button class="btn" style="width:auto;padding:0 16px;margin:0" onclick="addManual()">เพิ่ม</button></div>'+
+    '<button class="btn sec" id="scanBtn" style="margin-top:8px" onclick="toggleScan()">📷 เปิดกล้องสแกน</button>'+
+    '<div id="reader"></div>'+
+    '<div id="scanLog" class="mini" style="margin-top:8px"></div>'+
+    '</div>'; }
+function renderMenu(){ var box=document.getElementById('menuBody');
+  if(CAT==='ต่อผม'){
+    var h=scanBox('ext','สแกน QR ผม — เพื่อต่อผม',
+      'คิด <b>ราคาบริการต่อผม</b> · ต้องระบุช่าง · มีค่ามือช่าง<br>1 QR = 50g (หน่วยขายเล็กสุด)');
+    h+='<div style="margin:6px 2px 8px"><b style="font-weight:500;font-size:14px">✂️ บริการต่อผม — ลูกค้าเอาผมมาเอง</b><div class="mini">ไม่ใช้สต็อกร้าน · ไม่ต้องสแกน · คิดค่าบริการ + ค่ามือช่าง</div></div>';
+    h+='<div class="grid">'+(acctList().length?acctList().map(function(a){ var sv=svcByAcct(a); var p0=Math.round((Number(sv&&sv.byob_base)||0)+(Number(sv&&sv.byob_per_bundle)||0)); return tile('✂️', a, 'เริ่ม '+fmt(p0), '1 ชุด = '+qtyTag(a,1), "openLine('service','"+esc(a)+"')"); }).join(''):'<div class="empty" style="grid-column:1/-1">ยังไม่มีเทคนิคบริการ — ตรวจชีต Services คอลัมน์ active ต้องเป็น TRUE (หรือรัน fixActiveBlank ในตัวแก้ไข)</div>')+'</div>';
+    box.innerHTML=h; afterMenu(); return;
+  }
+  if(CAT==='สินค้าอื่นๆ'){
+    var h2=scanBox('plain','สแกน QR ผม — ขายผมเปล่า',
+      'คิด <b>ราคาขายผมเปล่า</b> · ไม่ต้องระบุช่าง · ไม่มีค่ามือช่าง');
+    h2+='<div class="grid">'+tile('➕','รายการกำหนดเอง','ตั้งราคาเอง','',"openLine('custom','')")+'</div>'+
+      '<div class="mini" style="margin-top:12px">💡 สินค้าที่ไม่ใช่ผม เช่น แชมพู / ทรีตเมนต์ — เพิ่มเป็นรายการกำหนดเองไปก่อนได้</div>';
+    box.innerHTML=h2; afterMenu(); return; }
+  if(CAT==='ถอดผม'){ box.innerHTML='<div class="grid">'+((DATA.removals||[]).map(function(r){ return tile('🧴',String(r.name),fmt(r.price)+' ฿','',"openLine('removal','"+esc(r.removal_id)+"')"); }).join('')||'<div class="empty" style="grid-column:1/-1">ยังไม่มีงานถอด</div>')+'</div>'; return; }
+  /* ขยับปม */
+  box.innerHTML='<div class="grid">'+(DATA.services||[]).map(function(s){ return tile('💆', String(s.acct_name), fmt(s.move_price)+' ฿','',"openLine('move','"+esc(s.acct_name)+"')"); }).join('')+'</div>';
+}
+
+/* ---- scanning ---- */
+var SCANNER=null, SCANNING=false;
+function toggleScan(){ if(SCANNING){ stopScan(); return; }
+  if(typeof Html5Qrcode==='undefined'){ toast('ไลบรารีสแกนยังไม่พร้อม ลองพิมพ์รหัสแทน',1); return; }
+  document.getElementById('reader').style.display='block'; document.getElementById('scanBtn').innerText='ปิดกล้อง';
+  SCANNER=new Html5Qrcode('reader'); SCANNING=true;
+  SCANNER.start({facingMode:'environment'},{fps:15,qrbox:{width:260,height:260},aspectRatio:1.0},function(txt){ onScan(txt); },function(){}).catch(function(e){ SCANNING=false; document.getElementById('scanBtn').innerText='เปิดกล้องสแกน'; toast('เปิดกล้องไม่ได้ ('+e+') · พิมพ์รหัสแทนได้',1); }); }
+function stopScan(){ if(SCANNER&&SCANNING){ SCANNER.stop().then(function(){SCANNER.clear();}).catch(function(){}); } SCANNING=false; document.getElementById('reader').style.display='none'; var b=document.getElementById('scanBtn'); if(b)b.innerText='เปิดกล้องสแกน'; }
+var _lastScan=0, _lastCode='';
+function onScan(code){ code=String(code).trim(); var now=Date.now();
+  if(code===_lastCode && now-_lastScan<2500) return;   /* กันอ่านซ้ำตัวเดิมรัว ๆ */
+  if(now-_lastScan<600) return;
+  _lastScan=now; _lastCode=code; addScan(code); }
+function addManual(){ var el=document.getElementById('manualCode'); var c=el.value.trim(); if(!c)return; addScan(c); el.value=''; try{el.focus();}catch(e){} }
+
+/* เตือนแบบค้างจอ ปิดเองไม่ได้ — ใช้กับเคสที่พลาดแล้วเสียหาย เช่นสแกนซ้ำ/ของขายไปแล้ว
+ * toast เดิมเล็กและหายใน 2-3 วิ พนักงานที่กำลังก้มดูเครื่องสแกนมองไม่ทัน */
+function scanAlert(title,msg,code,hint,icon){
+  var el=document.getElementById('scanAlert'); if(!el){ toast(title+' '+msg,1); return; }
+  document.getElementById('saIc').textContent=icon||'⛔';
+  document.getElementById('saTtl').textContent=title;
+  document.getElementById('saMsg').innerHTML=msg||'';
+  var c=document.getElementById('saCode'); c.textContent=code||''; c.style.display=code?'inline-block':'none';
+  var h=document.getElementById('saHint'); h.innerHTML=hint||''; h.style.display=hint?'block':'none';
+  el.classList.add('show');
+  try{ if(navigator.vibrate) navigator.vibrate([90,60,90]); }catch(e){}
+}
+function closeScanAlert(){ var el=document.getElementById('scanAlert'); if(el) el.classList.remove('show');
+  var b=document.getElementById('manualCode'); if(b){ b.value=''; b.focus(); } }
+document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeScanAlert(); });
+function scanLog(msg,bad){ var el=document.getElementById('scanLog'); if(!el)return;
+  el.innerHTML='<span style="color:'+(bad?'var(--crit)':'var(--ok)')+'">'+msg+'</span>'; }
+function addScan(code){ if(!code)return;
+  if(CART.filter(function(l){return l.kind==='product'&&l.barcode===code;}).length){ scanLog('⚠ '+code+' อยู่ในบิลแล้ว',1);
+    scanAlert('สแกนซ้ำ','QR ดวงนี้ถูกเพิ่มลงบิลนี้ไปแล้ว<br>ไม่ถูกเพิ่มซ้ำ',code,'ถ้าลูกค้าใช้ผมมากกว่า 1 มัด ต้องสแกน QR <b>คนละดวง</b> · 1 ดวง = 1 มัด','🔁');
+    return; }
+  scanLog('⟳ กำลังอ่าน '+code+'…');
+  api('scanUnit',{barcode:code}).then(function(r){ if(!r||!r.ok){ scanLog('✕ '+((r&&r.message)||'สแกนไม่สำเร็จ'),1); toast((r&&r.message)||'สแกนไม่สำเร็จ',1); return; }
+    var d=r.data;
+    /* คิวจองไม่ล็อกตัว QR แล้ว เหลือกันเฉพาะ sold/void ที่ขายไม่ได้จริง ๆ */
+    if(d.status!=='available'){ var why=(d.status==='sold'?'ขายไปแล้ว':(d.status==='void'?'ถูกยกเลิก':d.status));
+      scanLog('✕ '+code+' '+why+' — ขายไม่ได้',1);
+      scanAlert('ขายไม่ได้','QR ดวงนี้ <b>'+why+'</b> แล้ว<br>ไม่ถูกเพิ่มลงบิล',code,
+        (d.status==='sold'?'ถ้าลูกค้าถือมัดนี้อยู่จริง แปลว่าสติกเกอร์อาจซ้ำกัน หรือมีการขายไปก่อนหน้าโดยไม่ได้ตัดสต็อก — ตรวจกับผู้จัดการก่อนขาย'
+                           :'ล็อตนี้ถูกยกเลิกไปแล้ว ให้หยิบมัดอื่นแทน'),'⛔');
+      return; }
+    scanLog('✓ '+esc(d.hair_type||d.name||'')+' '+esc(String(d.length_in||''))+'นิ้ว '+esc(d.color||''));
+    openProductFromScan(d); if(navigator.vibrate)navigator.vibrate(40);
+  }).catch(function(){ scanLog('✕ เชื่อมต่อไม่สำเร็จ',1); toast('เชื่อมต่อไม่สำเร็จ',1); }); }
+
+/* ===================================================================
+ * PRODUCT POPUP (ขายผม จากสแกน) — ราคาเดียวตามเคส (เปล่า/ต่อ) · เทคนิคล็อกตามประเภทผม
+ * =================================================================== */
+var LD=null, LEDIT=null;
+function newProductBase(d){ var technique=techniqueFor(d.hair_type); var len=String(d.length_in||'');
+  return { kind:'product', barcode:d.barcode, variant_id:d.variant_id, name:String(d.name||d.hair_type||''),
+    hair_type:String(d.hair_type||''), length_in:len, color:String(d.color||''), grade:String(d.grade||''), texture:String(d.texture||''),
+    plainPrice:Number(d.sell_price)||0, extPrice:laborFor(technique,len), cost:(d.cost!=null?Number(d.cost):null),
+    mode:(SCANMODE==='plain'?'plain':'ext'), lockMode:true,
+    technique:technique, size:sizeLabelFor(technique,len), techs:[{name:USERTECH||'',split:100}] }; }
+function openProductFromScan(d){ LEDIT=null; LD=newProductBase(d); renderProduct(); openModal(); }
+function openProductEdit(i){ LEDIT=i; LD=JSON.parse(JSON.stringify(CART[i])); if(!LD.techs||!LD.techs.length)LD.techs=[{name:USERTECH||'',split:100}]; renderProduct(); openModal(); }
+function openModal(){ document.getElementById('lineModal').classList.add('show'); }
+
+function pdMode(m){ LD.mode=m; renderProduct(); }
+function pdSum(){ return LD.techs.reduce(function(a,t){return a+(Number(t.split)||0);},0); }
+function pdAddTech(){ LD.techs.push({name:'',split:0}); pdEven(); renderProduct(); }
+function pdRmTech(i){ LD.techs.splice(i,1); if(!LD.techs.length)LD.techs=[{name:'',split:100}]; pdEven(); renderProduct(); }
+function pdName(i,v){ LD.techs[i].name=v; }
+function pdSplit(i,v){ LD.techs[i].split=v; renderProduct(); }
+function pdEven(){ var n=LD.techs.length; if(n<=1){if(n)LD.techs[0].split=100;return;} var b=Math.floor(100/n); LD.techs.forEach(function(t,k){t.split=b+(k===0?(100-b*n):0);}); }
+function techOpts(sel){ return '<option value="">— ช่าง —</option>'+(DATA.technicians||[]).map(function(t){return '<option'+(String(t.name)===sel?' selected':'')+'>'+esc(t.name)+'</option>';}).join(''); }
+function pdQ(){ return Math.max(1, Math.round(Number(LD.qty_mad)||1)); }
+function pdTotal(){ return Math.round((LD.mode==='ext'?(Number(LD.extPrice)||0):(Number(LD.plainPrice)||0))*pdQ()); }
+
+function renderProduct(){ var l=LD, ext=(l.mode==='ext'), multi=l.techs.length>1, sum=pdSum(); var h='';
+  h+='<div class="idrow">'+
+     '<span class="pill">ประเภท <b>'+esc(l.hair_type||'-')+'</b></span>'+
+     '<span class="pill">ขนาด <b>'+esc(l.length_in?(l.length_in+'นิ้ว'):'-')+'</b></span>'+
+     '<span class="pill">สี <b>'+esc(l.color||'ดำ')+'</b></span>'+
+     '<span class="pill">รหัส <b>'+esc(l.barcode)+'</b></span>'+
+     '</div>';
+  if(l.lockMode){ h+='<div class="lockpill" style="margin-bottom:10px">'+(ext?'✂️ ต่อผม — คิดค่าบริการ + ค่ามือช่าง':'🏷️ ขายผมเปล่า — ไม่มีช่าง ไม่มีค่ามือ')+
+      ' <span class="faint" style="font-size:12px">(ตามแท็บที่สแกน)</span></div>'; }
+  else h+='<div class="seg"><button class="'+(!ext?'on':'')+'" onclick="pdMode(\'plain\')">ขายเปล่า</button><button class="'+(ext?'on':'')+'" onclick="pdMode(\'ext\')">✂️ ต่อผม (มีช่าง)</button></div>';
+  if(!ext){
+    h+='<label class="lbl">ราคาขายเปล่า /QR (฿) <span class="faint" style="font-size:11px">· 1 QR = '+qtyTag(l.technique||l.hair_type,1)+'</span></label><input class="in" type="number" style="text-align:right;font-size:17px;margin-bottom:6px" value="'+l.plainPrice+'" oninput="LD.plainPrice=parseFloat(this.value)||0;pdRefreshTotal()">';
+  } else {
+    h+='<div class="lockpill">🔒 เทคนิค: '+esc(l.technique||l.hair_type||'-')+' <span class="faint" style="font-size:12px">(ตามประเภทผม)</span></div>';
+    h+='<label class="lbl">ราคาขายต่อผม /QR (฿) <span class="faint" style="font-size:11px">· 1 QR = '+qtyTag(l.technique||l.hair_type,1)+'</span></label><input class="in" type="number" style="text-align:right;font-size:17px;margin-bottom:11px" value="'+l.extPrice+'" oninput="LD.extPrice=parseFloat(this.value)||0;pdRefreshTotal()">';
+    h+='<label class="lbl">ช่างที่ต่อ'+(multi?(' · รวม '+sum+'%'+(Math.round(sum)!==100?' ⚠':'')):'')+'</label>';
+    h+=l.techs.map(function(t,i){ return '<div class="tw"><select class="in" style="flex:1" onchange="pdName('+i+',this.value)">'+techOpts(t.name)+'</select>'+(multi?('<input class="in" type="number" style="width:56px;text-align:center" value="'+(t.split||0)+'" onchange="pdSplit('+i+',parseFloat(this.value)||0)"><span class="faint">%</span><button class="x" onclick="pdRmTech('+i+')">✕</button>'):'')+'</div>'; }).join('');
+    h+='<button class="btn sec" style="width:auto;padding:6px 12px;font-size:12px;margin:2px 0 10px" onclick="pdAddTech()">+ เพิ่มช่างร่วม</button>';
+  }
+  h+='<div class="tot grand" style="font-size:15px"><span>'+(ext?'ราคาขายต่อผม':'ราคาขายเปล่า')+(pdQ()>1?(' <span class="faint" style="font-size:12px">× '+pdQ()+' QR ('+qtyTag(l.technique||l.hair_type,pdQ())+')</span>'):'')+'</span><b id="pdTot" style="font-size:20px">'+fmt(pdTotal())+'</b></div>';
+  var cqT='product_ext', cqI=(l.technique||l.hair_type||''), cqQ=pdQ();
+  if(FULL && ext) h+=commBoxHtml(cqT,cqI,cqQ,'');
+  h+='<div style="margin-top:12px"><label class="lbl">ส่วนลดพิเศษเฉพาะรายการนี้ (฿)</label><input class="in" type="number" id="lmDisc" value="'+(Number(l.disc)||'')+'" placeholder="0 (เว้นว่าง=ไม่ลด)"></div>';
+  h+='<div class="row2" style="margin-top:16px"><button class="btn sec" onclick="closeLine()">ยกเลิก</button><button class="btn" onclick="confirmProduct()">'+(LEDIT!=null?'บันทึก':'＋ เพิ่มลงบิล')+'</button></div>';
+  document.getElementById('lmBody').innerHTML=h;
+  document.getElementById('lmTitle').innerText=(LEDIT!=null?'แก้ไขรายการ':esc(l.name||'ขายผม'));
+  if(FULL && ext) commAsk(cqT,cqI,cqQ);
+}
+function pdRefreshTotal(){ var e=document.getElementById('pdTot'); if(e)e.innerText=fmt(pdTotal()); }
+function confirmProduct(){ var l=LD; var price=pdTotal(); if(!(price>0)){ toast('ใส่ราคา',1); return; }
+  if(l.mode==='ext'){ var tc=l.techs.filter(function(t){return t.name;}); if(!tc.length && !FULL){ toast('เลือกช่างที่ต่อผม',1); return; }
+    if(tc.length>1&&Math.round(pdSum())!==100){ toast('สัดส่วนช่างต้องรวม 100%',1); return; } l.techs=tc; }
+  l.price=price; l.disc=Number((document.getElementById('lmDisc')||{}).value)||0;
+  if(LEDIT!=null)CART[LEDIT]=l; else CART.push(l); closeLine(); renderCart(); if(LEDIT==null)toast('เพิ่มลงบิลแล้ว'); }
+
+/* ===================================================================
+ * SERVICE(ลูกค้าเอาผมมาเอง) / MOVE / REMOVAL / CUSTOM popup
+ * =================================================================== */
+function openLine(kind,key,editIndex){ LEDIT=(editIndex==null?null:editIndex);
+  if(LEDIT!=null){ LD=JSON.parse(JSON.stringify(CART[editIndex])); if(!LD.techs||!LD.techs.length)LD.techs=[{name:USERTECH||'',split:100}]; }
+  else { var base={kind:kind,qty:1,price:0,unit:0,techs:[{name:USERTECH||'',split:100}],size:'',technique:''};
+    if(kind==='service'){ /* นำผมมาเอง (byob) — ตรงระบบจอง: byob_base + byob_per_bundle×qty · ไม่มีขนาด ไม่คิดค่าผม */
+      var sv=svcByAcct(key); base.item=key; base.technique=key; base.byobBase=Number(sv&&sv.byob_base)||0; base.byobPer=Number(sv&&sv.byob_per_bundle)||0; base.price=Math.round(base.byobBase+base.byobPer); }
+    else if(kind==='move'){ /* ขยับปม — move_price + move_add×(qty−1) (รวมถอดแล้ว) */
+      var sm=svcByAcct(key); base.item='ขยับปม'+key; base.technique=key; base.movePrice=Number(sm&&sm.move_price)||0; base.moveAdd=Number(sm&&sm.move_add)||0; base.price=base.movePrice; }
+    else if(kind==='removal'){ /* ถอดผม — ราคาเหมา ไม่มีจำนวน */
+      var rm=(DATA.removals||[]).filter(function(x){return String(x.removal_id)===key;})[0]||{name:'ถอดผม',price:0}; base.item=String(rm.name); base.price=Number(rm.price)||0; base.qty=1; }
+    else { base.item=''; }
+    LD=base; }
+  renderLine(); openModal(); }
+function lmRecalc(){ var l=LD; if(l.kind==='service')l.price=Math.round((l.byobBase||0)+(l.byobPer||0)*(l.qty||1));
+  else if(l.kind==='move')l.price=Math.round((l.movePrice||0)+(l.moveAdd||0)*((l.qty||1)-1)); }
+function lmStep(d){ if(LD.kind==='removal')return; LD.qty=Math.max(1,Math.round((Number(LD.qty)||1)+d)); lmRecalc(); renderLine(); }
+function lmSum(){ return LD.techs.reduce(function(a,t){return a+(Number(t.split)||0);},0); }
+function lmAddTech(){ LD.techs.push({name:'',split:0}); lmEven(); renderLine(); }
+function lmRmTech(i){ LD.techs.splice(i,1); if(!LD.techs.length)LD.techs=[{name:'',split:100}]; lmEven(); renderLine(); }
+function lmName(i,v){ LD.techs[i].name=v; }
+function lmSplit(i,v){ LD.techs[i].split=v; renderLine(); }
+function lmEven(){ var n=LD.techs.length; if(n<=1){if(n)LD.techs[0].split=100;return;} var b=Math.floor(100/n); LD.techs.forEach(function(t,k){t.split=b+(k===0?(100-b*n):0);}); }
+function renderLine(){ var l=LD, multi=l.techs.length>1, sum=lmSum(); var h='';
+  var cqHint=(l.kind==='move'?' <span class="faint">(ต่อ×จำนวน + ถอดเหมา)</span>':(l.kind==='removal'?' <span class="faint">(เหมา)</span>':''));
+  if(l.kind==='custom'){ h+='<label class="lbl">ชื่อรายการ</label><input class="in" value="'+esc(l.item)+'" oninput="LD.item=this.value" placeholder="เช่น แชมพู / ทรีตเมนต์" style="margin-bottom:11px">'; }
+  var qtyBlock='';
+  if(l.kind==='removal'){ qtyBlock='<div style="flex:0 0 auto"><label class="lbl">งานถอด</label><div class="lockpill" style="margin:0">🧴 ราคาเหมา (ไม่คิดตามจำนวน)</div></div>'; }
+  else { var disp=(l.kind==='custom')?(l.qty+' ชิ้น'):qtyTag(l.technique||l.item,l.qty);
+    qtyBlock='<div><label class="lbl">จำนวน'+(l.kind!=='custom'?' <span class="faint" style="font-size:11px">('+esc(sellUnitOf(l.technique||l.item))+' · กด±1 ชุด)</span>':'')+'</label><div class="stp"><button onclick="lmStep(-1)">−</button><span class="v" style="min-width:76px">'+esc(disp)+'</span><button onclick="lmStep(1)">＋</button></div></div>'; }
+  h+='<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:11px">'+qtyBlock+'<div style="flex:1"><label class="lbl">ราคารวม (฿)</label><input class="in" type="number" style="text-align:right;font-size:17px" value="'+l.price+'" oninput="LD.price=parseFloat(this.value)||0"></div></div>';
+  h+='<label class="lbl">ช่างที่ทำ'+(multi?(' · รวม '+sum+'%'+(Math.round(sum)!==100?' ⚠':'')):'')+'</label>';
+  h+=l.techs.map(function(t,i){ return '<div class="tw"><select class="in" style="flex:1" onchange="lmName('+i+',this.value)">'+techOpts(t.name)+'</select>'+(multi?('<input class="in" type="number" style="width:56px;text-align:center" value="'+(t.split||0)+'" onchange="lmSplit('+i+',parseFloat(this.value)||0)"><span class="faint">%</span><button class="x" onclick="lmRmTech('+i+')">✕</button>'):'')+'</div>'; }).join('');
+  h+='<button class="btn sec" style="width:auto;padding:6px 12px;font-size:12px;margin:2px 0 10px" onclick="lmAddTech()">+ เพิ่มช่างร่วม</button>';
+  if(FULL) h+=commBoxHtml(l.kind,l.item,l.qty,cqHint);
+  h+='<div style="margin-top:12px"><label class="lbl">ส่วนลดพิเศษเฉพาะรายการนี้ (฿)</label><input class="in" type="number" id="lmDisc" value="'+(Number(l.disc)||'')+'" placeholder="0 (เว้นว่าง=ไม่ลด)"></div>';
+  h+='<div class="row2" style="margin-top:16px"><button class="btn sec" onclick="closeLine()">ยกเลิก</button><button class="btn" onclick="confirmLine()">'+(LEDIT!=null?'บันทึก':'＋ เพิ่มลงบิล')+'</button></div>';
+  document.getElementById('lmBody').innerHTML=h; document.getElementById('lmTitle').innerText=(LEDIT!=null?'แก้ไขรายการ':esc(l.item||'รายการ'));
+  if(FULL) commAsk(l.kind,l.item,l.qty); }
+function confirmLine(){ var l=LD; if(!l.item){ toast('กรอกชื่อรายการ',1); return; } if(!(Number(l.price)>0)){ toast('ใส่ราคา',1); return; }
+  var tc=l.techs.filter(function(t){return t.name;}); if(tc.length>1&&Math.round(lmSum())!==100){ toast('สัดส่วนช่างต้องรวม 100%',1); return; }
+  l.disc=Number((document.getElementById('lmDisc')||{}).value)||0;
+  if(LEDIT!=null)CART[LEDIT]=l; else CART.push(l); closeLine(); renderCart(); if(LEDIT==null)toast('เพิ่มลงบิลแล้ว'); }
+function closeLine(){ QNOSHOW=null; document.getElementById('lineModal').classList.remove('show'); LD=null; LEDIT=null; }
+
+/* ===================================================================
+ * CART / BILL
+ * =================================================================== */
+function clearCart(){ CART=[]; QGUIDE=[]; QGTECH=''; window._disc=0; window._recv=0; window._split=false; window._p2a=0; window._slips=[]; window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName=''; PAY='เงินสด';
+  var cn=document.getElementById('cName'); if(cn)cn.value=''; var cp=document.getElementById('cPhone'); if(cp)cp.value=''; renderCart(); toast('ล้างบิลแล้ว'); }
+function delLine(i){ CART.splice(i,1); renderCart(); }
+function editLine(i){ if(CART[i].kind==='product')openProductEdit(i); else openLine(null,null,i); }
+function prodQty(l){ return Math.max(1, Math.round(Number(l.qty_mad)||1)); }
+function lineTotal(l){ if(l.kind==='product') return Math.round((l.mode==='ext'?(Number(l.extPrice)||0):(Number(l.plainPrice)||0))*prodQty(l)); return Number(l.price)||0; }
+function lineDisc(l){ return Math.max(0, Math.min(lineTotal(l), Math.round(Number(l.disc)||0))); } /* ส่วนลดพิเศษเฉพาะรายการ */
+function lineNet(l){ return lineTotal(l)-lineDisc(l); }
+function cartLineDisc(){ return CART.reduce(function(a,l){return a+lineDisc(l);},0); }
+function cartSub(){ return CART.reduce(function(a,l){return a+lineNet(l);},0); } /* รวมหลังหักส่วนลดรายการ */
+function cartDeposit(){ return Math.max(0, Math.round(Number(window._deposit)||0)); }
+function cartDue(){ return Math.max(0, cartSub()-(window._disc||0)-cartDeposit()); } /* _disc = ส่วนลดโปรโมชัน (คงที่) */
+
+/* ---- โปรโมชัน: จับคู่เงื่อนไข (ชื่อจริง) + คิดส่วนลด + เด้งโปรที่ดีสุด ---- */
+function pnorm(s){ return String(s==null?'':s).trim(); }
+function lineAttrs(l){ if(l.kind==='product') return { technique:l.hair_type||'', size:l.length_in||'', grade:l.grade||'', texture:l.texture||'', color:l.color||'', qty:prodQty(l), techs:(l.techs||[]).map(function(t){return t.name;}).filter(Boolean), amount:lineTotal(l) };
+  return { technique:String(l.item||'').replace('ขยับปม',''), size:l.size||'', grade:'', texture:'', color:'', qty:(Number(l.qty)||1), techs:(l.techs||[]).map(function(t){return t.name;}).filter(Boolean), amount:lineTotal(l) }; }
+/* min_qr = ขั้นต่ำเป็นจำนวน QR เหมือนทุกอย่างในระบบ (1 มัดใหญ่ = 2 QR) · ตรวจรวมทั้งบิล ไม่ใช่รายบรรทัด */
+function promoMatch(p,a){ if(p.tech&&a.techs.indexOf(p.tech)<0)return false;
+  if(p.technique&&pnorm(a.technique)!==pnorm(p.technique))return false;
+  if(p.size&&digits(a.size)!==digits(p.size))return false;
+  if(p.grade&&pnorm(a.grade)!==pnorm(p.grade))return false;
+  if(p.color&&pnorm(a.color)!==pnorm(p.color))return false;
+  if(p.texture&&pnorm(a.texture)!==pnorm(p.texture))return false;
+  return true; }
+function promoDiscount(p){ var attrs=CART.map(lineAttrs);
+  var hasCond=p.tech||p.technique||p.size||p.grade||p.color||p.texture;
+  var match=hasCond?attrs.filter(function(a){return promoMatch(p,a);}):attrs; if(!match.length)return 0;
+  var qty=match.reduce(function(s,a){return s+a.qty;},0); /* รวม QR ของรายการที่เข้าเงื่อนไข */
+  if(p.min_qr && qty < Number(p.min_qr)) return 0;   /* ขั้นต่ำนับเป็น QR (1 มัดใหญ่ = 2 QR) */
+  var base=match.reduce(function(s,a){return s+a.amount;},0), disc=0;
+  if(p.type==='percent')disc=Math.round(base*p.value/100); else disc=(p.per==='mad')?Math.round(p.value*qty):Math.round(p.value);
+  return Math.min(disc, cartSub()); }
+var PROMOLIST=[];
+function matchingPromos(){ return (DATA&&DATA.promos||[]).map(function(p){ return {p:p,disc:promoDiscount(p)}; }).filter(function(x){ return x.disc>0; }).sort(function(a,b){return b.disc-a.disc;}); }
+function promoBar(){ if(!CART.length)return '';
+  if(window._promoName){ return '<div class="promobar"><div style="min-width:0"><b style="color:var(--gold-soft)">🎁 '+esc(window._promoName)+'</b> <span class="mini">ลด '+fmt(window._disc||0)+' ฿</span></div><button class="chipbtn" style="border-color:var(--crit);color:var(--crit)" onclick="clearPromo()">ยกเลิกโปร</button></div>'; }
+  var n=matchingPromos().length;
+  return '<button class="btn sec" style="margin-top:8px" onclick="openPromoPicker()">🔍 ค้นหาโปรโมชั่น'+(n?(' · มี '+n+' โปรที่ใช้ได้'):'')+'</button>'; }
+function openPromoPicker(){ var list=matchingPromos(); PROMOLIST=list;
+  var h='<div class="mini" style="margin-bottom:10px">เลือกโปรที่ต้องการใช้ · ส่วนลดคิดตามเงื่อนไขอัตโนมัติ (แก้ไม่ได้)</div>';
+  if(!list.length){ h+='<div class="empty">ไม่มีโปรที่เข้าเงื่อนไขกับบิลนี้</div>'; }
+  else { h+=list.map(function(x,i){ return '<div class="promopick" onclick="applyPromoPick('+i+')"><div style="flex:1;min-width:0"><b style="font-weight:500">'+esc(x.p.name)+'</b>'+(x.p.show_text?('<div class="mini" style="margin-top:2px">'+esc(x.p.show_text)+'</div>'):'')+'</div><div class="mono" style="color:var(--gold-soft);white-space:nowrap">-'+fmt(x.disc)+' ฿</div></div>'; }).join(''); }
+  h+='<button class="btn sec" style="margin-top:14px" onclick="closeLine()">ปิด</button>';
+  document.getElementById('lmTitle').innerText='🎁 โปรโมชั่น'; document.getElementById('lmBody').innerHTML=h; document.getElementById('lineModal').classList.add('show'); }
+function applyPromoPick(i){ var x=PROMOLIST[i]; if(!x)return; window._disc=x.disc; window._promoName=x.p.name; closeLine(); renderCart(); toast('ใช้โปร: '+x.p.name); }
+function clearPromo(){ window._disc=0; window._promoName=''; renderCart(); toast('ยกเลิกโปรแล้ว'); }
+function lineTechNames(l){ var arr=(l.techs||[]); return arr.map(function(t){return t.name;}).filter(Boolean).join('+'); }
+
+function renderCart(){ var box=document.getElementById('cartBody');
+  var curName=document.getElementById('cName')?document.getElementById('cName').value:'';
+  var curPhone=document.getElementById('cPhone')?document.getElementById('cPhone').value:'';
+  var bkBanner=window._bookingId?('<div style="margin-bottom:10px;padding:10px 12px;background:var(--gold-ghost);border:1px solid var(--gold-dim);border-radius:11px;display:flex;align-items:center;justify-content:space-between;gap:8px"><div style="font-size:13px"><b style="color:var(--gold-soft)">📅 เช็คเอาต์คิว '+esc(window._bookingId)+'</b><div class="mini" style="margin-top:2px">'+esc(window._bookingName||'')+(cartDeposit()>0?(' · มัดจำ '+fmt(cartDeposit())+' ฿'):'')+'</div></div><button class="x" style="color:var(--muted)" onclick="detachBooking()">ไม่ผูกคิว</button></div>'):'';
+  var cust='<div class="row2" style="margin-bottom:10px"><input id="cName" class="in" placeholder="ชื่อลูกค้า (ไม่บังคับ)" value="'+esc(curName)+'"><input id="cPhone" class="in" inputmode="tel" placeholder="เบอร์โทร (ไม่บังคับ)" value="'+esc(curPhone)+'"></div>';
+  cust=bkBanner+guideCardHtml()+cust;
+  if(!CART.length){ box.innerHTML=cust+'<div class="empty">ยังไม่มีรายการ<br><span class="faint">สแกน QR · หรือเพิ่มบริการ/สินค้า</span></div>'; return; }
+  var lines=CART.map(function(l,i){ var det=[], tag='';
+    if(l.kind==='product'){ if(l.hair_type)det.push(l.hair_type); if(l.length_in)det.push(l.length_in+'นิ้ว'); if(l.grade)det.push('เกรด '+l.grade); if(l.texture)det.push(l.texture); if(l.color)det.push('สี '+l.color); det.push(qtyTag(l.hair_type,prodQty(l))); if(l.barcode)det.push(l.barcode);
+      if(l.mode==='ext'){ tag='<span style="color:var(--gold-soft);font-size:11px;background:var(--gold-ghost);border:1px solid var(--gold-dim);border-radius:6px;padding:1px 6px;margin-left:4px">✂️ ต่อผม'+(lineTechNames(l)?(' · '+esc(lineTechNames(l))):'')+'</span>'; }
+      else { tag='<span style="color:var(--faint);font-size:11px;margin-left:4px">· ขายเปล่า</span>'; }
+    } else { if(l.kind==='custom')det.push((l.qty||1)+' ชิ้น'); else if(l.kind==='removal')det.push('เหมา'); else { det.push('นำผมมาเอง'); if(l.size)det.push(/^\d+$/.test(String(l.size))?(l.size+'นิ้ว'):l.size); if(l.color)det.push('สี '+l.color); det.push(qtyTag(l.technique||l.item,l.qty||1)); } var tn=lineTechNames(l); if(tn)det.push('ช่าง '+tn); }
+    var ld=lineDisc(l); var priceHtml=ld>0?('<span style="text-decoration:line-through;color:var(--faint);font-size:12px">'+fmt(lineTotal(l))+'</span> <span class="mono" style="color:var(--gold-soft)">'+fmt(lineNet(l))+'</span>'):('<span class="mono" style="color:var(--gold-soft)">'+fmt(lineTotal(l))+'</span>');
+    return '<div style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)"><div style="flex:1;min-width:0;cursor:pointer" onclick="editLine('+i+')"><b style="font-weight:500">'+esc(l.kind==='product'?l.name:l.item)+'</b>'+tag+' <span style="color:var(--gold);font-size:12px">✎</span><div class="mini" style="margin-top:2px">'+esc(det.join(' · '))+(ld>0?(' · <span style="color:var(--gold-soft)">ลดพิเศษ -'+fmt(ld)+'</span>'):'')+'</div></div><div style="text-align:right">'+priceHtml+'</div><button class="x" onclick="delLine('+i+')">✕</button></div>';
+  }).join('');
+  var gross=CART.reduce(function(a,l){return a+lineTotal(l);},0), ldTot=cartLineDisc(), sub=cartSub(), disc=window._disc||0, dep=cartDeposit(), due=cartDue();
+  var pay=promoBar()+
+    '<div class="tot"><span>รวมราคาเต็ม</span><b>'+fmt(gross)+'</b></div>'+
+    (ldTot>0?('<div class="tot"><span>ส่วนลดพิเศษรายการ</span><b style="color:var(--ok)">-'+fmt(ldTot)+'</b></div>'):'')+
+    (window._promoName?('<div class="tot"><span>🎁 โปร: '+esc(window._promoName)+'</span><b style="color:var(--ok)">-'+fmt(disc)+'</b></div>'):'')+
+    ((ldTot>0||disc>0)?('<div class="tot"><span>รวมหลังส่วนลด</span><b>'+fmt(sub-disc)+'</b></div>'):'')+
+    (dep>0?('<div class="tot"><span>หัก มัดจำที่ชำระแล้ว</span><b style="color:var(--ok)">-'+fmt(dep)+'</b></div>'):'')+
+    '<div class="tot grand"><span>ยอดชำระ</span><b>'+fmt(due)+'</b></div>'+
+    '<div class="chkline"><input type="checkbox" id="splitChk" '+(window._split?'checked':'')+' onchange="window._split=this.checked;renderCart()"><label for="splitChk">แยกจ่าย 2 ช่องทาง</label></div>';
+
+  if(!window._split){
+    pay+='<label class="lbl" style="margin-top:8px">ช่องทางรับเงิน</label><div class="pm">'+
+      payBtn('เงินสด','💵',false)+payBtn('พร้อมเพย์','📱',false)+payBtn('บัตรเครดิต','💳',true)+'</div>';
+    pay+=payDetail(PAY, due);
+  } else {
+    var a2=Math.min(due, window._p2a||0); var a1=Math.max(0,due-a2);
+    pay+='<div style="margin-top:10px;padding:10px;background:var(--bg2);border:1px solid var(--line);border-radius:10px">'+
+      '<div class="row2"><div><label class="lbl">ช่องทางที่ 1</label><select class="in" id="p1m" onchange="renderCart()">'+mOpts(PAY)+'</select></div><div><label class="lbl">จำนวน (฿)</label><div class="in" style="text-align:right;color:var(--gold-soft)"><span id="p1amt">'+fmt(a1)+'</span></div></div></div>'+
+      '<div class="row2" style="margin-top:8px"><div><label class="lbl">ช่องทางที่ 2</label><select class="in" id="p2m" onchange="window._p2m=this.value;renderCart()">'+mOpts(window._p2m)+'</select></div><div><label class="lbl">จำนวน (฿)</label><input class="in" type="number" style="text-align:right" value="'+(window._p2a||'')+'" oninput="window._p2a=parseFloat(this.value)||0;updateMoney()"></div></div>'+
+      '<div class="mini">ช่องทางที่ 1 รับส่วนที่เหลือ = <b style="color:var(--gold-soft)"><span id="p1amt2">'+fmt(a1)+'</span></b> ฿ อัตโนมัติ</div>'+
+      '</div>';
+    pay+=splitDetail(due);
+  }
+  pay+='<div id="saveWrap" style="margin-top:12px"></div>';
+  box.innerHTML=cust+'<div style="margin-bottom:4px">'+lines+'</div>'+pay;
+  renderSaveArea(due);
+  if(needQR()) drawQR(due);
+}
+function payBtn(m,ic,dis){ return '<button class="'+(PAY===m?'on':'')+'" '+(dis?'disabled title="เร็วๆ นี้"':'onclick="setPay(\''+m+'\')"')+'><span>'+ic+'</span>'+m+(dis?'<span style="font-size:9px">เร็วๆนี้</span>':'')+'</button>'; }
+function mOpts(sel){ return ['เงินสด','พร้อมเพย์'].map(function(m){return '<option'+(m===sel?' selected':'')+'>'+m+'</option>';}).join(''); }
+function setPay(m){ PAY=m; renderCart(); }
+
+function activeMethods(){ if(window._split){ var p1=document.getElementById('p1m'); var m1=p1?p1.value:PAY; return [m1, window._p2m]; } return [PAY]; }
+function needSlip(){ return activeMethods().indexOf('พร้อมเพย์')>=0; }
+function needQR(){ if(window._split){ return (window._p2m==='พร้อมเพย์'); } return PAY==='พร้อมเพย์'; }
+
+function payDetail(m, due){
+  if(m==='เงินสด'){ var recv=window._recv||0;
+    return '<div class="row2" style="margin-top:8px"><div><label class="lbl">รับเงินมา</label><input class="in" type="number" value="'+(recv||'')+'" oninput="window._recv=parseFloat(this.value)||0;updateMoney()"></div><div><label class="lbl">เงินทอน</label><div class="in" style="color:var(--gold-soft)"><span id="chg">'+fmt(Math.max(0,recv-due))+'</span></div></div></div>';
+  }
+  if(m==='พร้อมเพย์'){ return '<div class="mini" style="text-align:center;margin:8px 0">สแกนจ่าย <b style="color:var(--gold-soft)">'+fmt(due)+'</b> บาท</div><div id="qr" style="display:flex;justify-content:center"></div>'+payLogos()+slipUI('พร้อมเพย์'); }
+  return '';
+}
+function payLogos(){ return '<div class="paylogos"><span class="plogo pp">Prompt<i>Pay</i></span><span class="plogo visa">VISA</span><span class="plogo mc"><span class="c r"></span><span class="c o"></span></span><span class="plogo spay"><span class="ic">S</span>Pay</span><span style="display:inline-flex;align-items:center;gap:4px"><span style="font-size:11px;color:#9a9484;font-weight:600;font-family:Arial">Rabbit</span><span class="plogo line">LINE Pay</span></span></div>'; }
+function splitDetail(due){ var h=''; var a2=Math.min(due,window._p2a||0);
+  if(window._p2m==='พร้อมเพย์'){ h+='<div class="mini" style="text-align:center;margin:8px 0">QR พร้อมเพย์ช่องทางที่ 2 · <b style="color:var(--gold-soft)"><span id="p2amt">'+fmt(a2)+'</span></b> บาท</div><div id="qr" style="display:flex;justify-content:center"></div>'+payLogos(); }
+  if(needSlip()) h+=slipUI('พร้อมเพย์');
+  return h;
+}
+function slipUI(label){ var thumbs=(window._slips||[]).map(function(s,i){ return '<div class="t"><img src="'+s.dataUrl+'"><button onclick="rmSlip('+i+')">✕</button></div>'; }).join('');
+  return '<div style="margin-top:10px;padding:12px;background:var(--bg2);border:1px solid var(--line);border-radius:10px">'+
+    '<label class="lbl" style="margin-top:0">📎 สลิป'+esc(label)+' (ถ่าย/แนบก่อนออกใบเสร็จ)</label>'+
+    '<input type="file" accept="image/*" capture="environment" id="slipCam" onchange="onSlipPick(event)" style="display:none">'+
+    '<input type="file" accept="image/*" id="slipFile" onchange="onSlipPick(event)" style="display:none">'+
+    '<button type="button" class="btn" onclick="document.getElementById(\'slipCam\').click()">📷 ถ่ายรูปสลิป</button>'+
+    '<div style="text-align:center;margin-top:8px"><button type="button" onclick="document.getElementById(\'slipFile\').click()" style="background:none;border:none;color:var(--muted);font-size:12.5px;text-decoration:underline;cursor:pointer;font-family:inherit">หรือเลือกรูปจากเครื่อง</button></div>'+
+    (thumbs?('<div class="slipthumb">'+thumbs+'</div>'):'<div class="mini" style="text-align:center">ยังไม่มีสลิป — จำเป็นต้องแนบอย่างน้อย 1 รูป</div>')+
+    '</div>';
+}
+function onSlipPick(ev){ var f=ev.target.files&&ev.target.files[0]; ev.target.value=''; if(!f)return; compressImage(f,1000,0.65,function(durl){ if(!durl){ toast('อ่านรูปไม่ได้',1); return; } window._slips.push({dataUrl:durl}); renderCart(); toast('แนบสลิปแล้ว'); }); }
+function rmSlip(i){ window._slips.splice(i,1); renderCart(); }
+function compressImage(file,maxW,q,cb){ try{ var img=new Image(); var url=URL.createObjectURL(file);
+  img.onload=function(){ var w=img.width,h=img.height; if(w>maxW){ h=Math.round(h*maxW/w); w=maxW; } var c=document.createElement('canvas'); c.width=w;c.height=h; c.getContext('2d').drawImage(img,0,0,w,h); var durl; try{durl=c.toDataURL('image/jpeg',q);}catch(e){durl=null;} URL.revokeObjectURL(url); cb(durl); };
+  img.onerror=function(){ URL.revokeObjectURL(url); cb(null); }; img.src=url; }catch(e){ cb(null); } }
+
+/* อัปเดตเฉพาะตัวเลขที่เปลี่ยน — ไม่ render ใหม่ทั้งบิล (กันเคอร์เซอร์เด้ง/โฟกัสหลุด) */
+function updateMoney(){ var sub=cartSub(), disc=window._disc||0, due=cartDue();
+  if(!window._split && PAY==='เงินสด'){ var recv=window._recv||0; var chg=document.getElementById('chg'); if(chg)chg.innerText=fmt(Math.max(0,recv-due)); }
+  if(window._split){ var a2=Math.min(due,window._p2a||0), a1=Math.max(0,due-a2);
+    var e1=document.getElementById('p1amt'); if(e1)e1.innerText=fmt(a1); var e1b=document.getElementById('p1amt2'); if(e1b)e1b.innerText=fmt(a1);
+    var e2=document.getElementById('p2amt'); if(e2)e2.innerText=fmt(a2); if(needQR())drawQR(due); }
+  renderSaveArea(due);
+}
+function renderSaveArea(due){ var w=document.getElementById('saveWrap'); if(!w)return; var problems=saveProblems(due);
+  w.innerHTML=(problems.length?('<div class="warn">'+problems.map(esc).join('<br>')+'</div>'):'')+
+    '<button class="btn" id="btnSave" '+(problems.length?'disabled':'')+' onclick="saveSale()">💾 บันทึกการขาย + ใบเสร็จ</button>';
+}
+function saveProblems(due){ var p=[];
+  if(!CART.length){ p.push('ยังไม่มีรายการ'); return p; }
+  for(var i=0;i<CART.length;i++){ if(!(lineTotal(CART[i])>0)) p.push('รายการ '+(i+1)+' ยังไม่มีราคา'); }
+  /* เตือนลืมเลือกช่าง — บังคับเฉพาะพนักงาน · เจ้าของ/ผู้จัดการ (FULL) ให้ยืนยันผ่านได้ (ไม่คิดค่ามือ) */
+  if(!FULL){ for(var j=0;j<CART.length;j++){ var lj=CART[j], needT=(lj.kind==='service'||lj.kind==='removal'||(lj.kind==='product'&&lj.mode==='ext')); if(needT && !lineTechNames(lj)) p.push('⚠ รายการ '+(j+1)+' ('+(lj.kind==='product'?lj.name:lj.item)+') ยังไม่ได้เลือกช่าง'); } }
+  if(!window._split){ if(PAY==='เงินสด'){ var recv=window._recv||0; if(recv<due) p.push('รับเงินสดน้อยกว่ายอดชำระ ('+fmt(due-recv)+' ฿)'); } }
+  else { var p1=document.getElementById('p1m'); var m1=p1?p1.value:PAY;
+    if((window._p2a||0)<=0) p.push('ใส่จำนวนช่องทางที่ 2');
+    if((window._p2a||0)>due) p.push('ช่องทางที่ 2 เกินยอดชำระ');
+    if(m1===window._p2m) p.push('เลือกช่องทางที่ 1 และ 2 ให้ต่างกัน'); }
+  if(needSlip() && !(window._slips&&window._slips.length)) p.push('แนบสลิปพร้อมเพย์ก่อนบันทึก');
+  return p;
+}
+
+/* PromptPay QR (บุคคล tag29 / ร้านค้า K-Shop tag30 Bill Payment) */
+function posCfg(){ var s=DATA.settings||{}; var biller=String(s.promptPayBiller||'').replace(/[^0-9]/g,''); var tpl=String(s.promptPayTemplate||'').trim(); var pt=String(s.promptPayType||'').toLowerCase();
+  var tplOk=/^0002/.test(tpl)&&tpl.length>=60; /* มี QR แม่แบบ K-Shop → ใช้เสมอ */
+  var type=tplOk?'template':((pt==='biller'&&biller)?'biller':'personal');
+  return { type:type, promptPayId:String(s.promptPayId||''), billerId:biller, ref:String(s.promptPayRef||''), template:tpl }; }
+function tlvParse(s){ var i=0,o=[]; while(i+4<=s.length){ var t=s.substr(i,2),l=parseInt(s.substr(i+2,2),10); if(isNaN(l))break; o.push({t:t,v:s.substr(i+4,l)}); i+=4+l; } return o; }
+function tlvBuild(a){ return a.map(function(x){ return x.t+('0'+x.v.length).slice(-2)+x.v; }).join(''); }
+function injectAmount(tpl,amount){ var body=tpl.replace(/63[0-9]{2}[0-9A-Fa-f]{4}$/,''); var arr=tlvParse(body), amt=Number(amount).toFixed(2), found=false;
+  for(var i=0;i<arr.length;i++){ if(arr[i].t==='54'){ arr[i].v=amt; found=true; } }
+  if(!found){ var idx=-1; for(var j=0;j<arr.length;j++){ if(arr[j].t==='58'){ idx=j; break; } } if(idx<0)idx=arr.length; arr.splice(idx,0,{t:'54',v:amt}); }
+  var rb=tlvBuild(arr)+'6304'; return rb+crc16(rb); }
+function drawQR(amt){ var el=document.getElementById('qr'); if(!el)return; var cfg=posCfg();
+  var has=(cfg.type==='template')?!!cfg.template:((cfg.type==='biller')?!!cfg.billerId:(String(cfg.promptPayId||'').replace(/[^0-9]/g,'').length>=10));
+  if(!has){ el.innerHTML='<div class="faint">ยังไม่ตั้งพร้อมเพย์</div>'; return; }
+  if(window._split){ amt=Math.min(amt, window._p2a||0); }
+  if(typeof QRCode==='undefined'){ el.innerHTML='<div class="faint">กำลังเตรียม QR…</div>'; return; }
+  var pref=((CART&&CART.length&&(document.getElementById('cPhone')||{}).value)||'').replace(/[^0-9]/g,'');
+  el.innerHTML=''; try{ new QRCode(el,{text:ppPayload(cfg,amt,pref),width:180,height:180,correctLevel:QRCode.CorrectLevel.M}); }catch(e){ el.innerHTML='<div class="faint">สร้าง QR ไม่ได้</div>'; } }
+function ppF(id,v){ return id+('0'+v.length).slice(-2)+v; }
+function ppPayload(cfg,amount,ref){ var merchant;
+  if(cfg.type==='template'&&cfg.template) return injectAmount(cfg.template, amount);
+  if(cfg.type==='biller'&&cfg.billerId){ var m=ppF('00','A000000677010112')+ppF('01',String(cfg.billerId).replace(/[^0-9]/g,''));
+    var r=String(ref||cfg.ref||'').replace(/[^0-9A-Za-z]/g,''); if(!r)r='POS'+Date.now().toString().slice(-8); m+=ppF('02',r); merchant=ppF('30',m); }
+  else { var id=String(cfg.promptPayId).replace(/[^0-9]/g,''); var tag,target; if(id.length>=15){tag='03';target=id;}else if(id.length===13){tag='02';target=id;}else{tag='01';target='0066'+id.replace(/^0/,'');}
+    merchant=ppF('29',ppF('00','A000000677010111')+ppF(tag,target)); }
+  var p=ppF('00','01')+ppF('01',amount>0?'12':'11')+merchant+ppF('53','764')+(amount>0?ppF('54',Number(amount).toFixed(2)):'')+ppF('58','TH')+'6304'; return p+crc16(p); }
+function crc16(s){ var c=0xFFFF; for(var i=0;i<s.length;i++){ c^=s.charCodeAt(i)<<8; for(var j=0;j<8;j++){ c=(c&0x8000)?((c<<1)^0x1021):(c<<1); c&=0xFFFF; } } return ('000'+c.toString(16).toUpperCase()).slice(-4); }
+
+/* ---- save ---- */
+function buildPayments(due){
+  if(!window._split){ if(PAY==='เงินสด') return [{method:'เงินสด',amount:(window._recv||due)}]; return [{method:PAY,amount:due}]; }
+  var a2=Math.min(due,window._p2a||0), a1=Math.max(0,due-a2);
+  var p1=document.getElementById('p1m'); var m1=p1?p1.value:PAY;
+  var arr=[]; if(a1>0)arr.push({method:m1,amount:a1}); if(a2>0)arr.push({method:window._p2m,amount:a2}); return arr;
+}
+function saveSale(){ if(BUSY)return; var sub=cartSub(), disc=window._disc||0, due=cartDue();
+  var probs=saveProblems(due); if(probs.length){ toast(probs[0],1); return; }
+  /* เจ้าของ/ผู้จัดการให้บริการเอง (ไม่ระบุช่าง) → ยืนยัน · ไม่คิดค่ามือ */
+  if(FULL){ var noT=CART.filter(function(l){ return (l.kind==='service'||l.kind==='removal'||(l.kind==='product'&&l.mode==='ext')) && !lineTechNames(l); });
+    if(noT.length && !confirm('มี '+noT.length+' รายการไม่ได้ระบุช่าง\nยืนยันว่าเจ้าของ/ผู้จัดการเป็นผู้ให้บริการ (ไม่คิดค่ามือช่าง) ?')) return; }
+  var cn=document.getElementById('cName'), cp=document.getElementById('cPhone'); var payments=buildPayments(due);
+  var sale={ customer:(cn?cn.value:'')||'ลูกค้า', phone:(cp?cp.value.trim():''), discount:disc, payments:payments,
+    booking_id:(window._bookingId||''), deposit_applied:cartDeposit(), note:(window._promoName?('โปร: '+window._promoName):''),
+    lines:CART.map(function(l){ if(l.kind==='product') return {type:'product', variant_id:l.variant_id, barcode:l.barcode, qty_mad:prodQty(l), unitPrice:(l.mode==='ext'?l.extPrice:l.plainPrice), disc:lineDisc(l), ext:(l.mode==='ext'?{on:true,technique:l.technique,size:l.size,techs:l.techs.filter(function(t){return t.name;})}:{on:false})};
+      return {type:l.kind,item:l.item,size:l.size,qty_mad:l.qty,price:l.price,disc:lineDisc(l),techs:(l.techs||[]).filter(function(t){return t.name;})}; }) };
+  BUSY=true; var b=document.getElementById('btnSave'); if(b){b.disabled=true;b.innerHTML='⏳ กำลังบันทึก…';}
+  var slips=(window._slips||[]).slice(); var slipMethod=(payments.filter(function(p){return p.method!=='เงินสด';})[0]||{}).method||'';
+  api('createSale',sale).then(function(r){ BUSY=false; if(!r||!r.ok){ var bb=document.getElementById('btnSave'); if(bb){bb.disabled=false;bb.innerHTML='💾 บันทึกการขาย + ใบเสร็จ';} toast((r&&r.message)||'บันทึกไม่สำเร็จ',1); return; }
+    var rc=r.data.receipt; var saleId=rc.bill;
+    if(slips.length){ toast('กำลังอัปโหลดสลิป…'); uploadSlips(saleId, slipMethod, due, slips, 0, function(){ finishSale(rc); }); }
+    else finishSale(rc);
+  }).catch(function(){ BUSY=false; var bb=document.getElementById('btnSave'); if(bb){bb.disabled=false;bb.innerHTML='💾 บันทึกการขาย + ใบเสร็จ';} toast('เชื่อมต่อไม่สำเร็จ',1); }); }
+function uploadSlips(saleId, method, amount, slips, i, done){ if(i>=slips.length){ done(); return; }
+  api('uploadSlip',{sale_id:saleId, method:method, amount:amount, dataUrl:slips[i].dataUrl}).then(function(r){
+    if(!r||!r.ok){ alert('⚠️ อัปโหลดสลิปไม่สำเร็จ: '+((r&&r.message)||'ไม่ทราบสาเหตุ')+'\n\n(มักเกิดจากยังไม่ได้อนุญาตสิทธิ์ Drive — ให้รัน grantDrive ใน Apps Script ก่อน)'); }
+    uploadSlips(saleId,method,amount,slips,i+1,done); })
+  .catch(function(){ alert('⚠️ เชื่อมต่อไม่ได้ตอนอัปโหลดสลิปรูปที่ '+(i+1)); uploadSlips(saleId,method,amount,slips,i+1,done); }); }
+function finishSale(rc){ showReceipt(rc); CART=[]; QGUIDE=[]; QGTECH=''; window._disc=0; window._recv=0; window._split=false; window._p2a=0; window._slips=[]; window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName=''; PAY='เงินสด';
+  var cn=document.getElementById('cName'); if(cn)cn.value=''; var cp=document.getElementById('cPhone'); if(cp)cp.value=''; renderCart(); if(FULL)loadToday(); }
+
+function showReceipt(rc){ document.getElementById('rcpt').innerHTML=receiptHtml(rc); document.getElementById('rcptModal').classList.add('show'); }
+/* เลย์เอาต์ใบเสร็จ — ใช้ร่วมกันระหว่าง "ออกใบเสร็จตอนขาย" กับ "เปิดบิลย้อนหลัง/พิมพ์ซ้ำ" จะได้ตรงกันเสมอ */
+function receiptHtml(rc){ var h='<h3>'+esc(rc.shopName)+'</h3><div class="c">ใบเสร็จรับเงิน</div><div class="c">'+esc(rc.bill)+' · '+esc(rc.datetime)+'</div><div class="c">ลูกค้า: '+esc(rc.customer)+'</div><div class="hr"></div>';
+  (rc.lines||[]).forEach(function(l){ var isP=(l.type==='product'), det=[];
+    if(l.byob) det.push('นำผมมาเอง');
+    if(!isP && l.size) det.push(/^\d+$/.test(String(l.size))?(l.size+'นิ้ว'):l.size);
+    if(l.color) det.push('สี '+l.color);
+    var q=(l.type==='removal')?'เหมา':qtyTag(l.unit_ref||l.item,l.qty); if(q)det.push(q);
+    if(l.tech) det.push('ช่าง '+l.tech); else if(l.ext) det.push('ต่อผม');
+    h+='<div class="rr"><span>'+esc(l.item)+'</span><span>'+fmt(l.price)+'</span></div>';
+    if(det.length) h+='<div class="rr sub"><span>'+esc(det.join(' · '))+'</span><span></span></div>';
+    if(Number(l.disc)>0) h+='<div class="rr sub"><span>ส่วนลดพิเศษ</span><span>-'+fmt(l.disc)+'</span></div>';
+  });
+  var gross=(rc.gross!=null?rc.gross:rc.subtotal), due=(rc.due!=null?rc.due:rc.total);
+  h+='<div class="hr"></div><div class="rr"><span>รวมราคาเต็ม</span><span>'+fmt(gross)+'</span></div>';
+  if(Number(rc.lineDiscTotal)>0)h+='<div class="rr"><span>ส่วนลดพิเศษรายการ</span><span>-'+fmt(rc.lineDiscTotal)+'</span></div>';
+  if(Number(rc.discount)>0)h+='<div class="rr"><span>ส่วนลด'+(rc.discount_name?(' · '+esc(rc.discount_name)):'')+'</span><span>-'+fmt(rc.discount)+'</span></div>';
+  if(Number(rc.deposit_applied)>0)h+='<div class="rr"><span>หัก มัดจำที่ชำระแล้ว</span><span>-'+fmt(rc.deposit_applied)+'</span></div>';
+  h+='<div class="rr big"><span>ยอดชำระ</span><span>'+fmt(due)+'</span></div>';
+  (rc.payments||[]).forEach(function(p){ h+='<div class="rr"><span>ชำระ · '+esc(p.method)+'</span><span>'+fmt(p.amount)+'</span></div>'; });
+  if(rc.change>0)h+='<div class="rr"><span>เงินทอน</span><span>'+fmt(rc.change)+'</span></div>';
+  if(rc.cashier)h+='<div class="rr sub"><span>ผู้ทำรายการ '+esc(rc.cashier)+'</span><span></span></div>';
+  h+='<div class="hr"></div><div class="c">ขอบคุณค่ะ 🤍 '+esc(rc.shopName||'House265')+'</div>';
+  return h; }
+function closeRcpt(){ document.getElementById('rcptModal').classList.remove('show'); }
+function printRcpt(srcId){ var el=document.getElementById(srcId||'rcpt'); if(!el){toast('ไม่พบใบเสร็จ',1);return;} var w=window.open('','_blank'); if(!w){toast('เบราว์เซอร์บล็อกหน้าต่างพิมพ์',1);return;} w.document.write('<html><head><title>ใบเสร็จ</title><style>body{font-family:monospace;font-size:12px;width:58mm;margin:0;padding:6px}h3{text-align:center;margin:0}.c{text-align:center}.rr{display:flex;justify-content:space-between}.rr.sub{color:#777;font-size:10px;padding-left:8px}.hr{border-top:1px dashed #999;margin:6px 0}.big{font-size:15px;font-weight:bold}</style></head><body>'+el.innerHTML+'</body></html>'); w.document.close(); w.focus(); setTimeout(function(){w.print();},300); }
+
+/* ---- today ---- */
+function loadToday(){ var box=document.getElementById('todayBox'); if(!box)return; box.innerHTML='<div class="empty">กำลังโหลด…</div>';
+  api('todaySales',{}).then(function(r){ if(!r||!r.ok){ box.innerHTML='<div class="empty">โหลดไม่สำเร็จ</div>'; return; } var d=r.data;
+    var bm=d.byMethod||{}; var h='<div class="tot"><span>ยอดขายวันนี้</span><b style="color:var(--gold-soft);font-size:18px">'+fmt(d.revenue)+'</b></div><div class="tot"><span>จำนวนบิล</span><b>'+d.count+'</b></div><div class="tot"><span>ค่ามือรวม</span><b>'+fmt(d.commission)+'</b></div>';
+    h+='<div class="mini" style="margin-top:6px">แยกช่องทาง: '+(Object.keys(bm).length?Object.keys(bm).map(function(k){return esc(k)+' '+fmt(bm[k]);}).join(' · '):'—')+'</div><div class="hr" style="border-top:1px solid var(--line);margin:10px 0"></div>';
+    h+=(d.sales||[]).map(function(s){return '<div class="tot"><span>'+esc(s.customer)+' <span class="faint">'+esc(s.bill)+'</span></span><b>'+fmt(s.total)+'</b></div>';}).join('')||'<div class="empty">ยังไม่มีการขายวันนี้</div>';
+    box.innerHTML=h; }).catch(function(){ box.innerHTML='<div class="empty">เชื่อมต่อไม่สำเร็จ</div>'; }); }
+
+/* ---- บิลย้อนหลัง + ค้นหา + เทียบสลิป ---- */
+function ymd_(d){ return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
+function initHistDates(){ var f=document.getElementById('hFrom'), t=document.getElementById('hTo');
+  if(f&&t&&!f.value&&!t.value){ f.value=todayStr().slice(0,8)+'01'; t.value=todayStr(); } }
+function histPreset(p){ var f=document.getElementById('hFrom'), t=document.getElementById('hTo'), today=todayStr();
+  if(p==='today'){ f.value=today; t.value=today; }
+  else if(p==='7'){ var d=new Date(); d.setDate(d.getDate()-6); f.value=ymd_(d); t.value=today; }
+  else if(p==='month'){ f.value=today.slice(0,8)+'01'; t.value=today; }
+  else { f.value=''; t.value=''; }
+  loadHistory(); }
+function loadHistory(){ var box=document.getElementById('histBox'); if(!box)return;
+  var q=((document.getElementById('hQ')||{}).value||'').trim(), from=(document.getElementById('hFrom')||{}).value||'', to=(document.getElementById('hTo')||{}).value||'';
+  var sum=document.getElementById('histSum');
+  if(!q && !from && !to){ box.innerHTML='<div class="empty">พิมพ์คำค้น หรือเลือกช่วงวันที่</div>'; sum.innerHTML=''; return; }
+  box.innerHTML='<div class="empty">กำลังค้นหา…</div>';
+  api('salesHistory',{q:q, dateFrom:from, dateTo:to, limit:200}).then(function(r){
+    if(!r||!r.ok){ box.innerHTML='<div class="empty">'+esc((r&&r.message)||'ค้นหาไม่สำเร็จ')+'</div>'; sum.innerHTML=''; return; }
+    var d=r.data, list=d.sales||[];
+    sum.innerHTML='พบ <b>'+fmt(d.count)+'</b> บิล'+(d.count>d.shown?(' (แสดง '+fmt(d.shown)+' ล่าสุด)'):'')+' · ยอดรวม <b style="color:var(--gold-soft)">'+fmt(d.sum)+'</b> ฿';
+    box.innerHTML=list.length?list.map(histRow).join(''):'<div class="empty">ไม่พบบิลที่ตรงเงื่อนไข</div>';
+  }).catch(function(){ box.innerHTML='<div class="empty">เชื่อมต่อไม่สำเร็จ</div>'; sum.innerHTML=''; }); }
+function histBadge(s){ var need=/พร้อมเพย์|โอน|บัตร/.test(s.pay_method||'');
+  if(s.slip_count>0){ return s.slip_match ? '<span class="badge ok">✓ สลิปตรงยอดโอน</span>'
+    : '<span class="badge bad">⚠️ สลิป '+fmt(s.slip_total)+' / ยอดโอน '+fmt(s.slip_expect!=null?s.slip_expect:s.total)+'</span>'; }
+  return need ? '<span class="badge warn">📎 ยังไม่มีสลิป</span>' : ''; }
+function histRow(s){ var t=String(s.datetime).replace('T',' ').slice(5,16);
+  var sub=[s.phone,s.line].filter(Boolean).join(' · '), bdg=histBadge(s);
+  return '<div class="sliprow" style="cursor:pointer" onclick="openBill(\''+esc(s.sale_id)+'\')">'+
+    '<div class="meta"><b style="font-weight:500">'+esc(s.customer||'ลูกค้า')+'</b> <span class="faint">'+esc(s.sale_id)+'</span>'+
+    '<div class="mini" style="margin-top:2px">'+esc(t)+' · '+esc(s.pay_method||'-')+(sub?(' · '+esc(sub)):'')+'</div>'+
+    (bdg?('<div style="margin-top:5px">'+bdg+'</div>'):'')+'</div>'+
+    '<div style="text-align:right;white-space:nowrap"><b style="color:var(--gold-soft);font-size:16px">'+fmt(s.total)+'</b> <span class="faint">฿</span><div class="mini" style="color:var(--gold)">ดูบิล ›</div></div></div>'; }
+/* แปลงข้อมูลบิลที่เก็บไว้ → โครงใบเสร็จ (ใช้ตัวเรนเดอร์เดียวกับตอนขาย ใบจะหน้าตาเหมือนกันเป๊ะ) */
+var BILLRC=null;
+function rcFromDetail(d){ var s=d.sale||{};
+  return { bill:s.sale_id, datetime:String(s.datetime||'').replace('T',' ').slice(0,16), shopName:s.shopName||'House265',
+    customer:s.customer||'ลูกค้า', cashier:s.cashier||'',
+    lines:(d.items||[]).map(function(it){ return { type:it.line_type, item:it.name, size:it.size, color:it.color,
+      qty:it.qty, unit_ref:it.name, byob:it.byob, ext:it.ext, tech:it.tech,
+      price:(it.gross!=null?it.gross:it.amount), disc:it.disc, net:it.amount }; }),
+    gross:(s.gross!=null?s.gross:s.subtotal), lineDiscTotal:s.lineDiscTotal||0,
+    subtotal:s.subtotal, discount:s.discount, discount_name:s.discount_name||'',
+    deposit_applied:s.deposit_applied||0, total:s.total, due:(s.due!=null?s.due:s.total),
+    received:s.received, change:s.change, payments:(d.payments||[]) }; }
+function openBill(sid){ var body=document.getElementById('lmBody'); document.getElementById('lmTitle').innerText='บิล '+sid;
+  body.innerHTML='<div class="empty">กำลังโหลด…</div>'; document.getElementById('lineModal').classList.add('show');
+  api('saleDetail',{sale_id:sid}).then(function(r){ if(!r||!r.ok){ body.innerHTML='<div class="empty">'+esc((r&&r.message)||'โหลดไม่สำเร็จ')+'</div>'; return; }
+    var d=r.data, s=d.sale, slips=d.slips||[];
+    /* ใช้เลย์เอาต์ใบเสร็จจริง → ตรวจเทียบกับใบที่ลูกค้าถืออยู่ได้บรรทัดต่อบรรทัด */
+    BILLRC=rcFromDetail(d);
+    var h='<div class="rcpt" id="billRcpt">'+receiptHtml(BILLRC)+'</div>';
+    /* ส่วนตรวจสอบภายใน (ไม่อยู่บนใบเสร็จลูกค้า) */
+    var st=slips.reduce(function(a,x){return a+Number(x.amount||0);},0);
+    var expect=(s.slip_expect!=null)?Number(s.slip_expect)
+      :(d.payments||[]).reduce(function(a,p){ return a+(/พร้อมเพย์|โอน|บัตร/.test(String(p.method||''))?Number(p.amount||0):0); },0);
+    var diff=st-expect, match=slips.length&&Math.abs(diff)<1;
+    h+='<div class="hr2"></div><div class="mini" style="margin-bottom:7px">สลิปแนบ ('+slips.length+')'+
+      (slips.length?(' · ยอดสลิปรวม <b>'+fmt(st)+'</b> / ยอดโอนในบิล <b>'+fmt(expect)+'</b> '+
+        (match?'<span class="badge ok">✓ ตรงยอดโอน</span>':'<span class="badge bad">⚠️ ต่าง '+(diff>0?'+':'')+fmt(diff)+'</span>')):'')+'</div>';
+    if(slips.length){ h+='<div class="sgrid">'+slips.map(function(x){ return '<button class="slipthumbbtn" onclick="viewSlip(\''+esc(x.file_id)+'\',\''+esc(sid)+'\')"><span style="font-size:22px">🧾</span><span class="mini">'+esc(x.method||'')+'<br>'+fmt(x.amount)+'฿</span></button>'; }).join('')+'</div>'; }
+    else { h+='<div class="mini faint">— ไม่มีสลิปแนบ —</div>'; }
+    h+='<div class="row2" style="margin-top:14px"><button class="btn sec" onclick="closeLine()">ปิด</button>'+
+       '<button class="btn" onclick="printRcpt(\'billRcpt\')">🖨️ พิมพ์ใบเสร็จซ้ำ</button></div>';
+    body.innerHTML=h;
+  }).catch(function(){ body.innerHTML='<div class="empty">เชื่อมต่อไม่สำเร็จ</div>'; }); }
+function viewSlip(fid,sid){ document.getElementById('imTitle').innerText='สลิป '+(sid||''); document.getElementById('imBody').innerHTML='กำลังโหลด…'; document.getElementById('imgModal').classList.add('show');
+  api('getSlip',{file_id:fid}).then(function(r){ if(!r||!r.ok){ document.getElementById('imBody').innerHTML='<div class="empty">เปิดรูปไม่ได้</div>'; return; }
+    document.getElementById('imBody').innerHTML='<img src="'+r.data.dataUrl+'" style="max-width:100%;border-radius:10px"><div class="row2" style="margin-top:12px"><button class="btn sec" onclick="closeImg()">ปิด</button><a class="btn" style="text-align:center;text-decoration:none;color:#231b08" href="'+r.data.dataUrl+'" download="'+esc(sid||'slip')+'.jpg">บันทึกรูป</a></div>';
+  }).catch(function(){ document.getElementById('imBody').innerHTML='<div class="empty">เชื่อมต่อไม่สำเร็จ</div>'; }); }
+function closeImg(){ document.getElementById('imgModal').classList.remove('show'); }
+
+/* ===================================================================
+ * คิวจอง (Phase 3) — ดูคิว · เช็คเอาท์เข้าบิล · ยกเลิกคืนสต็อก
+ * =================================================================== */
+var QBK=null, QBV=null, QCANCEL=false, QGUIDE=[], QGTECH='';
+function svcById(id){ return (DATA.services||[]).filter(function(s){return String(s.service_id)===String(id);})[0]; }
+function colorNm(id){ if(!id)return ''; var c=(DATA.colors||[]).filter(function(x){return String(x.color_id)===String(id)||String(x.name)===String(id);})[0]; return c?String(c.name):String(id); }
+function initQueueDate(){ var d=document.getElementById('qDate'); if(d&&!d.value)d.value=todayStr(); }
+function qPreset(n){ var d=document.getElementById('qDate'); if(n==='all'){ d.value=''; } else { var x=new Date(); x.setDate(x.getDate()+n); d.value=ymd_(x); } loadQueue(); }
+function qStatusBadge(s){ if(s==='เช็คเอาต์')return '<span class="badge ok">✓ เช็คเอาต์</span>'; if(s==='ยกเลิก')return '<span class="badge bad">ยกเลิก</span>'; if(s==='ยืนยัน')return '<span class="badge ok">✓ ยืนยัน</span>'; return '<span class="badge warn">⏳ รอ</span>'; }
+function loadQueue(){ var box=document.getElementById('queueBox'); if(!box)return;
+  var date=(document.getElementById('qDate')||{}).value||'', stSel=(document.getElementById('qStatus')||{}).value;
+  box.innerHTML='<div class="empty">กำลังโหลด…</div>';
+  var payload={}; if(date)payload.date=date; if(stSel&&stSel!=='all'&&stSel!=='')payload.status=stSel;
+  api('bookingsList',payload).then(function(r){ var sum=document.getElementById('qSum');
+    if(!r||!r.ok){ box.innerHTML='<div class="empty">'+esc((r&&r.message)||'โหลดไม่สำเร็จ')+'</div>'; if(sum)sum.innerHTML=''; return; }
+    var list=r.data.bookings||[];
+    if(stSel===''||stSel==null){ list=list.filter(function(b){return b.status!=='เช็คเอาต์'&&b.status!=='ยกเลิก';}); }
+    if(sum)sum.innerHTML='พบ <b>'+fmt(list.length)+'</b> คิว · '+(date?esc(date):'ทุกวัน');
+    if(!list.length){ box.innerHTML='<div class="empty">ไม่มีคิวตามเงื่อนไข</div>'; return; }
+    if(date){ box.innerHTML=list.map(qRow).join(''); return; }
+    /* ไม่ระบุวัน → จัดกลุ่มตามวันที่ (ใหม่→เก่า) + หัวข้อวัน + จำนวนคิว */
+    var groups={}, order=[]; list.forEach(function(b){ var d=String(b.date||'-').slice(0,10); if(!groups[d]){groups[d]=[];order.push(d);} groups[d].push(b); });
+    order.sort(function(a,b){ return a<b?1:-1; });
+    box.innerHTML=order.map(function(d){ var g=groups[d]; g.sort(function(a,b){return String(a.start)<String(b.start)?-1:1;});
+      return '<div class="qdhead"><b>'+esc(qDateLabel(d))+'</b><span>'+g.length+' คิว</span></div>'+g.map(qRow).join(''); }).join('');
+  }).catch(function(){ box.innerHTML='<div class="empty">เชื่อมต่อไม่สำเร็จ</div>'; }); }
+var THMON=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'], THDOW=['อา','จ','อ','พ','พฤ','ศ','ส'];
+function qDateLabel(d){ if(!d||d==='-')return 'ไม่ระบุวัน'; var p=d.split('-'); if(p.length<3)return d; var dt=new Date(+p[0],+p[1]-1,+p[2]);
+  var today=todayStr(); var rel=(d===today)?' (วันนี้)':''; return THDOW[dt.getDay()]+' '+(+p[2])+' '+THMON[+p[1]-1]+rel; }
+/* จำนวนท้ายบรรทัด: detail มักเขียนจำนวนไว้อยู่แล้ว ("...30นิ้ว · 300 ช่อ | ถอด:...")
+ * จึงต่อท้ายเฉพาะตอนที่ยังไม่มี — ถ้าสองค่าไม่ตรงกันจะเห็นทั้งคู่ ซึ่งเป็นสัญญาณว่าข้อมูลเพี้ยน ไม่ใช่ของซ้ำ */
+function qtyChip(b){ if(!b.qty_mad) return '';
+  var t=qtyTag(b.technique,b.qty_mad);
+  return (t && String(b.detail||'').indexOf(t)>=0) ? '' : (' · '+esc(t)); }
+function qRow(b){ return '<div class="sliprow" style="cursor:pointer;align-items:flex-start" onclick="openQueueBooking(\''+esc(b.booking_id)+'\')">'+
+  '<div style="text-align:center;min-width:54px"><b style="color:var(--gold-soft);font-size:16px">'+esc(b.start||'--')+'</b><div class="mini">'+esc(b.end||'')+'</div></div>'+
+  '<div class="meta"><b style="font-weight:500">'+esc(b.name||'ลูกค้า')+'</b> <span class="faint">'+esc(b.booking_id)+'</span>'+
+  '<div class="mini" style="margin-top:2px">'+esc(b.detail||'')+qtyChip(b)+(b.tech_name?(' · '+esc(b.tech_name)):'')+'</div>'+
+  '<div style="margin-top:5px">'+qStatusBadge(b.status)+(b.deposit>0?(' <span class="mini">มัดจำ '+fmt(b.deposit)+'฿</span>'):'')+'</div></div>'+
+  '<div style="text-align:right;white-space:nowrap"><b style="color:var(--gold-soft);font-size:16px">'+fmt(b.suggest_total)+'</b> <span class="faint">฿</span><div class="mini" style="color:var(--gold)">จัดการ ›</div></div></div>'; }
+function openQueueBooking(id){ QCANCEL=false; var body=document.getElementById('lmBody'); document.getElementById('lmTitle').innerText='คิว '+id;
+  body.innerHTML='<div class="empty">กำลังโหลด…</div>'; document.getElementById('lineModal').classList.add('show');
+  api('bookingDetail',{booking_id:id}).then(function(r){ if(!r||!r.ok){ body.innerHTML='<div class="empty">'+esc((r&&r.message)||'โหลดไม่สำเร็จ')+'</div>'; return; }
+    var bk=r.data.booking, v=bk.variant; QBK=bk; QBV=v;
+    var h='<div class="mini">'+esc(bk.date)+' · '+esc(bk.start)+'–'+esc(bk.end)+' น. &nbsp;'+qStatusBadge(bk.status)+'</div>';
+    h+='<div style="margin:8px 0 2px"><b style="font-weight:500">'+esc(bk.name)+'</b>'+(bk.phone?(' · '+esc(bk.phone)):'')+'</div>';
+    h+='<div class="hr2"></div><div class="idrow">'+
+       '<span class="pill">บริการ <b>'+esc(bk.detail||(svcById(bk.service_id)||{}).acct_name||'-')+'</b></span>'+
+       (v?('<span class="pill">ผม <b>'+esc(v.hair_type)+' '+esc(v.length_in)+'นิ้ว</b></span>'+(v.grade?('<span class="pill">เกรด <b>'+esc(v.grade)+'</b></span>'):'')+(v.texture?('<span class="pill">'+esc(v.texture)+'</span>'):'')+(v.color?('<span class="pill">สี <b>'+esc(v.color)+'</b></span>'):'')):'')+
+       '<span class="pill">จำนวน <b>'+qtyTag(bk.technique||(v&&v.hair_type),bk.qty_mad)+'</b></span></div>';
+    h+='<div class="tot"><span>ยอดประเมิน</span><b>'+fmt(bk.suggest_total)+' ฿</b></div>';
+    h+='<div class="tot"><span>มัดจำที่ชำระแล้ว</span><b style="color:var(--ok)">'+fmt(bk.deposit)+' ฿</b></div>';
+    h+='<div class="tot grand"><span>คงเหลือเก็บหน้าร้าน</span><b>'+fmt(Math.max(0,Number(bk.suggest_total)-Number(bk.deposit)))+'</b></div>';
+    h+='<div id="qAct" style="margin-top:14px"></div>';
+    body.innerHTML=h; renderQueueActions();
+  }).catch(function(){ body.innerHTML='<div class="empty">เชื่อมต่อไม่สำเร็จ</div>'; }); }
+function renderQueueActions(){ var w=document.getElementById('qAct'); if(!w||!QBK)return; var bk=QBK;
+  if(QCANCEL){ w.innerHTML='<div class="warn">ยืนยันยกเลิกคิวนี้? ระบบจะคืนสต็อกที่กันไว้ให้อัตโนมัติ</div><div class="row2" style="margin-top:8px"><button class="btn sec" onclick="QCANCEL=false;renderQueueActions()">ไม่ยกเลิก</button><button class="btn" style="background:var(--crit);color:#fff" onclick="doCancelBooking()">ยืนยันยกเลิก</button></div>'; return; }
+  if(bk.status==='เช็คเอาต์'){ w.innerHTML='<div class="mini" style="text-align:center">คิวนี้เช็คเอาต์ไปแล้ว</div><button class="btn sec" style="margin-top:10px;color:var(--gold-soft)" onclick="closeLine()">ปิด</button>'; return; }
+  if(bk.status==='ยกเลิก'){ w.innerHTML='<div class="mini" style="text-align:center">คิวนี้ถูกยกเลิก</div><button class="btn sec" style="margin-top:10px;color:var(--gold-soft)" onclick="closeLine()">ปิด</button>'; return; }
+  if(bk.status==='ไม่มาตามนัด'){ w.innerHTML='<div class="mini" style="text-align:center">คิวนี้บันทึกว่า<b style="color:var(--crit)">ลูกค้าผิดนัด</b>แล้ว<br>ถ้ากดผิด ให้ผู้จัดการยกเลิกให้ที่หน้า Admin</div>'+
+    '<button class="btn sec" style="margin-top:10px;color:var(--gold-soft)" onclick="closeLine()">ปิด</button>'; return; }
+  if(QNOSHOW){ renderNoShow(); return; }
+  w.innerHTML='<button class="btn" onclick="checkoutToCart(QBK,QBV)">✅ เช็คเอาท์ — ทำบิล</button>'+
+    '<div class="row2" style="margin-top:8px"><button class="btn sec" style="color:var(--crit)" onclick="openNoShow()">🚫 ผิดนัด</button>'+
+    '<button class="btn sec" style="color:var(--crit)" onclick="QCANCEL=true;renderQueueActions()">ยกเลิกคิว</button></div>'+
+    '<button class="btn sec" style="margin-top:8px;color:var(--gold-soft)" onclick="closeLine()">ปิด</button>'; }
+
+/* ---- ลูกค้าผิดนัด ----
+ * ค่าคอมคิดที่เซิร์ฟเวอร์เสมอ หน้าเว็บแค่แสดง (กฎเดียวกับราคาจอง) */
+var QNOSHOW=null;
+function openNoShow(){ if(!QBK)return;
+  QNOSHOW={loading:true,quote:null,tech:String(QBK.tech_id||'')};
+  renderQueueActions();
+  api('noShowQuote',{booking_id:QBK.booking_id}).then(function(r){
+    if(!r||!r.ok){ QNOSHOW=null; toast((r&&r.message)||'ดึงข้อมูลไม่สำเร็จ',1); renderQueueActions(); return; }
+    QNOSHOW.loading=false; QNOSHOW.quote=r.data;
+    if(!QNOSHOW.tech) QNOSHOW.tech=String(r.data.tech_id||'');
+    renderQueueActions();
+  }).catch(function(){ QNOSHOW=null; toast('เชื่อมต่อไม่สำเร็จ',1); renderQueueActions(); }); }
+function closeNoShow(){ QNOSHOW=null; renderQueueActions(); }
+function nsTech(v){ if(QNOSHOW){ QNOSHOW.tech=v; } }
+function renderNoShow(){
+  var w=document.getElementById('qAct'); if(!w) return;
+  if(QNOSHOW.loading){ w.innerHTML='<div class="mini" style="text-align:center">กำลังคำนวณค่าคอม…</div>'; return; }
+  /* ⚠ bootstrap ส่งมาในชื่อ technicians — เดิมอ่าน DATA.techs จึงได้ลิสต์ว่างตลอด เลือกช่างไม่ได้เลย */
+  var q=QNOSHOW.quote, techs=((DATA&&DATA.technicians)||[]).filter(function(t){ return String(t.name||'').trim(); });
+  var h='<div class="warn" style="margin-bottom:10px">บันทึกว่า<b>ลูกค้าไม่มาตามนัด</b> — ร้านยึดมัดจำ ช่างได้ค่าคอมตามเกณฑ์</div>';
+  h+='<label class="lbl">ช่างที่ได้ค่าคอม</label>';
+  h+= techs.length
+    ? ('<select class="in" onchange="nsTech(this.value)"><option value="">— เลือกช่าง —</option>'+
+       techs.map(function(t){ return '<option value="'+esc(t.tech_id)+'"'+(String(t.tech_id)===String(QNOSHOW.tech)?' selected':'')+'>'+esc(t.name)+'</option>'; }).join('')+'</select>')
+    : '<div class="warn" style="margin:0">ยังไม่มีรายชื่อช่างในระบบ — ให้ผู้จัดการเพิ่มช่างก่อน</div>';
+  h+='<div style="margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--bg2)">'+
+     '<div style="display:flex;justify-content:space-between;align-items:baseline"><span class="mini" style="margin:0">ค่าคอมที่ช่างได้</span>'+
+     '<b style="font-size:22px;color:var(--gold-soft)">'+fmt(q.comm)+' ฿</b></div>'+
+     '<div class="mini" style="margin:4px 0 0">'+esc(q.comm_label||'')+'</div>'+
+     (q.comm_note?('<div class="mini" style="margin:2px 0 0;color:var(--faint)">'+esc(q.comm_note)+'</div>'):'')+
+     /* ยอดฝั่งร้านโชว์เฉพาะตอนติดลบ — ปกติพนักงานไม่ต้องเห็นว่าร้านได้เท่าไหร่ */
+     (Number(q.shop)<0
+       ? ('<div style="border-top:1px solid var(--line);margin:9px 0 7px"></div>'+
+          '<div class="mini" style="margin:0;color:var(--crit)">มัดจำ <b>'+fmt(q.deposit)+'</b> ฿ ไม่พอจ่ายค่าคอม · <b>ร้านรับส่วนขาด '+fmt(Math.abs(q.shop))+' ฿</b></div>')
+       : '')+'</div>';
+  if(Number(q.shop)<0) h+='<div class="mini" style="margin-top:8px;color:var(--crit)">⚠ ช่างยังได้ค่าคอมเต็มจำนวน ส่วนที่ขาดร้านรับเอง</div>';
+  h+='<label class="lbl" style="margin-top:10px">เหตุผล (ไม่บังคับ)</label>'+
+     '<input class="in" id="nsReason" placeholder="เช่น โทรไม่รับ / แจ้งยกเลิกกระชั้น">';
+  h+='<div class="row2" style="margin-top:12px"><button class="btn sec" onclick="closeNoShow()">ย้อนกลับ</button>'+
+     '<button class="btn" style="background:var(--crit);color:#fff" onclick="doNoShow()">ยืนยันผิดนัด</button></div>';
+  w.innerHTML=h; }
+function doNoShow(){ if(!QNOSHOW||!QBK)return;
+  var reason=String((document.getElementById('nsReason')||{}).value||'').trim();
+  api('markNoShow',{booking_id:QBK.booking_id,tech_id:QNOSHOW.tech,reason:reason}).then(function(r){
+    if(!r||!r.ok){ toast((r&&r.message)||'บันทึกไม่สำเร็จ',1); return; }
+    var d=r.data;
+    QNOSHOW=null; closeLine();
+    toast('บันทึกผิดนัดแล้ว · ค่าคอม '+fmt(d.comm)+' ฿ รออนุมัติ');
+    loadQueue();
+  }).catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
+function doCancelBooking(){ if(!QBK)return; var id=QBK.booking_id;
+  api('cancelBooking',{booking_id:id}).then(function(r){ if(!r||!r.ok){ toast((r&&r.message)||'ยกเลิกไม่สำเร็จ',1); return; }
+    QCANCEL=false; closeLine(); toast('ยกเลิกคิวแล้ว · คืนสต็อก'); loadQueue(); }).catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
+/* เช็คเอาต์คิว: ไม่ยัดรายการตายตัว — สร้าง "ไกด์ไลน์ตามที่จอง" ให้พนักงานหยิบของจริง/สแกน QR + คีย์เอง (แก้ได้ทุกอย่างหน้างาน) */
+function checkoutToCart(bk,v){ if(!bk)return;
+  var qty=Math.max(1,Math.round(Number(bk.qty_mad)||1)); QGUIDE=[]; QGTECH='';
+  var bookedTech=(bk.tech_name||bk.tech_id||''); QGTECH=bookedTech;
+  var defTech=[{name:(bookedTech||USERTECH||''),split:100}];
+  /* รายการหลัก */
+  if(bk.variant_id){ var ht=(v&&v.hair_type)||'', len=String((v&&v.length_in)||bk.size||''), technique=techniqueFor(ht);
+    var perMad=laborFor(technique,len)||0; if(!perMad && Number(bk.suggest_total)&&qty) perMad=Math.round(Number(bk.suggest_total)/qty);
+    QGUIDE.push({ type:'ต่อผม (ใช้ผมของร้าน)', scan:true, line:{ kind:'product', variant_id:bk.variant_id, barcode:'', name:(v&&v.name)||('ต่อผม '+ht),
+      hair_type:ht, length_in:len, color:(v&&v.color)||'', grade:(v&&v.grade)||'', texture:(v&&v.texture)||'', plainPrice:perMad, extPrice:perMad, cost:null,
+      mode:'ext', technique:technique, size:sizeLabelFor(technique,len), techs:defTech.slice(), qty_mad:qty } });
+  } else { var svc=svcById(bk.service_id)||svcByAcct(bk.detail)||{}; var it=svc.acct_name||bk.service_id||'บริการต่อผม';
+    var bb=Number(svc.byob_base)||0, bp=Number(svc.byob_per_bundle)||0; var bprice=Math.round(bb+bp*qty)||Math.round(Number(bk.suggest_total)||0); /* คิดจากสูตร byob ไม่ใช้ค่าประเมินเก่า */
+    QGUIDE.push({ type:'byob', scan:false, line:{ kind:'service', item:it, size:String(bk.size||''), color:colorNm(bk.color_id), qty:qty, unit:0, price:bprice, byobBase:bb, byobPer:bp, technique:it, techs:defTech.slice() } }); }
+  /* ซื้อผมเพิ่ม */
+  if(bk.addon_variant_id){ var av=bk.addon_variant||{}, aq=Math.max(1,Math.round(Number(bk.addon_qty)||1)), aht=av.hair_type||'', alen=String(av.length_in||''), atech=techniqueFor(aht);
+    var aprice=laborFor(atech,alen)||0;
+    QGUIDE.push({ type:'ซื้อผมเพิ่ม (ใช้ผมของร้าน)', scan:true, line:{ kind:'product', variant_id:bk.addon_variant_id, barcode:'', name:(av.name||('ผมซื้อเพิ่ม '+aht)),
+      hair_type:aht, length_in:alen, color:av.color||'', grade:av.grade||'', texture:av.texture||'', plainPrice:aprice, extPrice:aprice, cost:null,
+      mode:'plain', technique:atech, size:sizeLabelFor(atech,alen), techs:defTech.slice(), qty_mad:aq } }); }
+  /* ถอดผมเก่า */
+  if(bk.rm_addon_id){ var rma=bk.rm_addon||{}, rmrow=(DATA.removals||[]).filter(function(x){return String(x.removal_id)===String(bk.rm_addon_id);})[0]||{};
+    QGUIDE.push({ type:'ถอดผมเก่า', scan:false, line:{ kind:'removal', item:String(rma.name||rmrow.name||'ถอดผม'), qty:1, price:Math.round(Number(rma.price!=null?rma.price:rmrow.price)||0), techs:defTech.slice(), size:'' } }); }
+  CART=[]; window._bookingId=bk.booking_id; window._bookingName=(bk.name||'')+(bk.phone?(' · '+bk.phone):''); window._deposit=Math.round(Number(bk.deposit)||0);
+  window._disc=0; window._recv=0; window._split=false; window._p2a=0; window._slips=[]; PAY='เงินสด';
+  closeLine(); setPage('Sale'); renderCart();
+  var cn=document.getElementById('cName'); if(cn)cn.value=bk.name||''; var cp=document.getElementById('cPhone'); if(cp)cp.value=bk.phone||'';
+  toast('ดึงคิวแล้ว · หยิบของจริง/สแกน QR ตามไกด์ไลน์ แล้วเลือกช่าง'); }
+/* ไกด์ไลน์ตามจอง (อ้างอิง) — โชว์เหนือบิล · กด "เพิ่ม" เพื่อนำลงบิล แล้วแก้/สแกนทับได้ */
+function guideSpec(g){ var l=g.line, p=[];
+  if(l.kind==='product'){ p.push(l.hair_type||l.name); p.push(g.scan?'ใช้ผมของร้าน · ต้องสแกน QR':'');
+    if(l.length_in)p.push(l.length_in+'นิ้ว'); if(l.grade)p.push('เกรด '+l.grade); if(l.texture)p.push(l.texture); if(l.color)p.push('สี '+l.color);
+    p.push(qtyTag(l.hair_type,Math.round(l.qty_mad||1))); }
+  else if(l.kind==='removal'){ p.push(l.item); p.push(qtyTag(l.technique||l.item,l.qty||1)); }
+  else { p.push(l.technique||l.item); p.push('นำผมมาเอง'); if(l.size)p.push(l.size); if(l.color)p.push('สี '+l.color); p.push(qtyTag(l.technique||l.item,l.qty||1)); }
+  return p.filter(Boolean).join(' : '); }
+function guideCardHtml(){ if(!QGUIDE.length)return '';
+  var rows=QGUIDE.map(function(g){ return '<div style="display:flex;gap:8px;align-items:center;padding:7px 0;border-top:1px solid var(--line)">'+
+    '<div style="flex:1;min-width:0;font-size:12.5px;line-height:1.5">'+esc(guideSpec(g))+'</div>'+
+    '<div class="mono" style="color:var(--gold-soft);white-space:nowrap">'+fmt(lineTotal(g.line))+'</div></div>'; }).join('');
+  var sum=QGUIDE.reduce(function(a,g){return a+lineTotal(g.line);},0);
+  return '<div style="margin-bottom:10px;padding:12px;background:var(--bg2);border:1px solid var(--gold-dim);border-radius:12px">'+
+    '<div style="display:flex;justify-content:space-between;align-items:baseline"><b style="color:var(--gold-soft);font-size:14px">📋 รายละเอียดการจอง</b>'+(QGTECH?('<span class="mini">ช่าง <b style="color:var(--gold-soft)">'+esc(QGTECH)+'</b></span>'):'')+'</div>'+
+    '<div style="display:flex;gap:8px;font-size:10px;color:var(--faint);padding-top:6px;text-transform:uppercase;letter-spacing:.04em"><div style="flex:1">รายการ</div><div>มูลค่าประเมิน</div></div>'+
+    rows+
+    '<div style="display:flex;gap:8px;align-items:center;padding:9px 0 2px;border-top:2px solid var(--gold-dim);margin-top:2px"><b style="flex:1;color:var(--gold-soft)">รวมประเมิน</b><b class="mono" style="color:var(--gold-soft)">'+fmt(sum)+'</b></div>'+
+    '<div class="mini" style="margin-top:6px;color:var(--faint)">ℹ️ ไกด์ไลน์สำหรับตรวจสอบเท่านั้น — สแกน QR หรือเลือกจากเมนูเพื่อลงบิลจริง</div></div>'; }
+function guideAdd(i){ var g=QGUIDE[i]; if(!g)return; CART.push(JSON.parse(JSON.stringify(g.line))); renderCart(); toast('เพิ่มลงบิลแล้ว · แตะเพื่อแก้ไข/เลือกช่าง'); }
+function guideAddAll(){ QGUIDE.forEach(function(g){ CART.push(JSON.parse(JSON.stringify(g.line))); }); renderCart(); toast('เพิ่มทั้งหมดแล้ว · ตรวจของจริง/เลือกช่าง'); }
+function detachBooking(){ window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName=''; QGUIDE=[]; QGTECH=''; renderCart(); toast('ยกเลิกการผูกคิวกับบิลนี้'); }
+</script>
+</body></html>
