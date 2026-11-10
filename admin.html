@@ -435,7 +435,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P68-LOTPRICE'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P71-NOVFIX2'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='', SCHED=null, SETTINGS=null, TAB='dash', FULL=false, ROLE='', MYTECH='';
 var THD=['อา','จ','อ','พ','พฤ','ศ','ส'];
 /* ===== สถานะ "กำลังทำงาน" — ใช้ร่วมกันทุกหน้า (admin / pos / receive / Booking) =====
@@ -516,6 +516,10 @@ function applyStaffMode(){
       '<div class="row2" style="margin-top:8px"><div><label class="lbl">เริ่ม (เว้นว่าง=ทั้งวัน)</label><input class="in" id="lvStart" placeholder="11:00"></div><div><label class="lbl">ถึง</label><input class="in" id="lvEnd" placeholder="15:00"></div></div>'+
       '<button class="btn" style="margin-top:12px" onclick="addMyLeave()">บันทึกวันลา</button><div id="lvList" style="margin-top:14px"></div></div>';
     document.getElementById('app').appendChild(pane); }
+  /* ปุ่มคิวงานของเดิมเรียก setTab ซึ่งรู้จักเฉพาะ pane ของผู้จัดการ
+     ในโหมดช่างให้วิ่งผ่าน staffTab เพื่อให้สลับแท็บได้ครบทั้ง 3 แท็บ */
+  var qb=document.querySelector('.tabbtn[data-t="queue"]');
+  if(qb) qb.onclick=function(){ staffTab('queue'); };
   staffTab('queue');
 }
 function staffTab(t){ ['queue','mine','leave'].forEach(function(x){ var p=document.getElementById('pane'+cap(x)); if(p)p.classList.toggle('hide',x!==t); });
@@ -594,6 +598,9 @@ function renderTechStats(d, box, withPicker){
   box.innerHTML=h;
 }
 function setTab(t){ TAB=t; ['dash','queue','tech','acct','settings'].forEach(function(x){ document.getElementById('pane'+cap(x)).classList.toggle('hide',x!==t); });
+  /* pane ของโหมดช่างถูกสร้างทีหลัง ไม่ได้อยู่ในลิสต์ข้างบน — ต้องซ่อนด้วย
+     ไม่งั้นกดแท็บคิวงานแล้วแดชบอร์ดรายได้ยังค้างอยู่ใต้คิว (ข้อมูลซ้ำกับแท็บ รายได้ของฉัน) */
+  ['Mine','Leave'].forEach(function(x){ var p=document.getElementById('pane'+x); if(p)p.classList.add('hide'); });
   [].forEach.call(document.querySelectorAll('.tabbtn'),function(b){ b.classList.toggle('on',b.dataset.t===t); });
   if(t==='dash')loadDash(); if(t==='queue')loadQueue(); if(t==='tech'){ loadTech(); var cy=document.getElementById('cmYm'); if(cy&&!cy.value)cy.value=iso(new Date()).slice(0,7); loadCommissions(); }
   if(t==='acct'){ var sy=document.getElementById('stYm'); if(sy&&!sy.value)sy.value=iso(new Date()).slice(0,7);
