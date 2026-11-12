@@ -168,6 +168,27 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
   .row2{gap:10px}
 }
 @media(max-width:400px){ .row2{grid-template-columns:1fr} }
+
+/* ===== พิมพ์ใบเสร็จ =====
+ * พิมพ์ "ในหน้าเดิม" ไม่เปิดหน้าต่างใหม่
+ * เหตุผล: Safari บน iPad/iPhone บล็อก window.open ที่ไม่ได้เกิดจากการแตะโดยตรง
+ *   และบางครั้งเปิดได้แต่เขียน document ไม่ทัน ทำให้พิมพ์ออกมาเป็นหน้าว่าง
+ *   วิธีนี้ทำงานเหมือนกันหมดทั้ง iPad (AirPrint) · Android · คอมพิวเตอร์
+ * ขนาดกระดาษตั้งเป็น 58mm สูงอัตโนมัติ เพื่อไม่ให้ถูกย่อลงกระดาษ A4 */
+@page{ size:58mm auto; margin:0 }
+#printArea{ display:none }
+@media print{
+  body.printing>*{ display:none !important }
+  body.printing #printArea{ display:block !important; width:58mm; margin:0; padding:4mm 3mm;
+    background:#fff; color:#000; font-family:"Noto Sans Thai",monospace; font-size:12px; line-height:1.45 }
+  body.printing #printArea h3{ text-align:center; margin:0 0 4px }
+  body.printing #printArea .c{ text-align:center }
+  body.printing #printArea .rr{ display:flex; justify-content:space-between; gap:6px }
+  body.printing #printArea .rr.sub{ color:#555; font-size:10px; padding-left:8px }
+  body.printing #printArea .hr{ border-top:1px dashed #999; margin:5px 0 }
+  body.printing #printArea .big{ font-size:15px; font-weight:700 }
+  body.printing #printArea img{ max-width:100% }
+}
 </style></head>
 <body>
 
@@ -264,7 +285,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P74-CRAFTEXTRA'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P78-IDFIX'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='',DATA=null,FULL=false,CART=[],CAT='ต่อผม',PAY='เงินสด',BUSY=false,USERTECH='';
 window._disc=0; window._recv=0; window._split=false; window._p2m='พร้อมเพย์'; window._p2a=0; window._slips=[];
 window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName='';
@@ -808,7 +829,21 @@ function receiptHtml(rc){ var h='<h3>'+esc(rc.shopName)+'</h3><div class="c">ใ
   h+='<div class="hr"></div><div class="c">ขอบคุณค่ะ 🤍 '+esc(rc.shopName||'House265')+'</div>';
   return h; }
 function closeRcpt(){ document.getElementById('rcptModal').classList.remove('show'); }
-function printRcpt(srcId){ var el=document.getElementById(srcId||'rcpt'); if(!el){toast('ไม่พบใบเสร็จ',1);return;} var w=window.open('','_blank'); if(!w){toast('เบราว์เซอร์บล็อกหน้าต่างพิมพ์',1);return;} w.document.write('<html><head><title>ใบเสร็จ</title><style>body{font-family:monospace;font-size:12px;width:58mm;margin:0;padding:6px}h3{text-align:center;margin:0}.c{text-align:center}.rr{display:flex;justify-content:space-between}.rr.sub{color:#777;font-size:10px;padding-left:8px}.hr{border-top:1px dashed #999;margin:6px 0}.big{font-size:15px;font-weight:bold}</style></head><body>'+el.innerHTML+'</body></html>'); w.document.close(); w.focus(); setTimeout(function(){w.print();},300); }
+function printRcpt(srcId){
+  var el=document.getElementById(srcId||'rcpt');
+  if(!el||!el.innerHTML.trim()){ toast('ไม่พบใบเสร็จ',1); return; }
+  var area=document.getElementById('printArea');
+  if(!area){ area=document.createElement('div'); area.id='printArea'; document.body.appendChild(area); }
+  area.innerHTML=el.innerHTML;
+  document.body.classList.add('printing');
+  /* เก็บกวาดหลังพิมพ์เสร็จหรือหลังผู้ใช้กดยกเลิก — ต้องมี fallback ด้วย
+     เพราะ Safari บางรุ่นไม่ยิง afterprint ถ้าไม่ล้าง หน้าจอจะค้างว่างทั้งหน้า */
+  var done=false, cleanup=function(){ if(done)return; done=true;
+    document.body.classList.remove('printing'); area.innerHTML=''; };
+  window.addEventListener('afterprint', cleanup, {once:true});
+  setTimeout(function(){ try{ window.print(); }catch(e){ toast('พิมพ์ไม่สำเร็จ',1); }
+                         setTimeout(cleanup, 1500); }, 60);
+}
 
 /* ---- today ---- */
 function loadToday(){ var box=document.getElementById('todayBox'); if(!box)return; box.innerHTML='<div class="empty">กำลังโหลด…</div>';
@@ -1061,4 +1096,5 @@ function guideAdd(i){ var g=QGUIDE[i]; if(!g)return; CART.push(JSON.parse(JSON.s
 function guideAddAll(){ QGUIDE.forEach(function(g){ CART.push(JSON.parse(JSON.stringify(g.line))); }); renderCart(); toast('เพิ่มทั้งหมดแล้ว · ตรวจของจริง/เลือกช่าง'); }
 function detachBooking(){ window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName=''; QGUIDE=[]; QGTECH=''; renderCart(); toast('ยกเลิกการผูกคิวกับบิลนี้'); }
 </script>
+<div id="printArea" aria-hidden="true"></div>
 </body></html>
