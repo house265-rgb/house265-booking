@@ -222,7 +222,7 @@ button.is-busy,.is-busy{cursor:progress!important;opacity:.78}
         <div class="row3" style="margin-top:8px">
           <div><label class="lbl">กรัม/QR</label><input class="in" id="nvG" type="number" placeholder="50"></div>
           <div><label class="lbl">ช่อ/QR</label><input class="in" id="nvS" type="number" placeholder=""></div>
-          <div><label class="lbl">ราคาขายเปล่า/QR</label><input class="in" id="nvPrice" type="number" placeholder="0"></div>
+          <div><label class="lbl">ราคาขายเปล่า/QR <span class="mini" style="display:inline">(มาตรฐานของรุ่น)</span></label><input class="in" id="nvPrice" type="number" placeholder="0"></div>
         </div>
       </div>
 
@@ -263,6 +263,14 @@ button.is-busy,.is-busy{cursor:progress!important;opacity:.78}
         <div class="bkq">💰 ราคา <b>ค่าต่อ</b> พิเศษของล็อตนี้ <span class="mini" style="display:inline">(ไม่บังคับ)</span></div>
         <div class="bkhint">ผมเกรดพิเศษที่คิดค่าต่อแพงกว่าปกติ ใส่ราคาต่อ 1 QR ที่นี่ได้เลย — <b>เว้นว่าง = ใช้ราคามาตรฐานตามความยาวจาก ServiceSizes เหมือนเดิม</b></div>
         <input class="in" id="rAttach" type="number" placeholder="เว้นว่าง = ราคามาตรฐาน" style="margin:0">
+      </div>
+      <!-- ราคาขายเปล่าอยู่ที่ "ล็อต" เหมือนราคาค่าต่อ เพราะสเปกเดียวกันแต่ซื้อมาคนละราคา
+           ต้องขายคนละราคาได้ · เดิมเก็บไว้ที่ "รุ่น" ทุกล็อตจึงถูกบังคับให้ขายราคาเดียวกัน -->
+      <div class="bkpick" style="margin-top:14px">
+        <div class="bkq">💰 ราคา <b>ขายผมเปล่า</b> ของล็อตนี้ <span class="mini" style="display:inline">(ไม่บังคับ)</span></div>
+        <div class="bkhint">ล็อตนี้ซื้อมาแพง/ถูกกว่าปกติ ตั้งราคาขายของตัวเองได้ ใส่ราคาต่อ 1 QR — <b>เว้นว่าง = ใช้ราคามาตรฐานของรุ่น</b> ฉลาก QR จะพิมพ์ราคาของล็อตนี้ และ POS จะคิดราคาตามดวงที่สแกน</div>
+        <input class="in" id="rSell" type="number" placeholder="เว้นว่าง = ราคามาตรฐานของรุ่น" style="margin:0">
+        <div class="mini" id="rSellNow" style="margin-top:6px"></div>
       </div>
       <div class="bkpick" id="bkPick">
         <div class="bkq">ล็อตนี้ให้ลูกค้า<b>จองออนไลน์</b>ได้หรือไม่ <span style="color:var(--crit)">*</span></div>
@@ -357,7 +365,7 @@ button.is-busy,.is-busy{cursor:progress!important;opacity:.78}
 /* ===== ตั้งค่า: ใส่ลิงก์ /exec ของโปรเจกต์ระบบใหม่ ===== */
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
 
-var BUILD='P81-PROMOQR'; /* เวอร์ชันหน้าเว็บ — เทียบกับ APP.VERSION ของหลังบ้าน แสดงที่มุมบนขวา */
+var BUILD='P82-LOTPRICE'; /* เวอร์ชันหน้าเว็บ — เทียบกับ APP.VERSION ของหลังบ้าน แสดงที่มุมบนขวา */
 var TOKEN='', DATA=null, BUSY=false, LAST=null;
 
 /* ---- สถานะ "กำลังทำงาน" ----
@@ -527,6 +535,11 @@ function updateVarBtn(){ var id=(document.getElementById('vSel')||{}).value||'',
              Number(v.attach_price)>0?('ค่าต่อ '+fmt(v.attach_price)):'',
              v.supplier_name?('ผู้จำหน่าย '+v.supplier_name):''].filter(Boolean).join(' · '));
   if(money) sub=(sub?(sub+'<br>'):'')+money;
+  /* บอกไว้ใต้ช่องราคาขายเปล่าว่า "เว้นว่าง" แล้วจะได้ราคาเท่าไหร่ จะได้ไม่ต้องเดา */
+  var hint=document.getElementById('rSellNow');
+  if(hint) hint.innerHTML = Number(v.sell_price_per_mad)>0
+    ? ('เว้นว่าง = ใช้ราคามาตรฐานของรุ่นนี้ <b>'+fmt(v.sell_price_per_mad)+'฿</b>/QR')
+    : '<span style="color:var(--crit)">รุ่นนี้ยังไม่มีราคามาตรฐาน — ควรใส่ราคาขายของล็อตนี้</span>';
   btn.className='in selbtn';
   btn.innerHTML='<span><b>'+esc(v.hair_type)+' '+esc(v.length_in)+'นิ้ว</b>'+(sub?('<br><span class="btnsub">'+sub+'</span>'):'')+'</span><span class="btnsub" style="margin-left:auto;white-space:nowrap">เหลือ '+fmt(Number(v.available)||0)+'</span>'; }
 function loadSuppliers(){ api('suppliersList',{}).then(function(r){ if(!r||!r.ok)return; var sup=r.data.suppliers||[];
@@ -584,7 +597,8 @@ function doReceive(){ if(BUSY)return;
     toast('เลือกก่อนว่าล็อตนี้ให้จองออนไลน์ได้หรือไม่',1); return; }
   var vSel=document.getElementById('vSel').value;
   var base={ received_date:document.getElementById('rDate').value, supplier_id:document.getElementById('supSel').value, bookable:(BOOKABLE?'TRUE':'FALSE'),
-    attach_price_per_qr:Number(document.getElementById('rAttach').value)||0 };   /* 0 = ใช้ราคามาตรฐานจาก ServiceSizes */
+    attach_price_per_qr:Number(document.getElementById('rAttach').value)||0,   /* 0 = ใช้ราคามาตรฐานจาก ServiceSizes */
+    sell_price_per_qr:Number(document.getElementById('rSell').value)||0 };     /* 0 = ใช้ราคาขายเปล่ามาตรฐานของรุ่น */
   if(vSel==='__NEW__'){ var ht=document.getElementById('nvType').value; if(!ht){ toast('เลือกประเภท/เทคนิค',1); return; }
     var gr=document.getElementById('nvGrade').value.trim(), tx=document.getElementById('nvTexture').value.trim();
     var nm=[ht,(document.getElementById('nvLen').value||'')+'นิ้ว',(gr?('เกรด '+gr):''),tx,document.getElementById('nvColor').value].filter(Boolean).join(' ');
@@ -607,7 +621,7 @@ function doReceive(){ if(BUSY)return;
   var go=function(){ api(action,payload).then(function(r){ BUSY=false; b.disabled=false; b.innerHTML='รับเข้า + สร้าง QR';
       if(!r||!r.ok){ toast(((r&&r.message)||'ไม่สำเร็จ')+' · หลังบ้าน '+(DATA&&DATA.version||'เก่า⚠️'),1); return; }
       LAST=r.data; renderLabels(r.data); toast((MODE==='produce'?'ผลิต ':'รับเข้า ')+fmt(r.data.count)+' มัด · Batch '+r.data.batch_id+' ✓');
-      ['rQty','rCost','rExtra','rAttach','pQty','pRaw','pLabor','pMat','pWaste','pShip'].forEach(function(id){var e=document.getElementById(id); if(e)e.value='';}); prev();
+      ['rQty','rCost','rExtra','rAttach','rSell','pQty','pRaw','pLabor','pMat','pWaste','pShip'].forEach(function(id){var e=document.getElementById(id); if(e)e.value='';}); prev();
       /* รีเซ็ตตัวเลือกจองออนไลน์ → ล็อตถัดไปต้องเลือกใหม่ ไม่ติดค่าเดิมมาโดยไม่รู้ตัว */
       BOOKABLE=null; [].forEach.call(document.querySelectorAll('#bkPick .bkopt'),function(b){ b.classList.remove('on'); });
       var hint1=document.getElementById('bkHint'); if(hint1){ hint1.classList.remove('warn'); hint1.innerText='ต้องเลือกก่อนรับเข้า — เลือกแล้วไม่ต้องมาเปิด-ปิดทีหลัง'; }
@@ -664,7 +678,7 @@ function mkLabel_(d,code){ var el=document.createElement('div'); el.className='l
     (d.texture?('<div class="l">'+esc(d.texture)+'</div>'):'')+   /* ลักษณะผม */
     (col.trim()?('<div class="l">'+col+'</div>'):'')+
     (l4?('<div class="l">'+l4+'</div>'):'')+
-    '<div class="l">เปล่า <b>'+fmt(d.sell_price_per_mad)+'</b>฿</div>'+
+    '<div class="l">เปล่า <b>'+fmt(d.sell_price_per_mad)+'</b>฿'+(d.sell_price_special?' ★':'')+'</div>'+
     (Number(d.ext_price)>0?('<div class="l">ต่อ <b>'+fmt(d.ext_price)+'</b>฿</div>'):'')+
     '</div></div>'; return el; }
 function drawQRin_(container, codes){ var qrs=container.querySelectorAll('.qr');
@@ -767,8 +781,10 @@ function renderBatches(){ var box=document.getElementById('batchBox'); if(!box||
         (Number(x.ship_per_qr)>0?('<br><span style="color:var(--muted)">ค่าขนส่งเฉลี่ย</span> <b>'+fmt(x.ship_per_qr)+'</b>/QR'):'')+
         (x.supplier_name?('<br><span style="color:var(--muted)">ผู้จำหน่าย</span> '+esc(x.supplier_name)):'')+
         '<br><span style="color:var(--muted)">ขายเปล่า</span> <b>'+fmt(x.sell_price)+'</b>฿'+
+        (x.sell_special?' <span style="color:var(--gold-soft)">★</span>':'')+
         ' · <span style="color:var(--muted)">ค่าต่อ</span> <b>'+fmt(x.attach_price)+'</b>฿'+
-        (x.attach_special?' <span style="color:var(--gold-soft)">★ ราคาพิเศษของล็อตนี้</span>':' <span style="color:var(--faint)">(มาตรฐาน)</span>')+
+        (x.attach_special?' <span style="color:var(--gold-soft)">★</span>':'')+
+        ((x.sell_special||x.attach_special)?'<br><span style="color:var(--gold-soft)">★ = ราคาพิเศษของล็อตนี้</span>':' <span style="color:var(--faint)">(มาตรฐาน)</span>')+
       '</div></div>'+
       '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">'+
       (function(){ var on=(x.bookable!==false);
