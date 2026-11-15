@@ -357,7 +357,7 @@ button.is-busy,.is-busy{cursor:progress!important;opacity:.78}
 /* ===== ตั้งค่า: ใส่ลิงก์ /exec ของโปรเจกต์ระบบใหม่ ===== */
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
 
-var BUILD='P80-FIX9'; /* เวอร์ชันหน้าเว็บ — เทียบกับ APP.VERSION ของหลังบ้าน แสดงที่มุมบนขวา */
+var BUILD='P81-PROMOQR'; /* เวอร์ชันหน้าเว็บ — เทียบกับ APP.VERSION ของหลังบ้าน แสดงที่มุมบนขวา */
 var TOKEN='', DATA=null, BUSY=false, LAST=null;
 
 /* ---- สถานะ "กำลังทำงาน" ----
@@ -484,7 +484,13 @@ function varMoney_(v){
   if(!has) return '';
   var L=function(k,val,strong){ return '<span style="color:var(--muted)">'+k+'</span> '+(strong?('<b>'+val+'</b>'):val); };
   var rows=[];
-  if(Number(v.hair_raw_per_qr)>0) rows.push(L('ทุนผม',fmt(v.hair_raw_per_qr)+'/QR',true)+(Number(v.cost_per_qr)>0?('<span style="color:var(--faint)"> · รวมทุกอย่าง '+fmt(v.cost_per_qr)+'</span>'):''));
+  /* แสดงต้นทุนแยกเป็นก้อน ๆ ตามที่บันทึกไว้จริงของล็อตนั้น ไม่รวมยอดให้
+   * เพราะแต่ละล็อตจ่ายค่าปั้น/ค่าอุปกรณ์ไม่เท่ากัน ต้องเห็นของจริงทีละก้อน
+   * ส่วนนี้เป็นข้อมูลประกอบการเลือกรุ่น ไม่ใช่ตัวเลขให้เอาไปคิดต่อ */
+  if(Number(v.hair_raw_per_qr)>0) rows.push(L('ทุนผม',fmt(v.hair_raw_per_qr)+'/QR',true));
+  if(Number(v.craft_per_qr)>0)    rows.push(L('ค่าปั้นช่อ',fmt(v.craft_per_qr)+'/QR',true));
+  if(Number(v.matl_per_qr)>0)     rows.push(L('ค่าอุปกรณ์ปั้น',fmt(v.matl_per_qr)+'/QR',true));
+  if(Number(v.ship_per_qr)>0)     rows.push(L('ค่าขนส่งเฉลี่ย',fmt(v.ship_per_qr)+'/QR',true));
   var line2=[];
   if(Number(v.sell_price_per_mad)>0) line2.push(L('ขายเปล่า',fmt(v.sell_price_per_mad)+'฿',true));
   if(Number(v.attach_price)>0) line2.push(L('ค่าต่อ',fmt(v.attach_price)+'฿',true)+(v.attach_special?' <span style="color:var(--gold-soft)">★</span>':''));
@@ -753,8 +759,12 @@ function renderBatches(){ var box=document.getElementById('batchBox'); if(!box||
       '<div class="sub" style="font-size:11px;color:var(--faint);margin-top:3px">รับ '+fmt(x.qty_received)+' QR · เหลือ '+fmt(x.remaining)+'</div>'+
       /* ข้อมูลต้นทุน/ราคา — หน้านี้เปิดได้เฉพาะเจ้าของกับผู้จัดการอยู่แล้ว */
       '<div class="sub" style="font-size:11px;margin-top:4px;line-height:1.7">'+
-        '<span style="color:var(--muted)">ต้นทุนผมเพียวๆ</span> <b>'+fmt(x.hair_raw_per_qr||x.cost_per_mad)+'</b>/QR'+
-        '<span style="color:var(--faint)"> · รวมทุกอย่าง '+fmt(x.cost_per_mad)+'/QR</span>'+
+        /* แยกเป็นก้อน ๆ ตามที่บันทึกไว้จริงของล็อตนั้น ไม่รวมยอดให้
+         * แต่ละล็อตจ่ายค่าปั้น/ค่าอุปกรณ์ไม่เท่ากัน ต้องเห็นของจริงทีละก้อน */
+        '<span style="color:var(--muted)">ทุนผม</span> <b>'+fmt(x.hair_raw_per_qr||x.cost_per_mad)+'</b>/QR'+
+        (Number(x.craft_per_qr)>0?('<br><span style="color:var(--muted)">ค่าปั้นช่อ</span> <b>'+fmt(x.craft_per_qr)+'</b>/QR'):'')+
+        (Number(x.material_per_qr)>0?('<br><span style="color:var(--muted)">ค่าอุปกรณ์ปั้น</span> <b>'+fmt(x.material_per_qr)+'</b>/QR'):'')+
+        (Number(x.ship_per_qr)>0?('<br><span style="color:var(--muted)">ค่าขนส่งเฉลี่ย</span> <b>'+fmt(x.ship_per_qr)+'</b>/QR'):'')+
         (x.supplier_name?('<br><span style="color:var(--muted)">ผู้จำหน่าย</span> '+esc(x.supplier_name)):'')+
         '<br><span style="color:var(--muted)">ขายเปล่า</span> <b>'+fmt(x.sell_price)+'</b>฿'+
         ' · <span style="color:var(--muted)">ค่าต่อ</span> <b>'+fmt(x.attach_price)+'</b>฿'+

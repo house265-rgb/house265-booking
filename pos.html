@@ -312,7 +312,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P80-FIX9'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P81-PROMOQR'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='',DATA=null,FULL=false,CART=[],CAT='ต่อผม',PAY='เงินสด',BUSY=false,USERTECH='';
 window._disc=0; window._recv=0; window._split=false; window._p2m='พร้อมเพย์'; window._p2a=0; window._slips=[];
 window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName='';
@@ -649,18 +649,24 @@ function promoDiscount(p){ var attrs=CART.map(lineAttrs);
   var base=match.reduce(function(s,a){return s+a.amount;},0);
   return Math.min(promoAmount(p, base, qty), cartSub()); }
 /* ===== นิยามเดียวของ "ลดเท่าไหร่" — คอลัมน์ per ในชีต Promotions =====
- *   bill = ลดก้อนเดียวทั้งบิล (ซื้อเท่าไหร่ก็ลดเท่าเดิม)
- *   mad  = ลดต่อ 1 QR (1 มัดเล็ก)   → 2 QR ลด 2 เท่า
- *   item = ลดต่อ 1 มัดใหญ่ (2 QR)   → 1 มัดใหญ่ ลด 310 · 1.5 มัดใหญ่ (3 QR) ลด 465 · 2 มัดใหญ่ ลด 620
+ * มีแค่ 2 แบบ ไม่มีหน่วย "มัด" ให้สับสนว่ามัดเล็กหรือมัดใหญ่
+ *   bill = ลดก้อนเดียวทั้งบิล — ซื้อเท่าไหร่ก็ลดเท่าเดิม
+ *   qr   = ลดต่อ 1 QR — อยากได้ "ลด 310 ต่อ 1 มัดใหญ่" ให้ใส่ 155 (155×2=310 · ×3=465 · ×4=620)
+ * "ซื้อเท่าไหร่ถึงเข้าโปร" เป็นคนละเรื่อง อยู่ที่คอลัมน์ min_qr (1 มัดใหญ่ขึ้นไป = 2)
  * qty ที่ส่งเข้ามาเป็น "QR" เสมอ เหมือนทุกอย่างในระบบ ห้ามแปลงหน่วยที่อื่นอีก
- * (15 พ.ย. 2026: เดิม item ตกไปเข้าเงื่อนไขเดียวกับ bill จึงลด 310 เท่าเดิมไม่ว่าซื้อกี่มัด) */
+ * mad = ชื่อเดิมของ qr ยังใช้ได้ · ค่าอื่นที่ระบบไม่รู้จักจะไม่คิดส่วนลดให้
+ *   (เงียบไว้ดีกว่าเดา — เดาผิดทางไหนก็เป็นเงินของร้านหรือของลูกค้าทั้งคู่) */
 function promoPerUnits(p, qr){ var per=String(p.per||'bill').trim().toLowerCase();
-  if(per==='mad'||per==='qr') return Number(qr)||0;
-  if(per==='item'||per==='bundle') return (Number(qr)||0)/2;
-  return 1; }
+  if(per==='bill') return 1;
+  if(per==='qr'||per==='mad') return Number(qr)||0;
+  return null; }                       /* ไม่รู้จัก = ใช้ไม่ได้ */
 function promoAmount(p, base, qr){
+  var u=promoPerUnits(p, qr); if(u===null) return 0;
   if(p.type==='percent') return Math.round(base*p.value/100);
-  return Math.round(p.value * promoPerUnits(p, qr)); }
+  return Math.round(p.value * u); }
+/* โปรที่ตั้ง per ไว้เป็นค่าที่ระบบไม่รู้จัก — ต้องบอกเจ้าของร้าน ไม่ใช่หายเงียบ */
+function promoBadPer(){ return (DATA&&DATA.promos||[]).filter(function(p){
+  return promoPerUnits(p,1)===null; }); }
 var PROMOLIST=[];
 function matchingPromos(){ return (DATA&&DATA.promos||[]).map(function(p){ return {p:p,disc:promoDiscount(p)}; }).filter(function(x){ return x.disc>0; }).sort(function(a,b){return b.disc-a.disc;}); }
 function promoBar(){ if(!CART.length)return '';
@@ -670,6 +676,10 @@ function promoBar(){ if(!CART.length)return '';
 function openPromoPicker(){ var list=matchingPromos(); PROMOLIST=list;
   var h='<div class="mini" style="margin-bottom:10px">เลือกโปรที่ต้องการใช้ · ส่วนลดคิดตามเงื่อนไขอัตโนมัติ (แก้ไม่ได้)</div>';
   if(!list.length){ h+='<div class="empty">ไม่มีโปรที่เข้าเงื่อนไขกับบิลนี้</div>'; }
+  var bad=promoBadPer();
+  if(bad.length){ h+='<div class="warn" style="margin-bottom:10px">⚠ โปรต่อไปนี้ตั้งคอลัมน์ <b>per</b> ไว้ผิด ระบบจึงใช้ไม่ได้: '+
+    esc(bad.map(function(p){ return (p.name||p.promo_id)+' (per='+(p.per||'ว่าง')+')'; }).join(' · '))+
+    '<br>ให้แก้เป็น <b>bill</b> (ลดทั้งบิล) หรือ <b>qr</b> (ลดต่อ 1 QR) ในชีต Promotions</div>'; }
   else { h+=list.map(function(x,i){ return '<div class="promopick" onclick="applyPromoPick('+i+')"><div style="flex:1;min-width:0"><b style="font-weight:500">'+esc(x.p.name)+'</b>'+(x.p.show_text?('<div class="mini" style="margin-top:2px">'+esc(x.p.show_text)+'</div>'):'')+'</div><div class="mono" style="color:var(--gold-soft);white-space:nowrap">-'+fmt(x.disc)+' ฿</div></div>'; }).join(''); }
   h+='<button class="btn sec" style="margin-top:14px" onclick="closeLine()">ปิด</button>';
   document.getElementById('lmTitle').innerText='🎁 โปรโมชั่น'; document.getElementById('lmBody').innerHTML=h; document.getElementById('lineModal').classList.add('show'); }
