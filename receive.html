@@ -379,6 +379,8 @@ button.is-busy,.is-busy{cursor:progress!important;opacity:.78}
 
   </div>
 </div>
+<!-- ยืนยันจำนวนช่อที่เกินมาตรฐาน — ต้องเป็นผู้จัดการ/เจ้าของเท่านั้น -->
+<div class="modal" id="scModal"><div class="mbox" style="max-width:420px"><div class="mh">ยืนยันจำนวนช่อ</div><div class="mc" id="scBody"></div></div></div>
 <div class="modal" id="varModal"><div class="mbox" style="max-width:540px"><div class="mh">เลือกรุ่นสินค้า</div><div class="mc">
   <input id="varSearch" class="in" placeholder="ค้นหา ประเภท / สี / เกรด / ลักษณะ / ความยาว" oninput="renderVariantList()">
   <div id="varTypes" class="stkchips" style="margin-top:10px"></div>
@@ -391,7 +393,7 @@ button.is-busy,.is-busy{cursor:progress!important;opacity:.78}
 /* ===== ตั้งค่า: ใส่ลิงก์ /exec ของโปรเจกต์ระบบใหม่ ===== */
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
 
-var BUILD='P85-STRANDS'; /* เวอร์ชันหน้าเว็บ — เทียบกับ APP.VERSION ของหลังบ้าน แสดงที่มุมบนขวา */
+var BUILD='P86-STRANDCONF'; /* เวอร์ชันหน้าเว็บ — เทียบกับ APP.VERSION ของหลังบ้าน แสดงที่มุมบนขวา */
 var TOKEN='', DATA=null, BUSY=false, LAST=null;
 
 /* ---- สถานะ "กำลังทำงาน" ----
@@ -599,6 +601,52 @@ function stdSizeHint(){
     : ('⚠ จะบันทึกราคาฐาน <b>'+fmt(base)+'฿</b> ของ '+esc(String(len))+'นิ้ว'+(sur>0?(' (= '+fmt(typed)+' − ค่าสี '+fmt(sur)+')'):'')+
        '<br>มีผลกับ<b>ทุกสีทุกเกรด</b>ของความยาวนี้ และหน้าจองของลูกค้าด้วย')); }
 
+/* ===== ยืนยันจำนวนช่อที่เกินมาตรฐาน =====
+ * ช่อเป็นตัวคูณค่ามือช่างและค่าอุปกรณ์ต่อ กรอกเกินไปหนึ่งหลัก = จ่ายค่ามือเกินทุกบิลของล็อตนี้
+ * จึงให้คนยืนยัน ไม่ใช่ให้โปรแกรมตัดเพดานเงียบ ๆ (ผมรุ่น 230–270 ช่อ มีจริง ตัดทิ้งก็ผิดอีกทาง) */
+var SCPEND=null;
+function openStrandsConfirm_(d, msg, action, payload){
+  SCPEND={action:action, payload:payload};
+  var el=document.getElementById('scBody');
+  el.innerHTML='<div class="warn" style="margin-bottom:12px">'+esc(msg).replace(/\n/g,'<br>')+'</div>'+
+    '<div class="mini" style="margin-bottom:10px">'+
+      'มาตรฐาน '+esc(String(d.hair_type||''))+' = <b>'+fmt(d.standard||0)+'</b> ช่อ/QR · '+
+      'รุ่นนี้ระบุ <b style="color:var(--gold-soft)">'+fmt(d.strands||0)+'</b> ช่อ/QR'+
+      (d.ratio?(' → ค่ามือและค่าอุปกรณ์ต่อจะคิดเป็น <b>'+d.ratio+' เท่า</b>'):'')+'</div>'+
+    '<label class="lbl">พิมพ์จำนวนช่อต่อ 1 QR เพื่อยืนยัน</label>'+
+    '<input class="in" id="scStrands" type="number" placeholder="'+fmt(d.strands||0)+'" value="'+(d.strands||'')+'">'+
+    '<div class="mini" style="margin-top:4px;color:var(--faint)">พิมพ์ผิดตอนสร้างรุ่น แก้ตรงนี้ได้เลย ระบบจะใช้ตัวเลขนี้</div>'+
+    '<label class="lbl" style="margin-top:12px">ชื่อผู้ใช้ผู้จัดการ/เจ้าของ</label>'+
+    '<input class="in" id="scUser" autocomplete="off">'+
+    '<label class="lbl" style="margin-top:10px">รหัสผ่าน</label>'+
+    '<input class="in" id="scPass" type="password" autocomplete="off">'+
+    '<div class="row2" style="margin-top:14px">'+
+      '<button class="btn sec" onclick="closeStrandsConfirm_()">ยกเลิก</button>'+
+      '<button class="btn" onclick="sendStrandsConfirm_()">ยืนยันและรับเข้า</button></div>';
+  document.getElementById('scModal').classList.add('show');
+  setTimeout(function(){ try{ document.getElementById('scUser').focus(); }catch(e){} },80); }
+function closeStrandsConfirm_(){ SCPEND=null; document.getElementById('scModal').classList.remove('show'); }
+function sendStrandsConfirm_(){ if(!SCPEND) return;
+  var n=Number((document.getElementById('scStrands')||{}).value)||0;
+  var usr=String((document.getElementById('scUser')||{}).value||'').trim();
+  var pw=String((document.getElementById('scPass')||{}).value||'');
+  if(!(n>0)){ toast('พิมพ์จำนวนช่อเพื่อยืนยัน',1); return; }
+  if(!usr||!pw){ toast('กรอกชื่อผู้ใช้และรหัสผ่านของผู้จัดการ',1); return; }
+  var pl=Object.assign({}, SCPEND.payload, { strands_confirm:n, confirm_user:usr, confirm_pass:pw });
+  var act=SCPEND.action;
+  closeStrandsConfirm_();
+  BUSY=true; var b=document.getElementById('btnReceive'); b.disabled=true; b.innerHTML='⏳ กำลังบันทึก…';
+  api(act, pl).then(function(r){ BUSY=false; b.disabled=false; b.innerHTML='รับเข้า + สร้าง QR';
+    if(!r||!r.ok){
+      if(r && (r.code==='NEED_STRANDS_CONFIRM'||r.code==='BAD_CONFIRM')){
+        openStrandsConfirm_(r.data||{}, String(r.message||''), act, SCPEND?SCPEND.payload:pl); return; }
+      toast((r&&r.message)||'ไม่สำเร็จ',1); return; }
+    LAST=r.data; renderLabels(r.data);
+    toast('รับเข้า '+fmt(r.data.count)+' มัด · Batch '+r.data.batch_id+' ✓');
+    if(r.data.std_done && r.data.std_done.length) setTimeout(function(){ toast('✓ '+r.data.std_done.join(' · ')); },1200);
+    loadVariants(); loadBatches();
+  }).catch(function(){ BUSY=false; b.disabled=false; b.innerHTML='รับเข้า + สร้าง QR'; toast('เชื่อมต่อไม่สำเร็จ',1); }); }
+
 /* กล่องเตือน "รับเข้าไม่ได้ ยังไม่มีราคา" — ค้างไว้จนกว่าจะแก้ ไม่ใช่ toast ที่หายไปเอง */
 function clearPriceBlock_(){ var el=document.getElementById('priceBlock'); if(el) el.innerHTML=''; }
 function showPriceBlock_(msg){
@@ -724,6 +772,9 @@ function doReceive(){ if(BUSY)return;
         /* "ยังไม่มีราคา" เป็นเรื่องต้องอ่านและลงมือแก้ ไม่ใช่ toast ที่หายไปใน 3 วินาที
          * โชว์เป็นกล่องค้างไว้ตรงปุ่มรับเข้า พร้อมพาไปที่ช่องราคาให้เลย */
         if(r && r.code==='NO_PRICE'){ showPriceBlock_(String(r.message||'')); return; }
+        /* ช่อเกินมาตรฐาน → ขอให้ผู้จัดการยืนยันตัวตนและพิมพ์จำนวนช่อซ้ำ แล้วส่งใหม่ */
+        if(r && (r.code==='NEED_STRANDS_CONFIRM'||r.code==='BAD_CONFIRM')){
+          openStrandsConfirm_(r.data||{}, String(r.message||''), action, payload); return; }
         toast(((r&&r.message)||'ไม่สำเร็จ')+' · หลังบ้าน '+(DATA&&DATA.version||'เก่า⚠️'),1); return; }
       clearPriceBlock_();
       LAST=r.data; renderLabels(r.data); toast((MODE==='produce'?'ผลิต ':'รับเข้า ')+fmt(r.data.count)+' มัด · Batch '+r.data.batch_id+' ✓');
