@@ -123,6 +123,11 @@ td.r,th.r{text-align:right}
 .bkq{font-size:14px;margin-bottom:2px}
 .bkhint{font-size:11.5px;color:var(--muted);margin-bottom:10px}
 .bkhint.warn{color:var(--crit)}
+.pgrp{margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)}
+.pgrp .plabel{font-size:12.5px;color:var(--gold-soft);margin-bottom:7px}
+.popt{display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:1.6;padding:4px 0;cursor:pointer}
+.popt input{margin-top:3px;flex:0 0 auto}
+.popt input:disabled+span{opacity:.45;cursor:not-allowed}
 #lblWarn .warn,#priceBlock .warn{background:rgba(217,138,138,.12);border:1px solid var(--crit);color:var(--crit);border-radius:9px;padding:10px 12px;font-size:12.5px;line-height:1.7;margin-top:12px}
 .bkopts{display:grid;gap:8px}
 .bkopt{text-align:left;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:transparent;
@@ -211,20 +216,20 @@ button.is-busy,.is-busy{cursor:progress!important;opacity:.78}
         <div class="mini" style="margin-top:0;color:var(--gold-soft)">สร้างรุ่นใหม่</div>
         <div class="row2" style="margin-top:8px">
           <div><label class="lbl">ประเภท/เทคนิค</label><select class="in" id="nvType" onchange="onTypeSel()"></select></div>
-          <div><label class="lbl">ความยาว (นิ้ว)</label><input class="in" id="nvLen" placeholder="30"></div>
+          <div><label class="lbl">ความยาว (นิ้ว)</label><input class="in" id="nvLen" placeholder="30" onchange="loadPriceInfo()"></div>
         </div>
         <div class="row2" style="margin-top:8px">
-          <div><label class="lbl">สี</label><input class="in" id="nvColor" list="colorList" placeholder="เลือกหรือพิมพ์สี"><datalist id="colorList"></datalist></div>
+          <div><label class="lbl">สี</label><input class="in" id="nvColor" list="colorList" placeholder="เลือกหรือพิมพ์สี" onchange="loadPriceInfo()"><datalist id="colorList"></datalist></div>
           <div><label class="lbl">เกรด (เช่น 4A · ถ้ามี)</label><input class="in" id="nvGrade" placeholder=""></div>
         </div>
         <div style="margin-top:8px"><label class="lbl">ลักษณะผม (เช่น ผมตรง · ผมหยิก · ผมดัดลอน · ผมลอนธรรมชาติ)</label>
           <input class="in" id="nvTexture" list="textureList" placeholder="เลือกหรือพิมพ์ลักษณะผม">
           <datalist id="textureList"><option value="ผมตรง"></option><option value="ผมหยิก"></option><option value="ผมดัดลอน"></option><option value="ผมลอนธรรมชาติ"></option><option value="ผมลอนใหญ่"></option><option value="ผมลอนเล็ก"></option><option value="ผมหยักศก"></option></datalist></div>
-        <div class="row3" style="margin-top:8px">
+        <div class="row2" style="margin-top:8px">
           <div><label class="lbl">กรัม/QR</label><input class="in" id="nvG" type="number" placeholder="50"></div>
           <div><label class="lbl">ช่อ/QR</label><input class="in" id="nvS" type="number" placeholder=""></div>
-          <div><label class="lbl">ราคาขายเปล่า/QR <span class="mini" style="display:inline">(มาตรฐานของรุ่น)</span></label><input class="in" id="nvPrice" type="number" placeholder="0"></div>
         </div>
+        <div class="mini" style="margin-top:8px">ราคาขายกรอกที่ส่วน “ราคาขาย” ด้านล่าง</div>
       </div>
 
       <div class="seg" id="modeSeg" style="display:flex;gap:8px;margin-top:14px">
@@ -260,18 +265,36 @@ button.is-busy,.is-busy{cursor:progress!important;opacity:.78}
       <input class="in" id="supNew" placeholder="+ ผู้ขายใหม่ (ถ้ายังไม่มีในรายการ)" style="margin-top:8px">
 
       <div class="prev" id="rPrev">กรอกข้อมูลเพื่อดูสรุป</div>
-      <div class="bkpick" style="margin-top:14px">
-        <div class="bkq">💰 ราคา <b>ค่าต่อ</b> พิเศษของล็อตนี้ <span class="mini" style="display:inline">(ไม่บังคับ)</span></div>
-        <div class="bkhint">ผมเกรดพิเศษที่คิดค่าต่อแพงกว่าปกติ ใส่ราคาต่อ 1 QR ที่นี่ได้เลย — <b>เว้นว่าง = ใช้ราคามาตรฐานตามความยาวจาก ServiceSizes เหมือนเดิม</b></div>
-        <input class="in" id="rAttach" type="number" placeholder="เว้นว่าง = ราคามาตรฐาน" style="margin:0">
-      </div>
-      <!-- ราคาขายเปล่าอยู่ที่ "ล็อต" เหมือนราคาค่าต่อ เพราะสเปกเดียวกันแต่ซื้อมาคนละราคา
-           ต้องขายคนละราคาได้ · เดิมเก็บไว้ที่ "รุ่น" ทุกล็อตจึงถูกบังคับให้ขายราคาเดียวกัน -->
-      <div class="bkpick" style="margin-top:14px">
-        <div class="bkq">💰 ราคา <b>ขายผมเปล่า</b> ของล็อตนี้ <span class="mini" style="display:inline">(ไม่บังคับ)</span></div>
-        <div class="bkhint">ล็อตนี้ซื้อมาแพง/ถูกกว่าปกติ ตั้งราคาขายของตัวเองได้ ใส่ราคาต่อ 1 QR — <b>เว้นว่าง = ใช้ราคามาตรฐานของรุ่น</b> ฉลาก QR จะพิมพ์ราคาของล็อตนี้ และ POS จะคิดราคาตามดวงที่สแกน</div>
-        <input class="in" id="rSell" type="number" placeholder="เว้นว่าง = ราคามาตรฐานของรุ่น" style="margin:0">
-        <div class="mini" id="rSellNow" style="margin-top:6px"></div>
+      <!-- ===== ราคาขาย — รวมไว้ที่เดียว =====
+           เดิมมีช่องราคาขายเปล่าซ้ำกัน 2 ที่ (ในกล่องสร้างรุ่นใหม่ กับตรงนี้) ต่างกันตรงที่
+           ช่องบนเขียนลงชีต Variants ส่วนช่องล่างเขียนลงชีต Batches แต่หน้าจอไม่ได้บอก คนใช้เลยงง
+           ตอนนี้เหลือที่เดียว เลือกเอาว่าจะใช้ราคามาตรฐานหรือระบุราคาของล็อตนี้เอง -->
+      <div class="bkpick" id="priceBox" style="margin-top:14px">
+        <div class="bkq">💰 ราคาขาย <span style="color:var(--crit)">*</span></div>
+        <div class="bkhint">เลือกรุ่นสินค้าก่อน แล้วระบบจะดึงราคามาตรฐานมาให้ดู</div>
+
+        <div class="pgrp" id="pgSell">
+          <div class="plabel">ขายผมเปล่า /QR</div>
+          <label class="popt"><input type="radio" name="sellMode" value="std" onchange="setPriceMode('sell','std',true)" checked>
+            <span>ใช้ราคามาตรฐานของรุ่น <b id="sellStdTxt">—</b></span></label>
+          <label class="popt"><input type="radio" name="sellMode" value="own" onchange="setPriceMode('sell','own',true)">
+            <span>ระบุราคาเองเฉพาะล็อตนี้</span></label>
+          <input class="in hide" id="rSell" type="number" placeholder="ราคาขายเปล่าของล็อตนี้ /QR" style="margin:8px 0 0">
+          <div class="mini" id="sellNote" style="margin-top:6px"></div>
+        </div>
+
+        <div class="pgrp" id="pgAttach">
+          <div class="plabel">ค่าต่อ /QR</div>
+          <label class="popt"><input type="radio" name="attachMode" value="std" onchange="setPriceMode('attach','std',true)" checked>
+            <span>ใช้ราคามาตรฐาน <b id="attachStdTxt">—</b></span></label>
+          <label class="popt"><input type="radio" name="attachMode" value="own" onchange="setPriceMode('attach','own',true)">
+            <span>ระบุราคาเองเฉพาะล็อตนี้</span></label>
+          <input class="in hide" id="rAttach" type="number" placeholder="ราคาค่าต่อของล็อตนี้ /QR" style="margin:8px 0 0" oninput="stdSizeHint()">
+          <label class="popt hide" id="setStdWrap" style="margin-top:8px">
+            <input type="checkbox" id="setStdSize" onchange="stdSizeHint()">
+            <span>ตั้งเป็น<b>ราคามาตรฐาน</b>ของความยาวนี้ด้วย</span></label>
+          <div class="mini" id="attachNote" style="margin-top:6px"></div>
+        </div>
       </div>
       <div class="bkpick" id="bkPick">
         <div class="bkq">ล็อตนี้ให้ลูกค้า<b>จองออนไลน์</b>ได้หรือไม่ <span style="color:var(--crit)">*</span></div>
@@ -368,7 +391,7 @@ button.is-busy,.is-busy{cursor:progress!important;opacity:.78}
 /* ===== ตั้งค่า: ใส่ลิงก์ /exec ของโปรเจกต์ระบบใหม่ ===== */
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
 
-var BUILD='P83-NOPRICE'; /* เวอร์ชันหน้าเว็บ — เทียบกับ APP.VERSION ของหลังบ้าน แสดงที่มุมบนขวา */
+var BUILD='P84-ONEPRICE'; /* เวอร์ชันหน้าเว็บ — เทียบกับ APP.VERSION ของหลังบ้าน แสดงที่มุมบนขวา */
 var TOKEN='', DATA=null, BUSY=false, LAST=null;
 
 /* ---- สถานะ "กำลังทำงาน" ----
@@ -479,10 +502,11 @@ function setTab(t){ ['receive','label','stock','batch'].forEach(function(x){ var
   [].forEach.call(document.querySelectorAll('.tabbtn'),function(b){ b.classList.toggle('on',b.dataset.t===t); });
   if(t==='stock'&&!STOCKDATA)loadStock(); if(t==='batch'&&!BATCHDATA)loadBatches(); window.scrollTo(0,0); }
 function onTypeSel(){ var t=document.getElementById('nvType').value; var s=(DATA.services||[]).filter(function(x){return String(x.acct_name)===t;})[0];
-  if(s){ document.getElementById('nvG').placeholder=s.grams_per_mad||'50'; document.getElementById('nvS').placeholder=(s.strands_per_mad===''||s.strands_per_mad==null)?'(ไม่มี)':s.strands_per_mad; } applyProduceDefaults(); }
+  if(s){ document.getElementById('nvG').placeholder=s.grams_per_mad||'50'; document.getElementById('nvS').placeholder=(s.strands_per_mad===''||s.strands_per_mad==null)?'(ไม่มี)':s.strands_per_mad; } applyProduceDefaults(); loadPriceInfo(); }
 
 function loadVariants(){ api('variantsList',{}).then(function(r){ if(!r||!r.ok)return; DATA.variants=r.data.variants||[]; updateVarBtn(); fillTextures(); }); }
-function onVariantSel(){ document.getElementById('newVariant').classList.toggle('hide', document.getElementById('vSel').value!=='__NEW__'); applyProduceDefaults(); }
+function onVariantSel(){ document.getElementById('newVariant').classList.toggle('hide', document.getElementById('vSel').value!=='__NEW__');
+  applyProduceDefaults(); resetPriceBox(); loadPriceInfo(); }
 /* ---- variant picker (การ์ด · ค้นหา · แสดงเกรด/ลักษณะ/สี/สต็อก · กันเลือกผิด) ---- */
 var VARF={};
 function openVariantPicker(){ document.getElementById('varModal').classList.add('show'); document.getElementById('varSearch').value=''; VARF={}; renderVariantList(); setTimeout(function(){ try{document.getElementById('varSearch').focus();}catch(e){} },60); }
@@ -509,6 +533,72 @@ function varMoney_(v){
   if(v.supplier_name) rows.push(L('ผู้จำหน่าย',esc(v.supplier_name)));
   if(!rows.length) return '<div class="vmoney" style="color:var(--faint)">ยังไม่เคยรับล็อตของรุ่นนี้</div>';
   return '<div class="vmoney">'+rows.join('<br>')+'</div>'; }
+/* ===== ส่วน "ราคาขาย" — ที่เดียวของทั้งหน้า =====
+ * ตัวเลขราคามาตรฐานขอจากเซิร์ฟเวอร์ (action priceInfo) ซึ่งใช้สูตรเดียวกับฉลากและ POS
+ * ⛔ ห้ามคิดราคาเองในหน้าเว็บ — เคยเจอมาแล้วว่าพอคิดคนละที่ ตัวเลขจะเพี้ยนคนละทาง */
+var PMODE={sell:'std', attach:'std'}, PINFO=null, PSEQ=0;
+/* fromUser = คนกดเอง · ระบบสลับโหมดให้เองห้าม focus เพราะเบราว์เซอร์จะเลื่อนหน้าไปหาช่องนั้น
+ * (เคยทำให้หน้าเด้งลงไปกลางฟอร์มทันทีที่โหลดเสร็จ) */
+function setPriceMode(which, mode, fromUser){ PMODE[which]=mode;
+  var inp=document.getElementById(which==='sell'?'rSell':'rAttach');
+  if(inp){ inp.classList.toggle('hide', mode!=='own'); if(mode==='own'){ if(fromUser) inp.focus(); } else inp.value=''; }
+  if(which==='attach'){ var w=document.getElementById('setStdWrap');
+    if(w){ w.classList.toggle('hide', mode!=='own');
+      if(mode!=='own') document.getElementById('setStdSize').checked=false; } }
+  paintPrices(); }
+function resetPriceBox(){ PMODE={sell:'std',attach:'std'}; PINFO=null;
+  [['sellMode','rSell'],['attachMode','rAttach']].forEach(function(x){
+    var r=document.querySelector('input[name="'+x[0]+'"][value="std"]'); if(r) r.checked=true;
+    var i=document.getElementById(x[1]); if(i){ i.value=''; i.classList.add('hide'); } });
+  var w=document.getElementById('setStdWrap'); if(w) w.classList.add('hide');
+  var c=document.getElementById('setStdSize'); if(c) c.checked=false;
+  paintPrices(); }
+/* ถามราคามาตรฐานของสเปกที่กำลังจะรับ — เรียกทุกครั้งที่เปลี่ยนรุ่น/ความยาว/สี */
+function loadPriceInfo(){
+  var q={}, vSel=document.getElementById('vSel').value;
+  if(vSel && vSel!=='__NEW__') q.variant_id=vSel;
+  else { q.hair_type=document.getElementById('nvType').value; q.length_in=document.getElementById('nvLen').value;
+    q.color=document.getElementById('nvColor').value; q.grade=document.getElementById('nvGrade').value;
+    q.texture=document.getElementById('nvTexture').value;
+    if(!q.hair_type || !q.length_in){ PINFO=null; paintPrices(); return; } }
+  var my=++PSEQ; PINFO=null; paintPrices();
+  api('priceInfo',q).then(function(r){ if(my!==PSEQ) return;          /* ผู้ใช้เปลี่ยนไปแล้ว ทิ้งผลเก่า */
+    PINFO=(r&&r.ok)?r.data:null; paintPrices(); })
+   .catch(function(){ if(my===PSEQ){ PINFO=null; paintPrices(); } }); }
+function paintPrices(){
+  var sT=document.getElementById('sellStdTxt'), aT=document.getElementById('attachStdTxt');
+  var sN=document.getElementById('sellNote'),  aN=document.getElementById('attachNote');
+  if(!sT) return;
+  /* ยังไม่รู้ราคา (ยังไม่เลือกรุ่น หรือกำลังถามเซิร์ฟเวอร์) = ยังไม่ตัดสินใจแทนผู้ใช้ */
+  var loading=(PINFO===null);
+  var setStd=function(txtEl, noteEl, val, radioName, missMsg, extra){
+    var has=Number(val)>0;
+    txtEl.innerHTML = has?(fmt(val)+'฿'):'<span style="color:var(--crit)">— ยังไม่มี</span>';
+    var radio=document.querySelector('input[name="'+radioName+'"][value="std"]');
+    if(radio){ radio.disabled=(loading||!has);
+      /* ระหว่างรอคำตอบ ห้ามสลับโหมดให้เอง — ไม่งั้นพอราคามาถึงจะกลายเป็น "ระบุเอง" ทั้งที่มีราคามาตรฐานอยู่ */
+      if(!loading && !has && radio.checked){ var own=document.querySelector('input[name="'+radioName+'"][value="own"]');
+        if(own){ own.checked=true; setPriceMode(radioName==='sellMode'?'sell':'attach','own'); } } }
+    noteEl.innerHTML = loading?(PSEQ>0?'<span style="color:var(--faint)">กำลังดึงราคามาตรฐาน…</span>':'')
+      : (has?(extra||'') : ('<span style="color:var(--crit)">'+missMsg+'</span>')); };
+  setStd(sT, sN, PINFO&&PINFO.std_sell, 'sellMode',
+    'รุ่นนี้ยังไม่มีราคาขายเปล่ามาตรฐาน — ระบุราคาของล็อตนี้ แล้วระบบจะตั้งให้เป็นราคามาตรฐานของรุ่นด้วย (เพราะยังว่างอยู่)');
+  var sur=(PINFO&&Number(PINFO.color_sur))||0, base=(PINFO&&Number(PINFO.attach_base))||0;
+  setStd(aT, aN, PINFO&&PINFO.std_attach, 'attachMode',
+    'ความยาวนี้ยังไม่มีราคาค่าต่อมาตรฐานในชีต ServiceSizes — ระบุราคาของล็อตนี้ หรือติ๊กตั้งเป็นราคามาตรฐาน',
+    (sur>0?('= ราคาฐาน '+fmt(base)+' + ค่าสี'+esc(String((PINFO&&PINFO.color)||''))+' '+fmt(sur)):''));
+  stdSizeHint(); }
+/* ติ๊กตั้งราคามาตรฐาน: ServiceSizes เก็บ "ราคาฐาน" ที่ยังไม่รวมค่าสี ต้องบอกให้เห็นว่าจะบันทึกเลขไหน */
+function stdSizeHint(){
+  var c=document.getElementById('setStdSize'), w=document.getElementById('setStdWrap'), n=document.getElementById('attachNote');
+  if(!c||!w||!n||w.classList.contains('hide')||!c.checked) return;
+  var sur=(PINFO&&Number(PINFO.color_sur))||0, typed=Number(document.getElementById('rAttach').value)||0;
+  var base=typed-sur, len=(PINFO&&PINFO.length_in)||'';
+  n.innerHTML = typed<=0 ? '<span style="color:var(--crit)">ใส่ราคาค่าต่อก่อน</span>'
+    : (base<=0 ? '<span style="color:var(--crit)">ราคาต่ำกว่าค่าสี '+fmt(sur)+' — ตั้งเป็นราคามาตรฐานไม่ได้</span>'
+    : ('⚠ จะบันทึกราคาฐาน <b>'+fmt(base)+'฿</b> ของ '+esc(String(len))+'นิ้ว'+(sur>0?(' (= '+fmt(typed)+' − ค่าสี '+fmt(sur)+')'):'')+
+       '<br>มีผลกับ<b>ทุกสีทุกเกรด</b>ของความยาวนี้ และหน้าจองของลูกค้าด้วย')); }
+
 /* กล่องเตือน "รับเข้าไม่ได้ ยังไม่มีราคา" — ค้างไว้จนกว่าจะแก้ ไม่ใช่ toast ที่หายไปเอง */
 function clearPriceBlock_(){ var el=document.getElementById('priceBlock'); if(el) el.innerHTML=''; }
 function showPriceBlock_(msg){
@@ -546,11 +636,7 @@ function updateVarBtn(){ var id=(document.getElementById('vSel')||{}).value||'',
              Number(v.attach_price)>0?('ค่าต่อ '+fmt(v.attach_price)):'',
              v.supplier_name?('ผู้จำหน่าย '+v.supplier_name):''].filter(Boolean).join(' · '));
   if(money) sub=(sub?(sub+'<br>'):'')+money;
-  /* บอกไว้ใต้ช่องราคาขายเปล่าว่า "เว้นว่าง" แล้วจะได้ราคาเท่าไหร่ จะได้ไม่ต้องเดา */
-  var hint=document.getElementById('rSellNow');
-  if(hint) hint.innerHTML = Number(v.sell_price_per_mad)>0
-    ? ('เว้นว่าง = ใช้ราคามาตรฐานของรุ่นนี้ <b>'+fmt(v.sell_price_per_mad)+'฿</b>/QR')
-    : '<span style="color:var(--crit)">รุ่นนี้ยังไม่มีราคามาตรฐาน — ควรใส่ราคาขายของล็อตนี้</span>';
+
   btn.className='in selbtn';
   btn.innerHTML='<span><b>'+esc(v.hair_type)+' '+esc(v.length_in)+'นิ้ว</b>'+(sub?('<br><span class="btnsub">'+sub+'</span>'):'')+'</span><span class="btnsub" style="margin-left:auto;white-space:nowrap">เหลือ '+fmt(Number(v.available)||0)+'</span>'; }
 function loadSuppliers(){ api('suppliersList',{}).then(function(r){ if(!r||!r.ok)return; var sup=r.data.suppliers||[];
@@ -608,13 +694,17 @@ function doReceive(){ if(BUSY)return;
     toast('เลือกก่อนว่าล็อตนี้ให้จองออนไลน์ได้หรือไม่',1); return; }
   var vSel=document.getElementById('vSel').value;
   var base={ received_date:document.getElementById('rDate').value, supplier_id:document.getElementById('supSel').value, bookable:(BOOKABLE?'TRUE':'FALSE'),
-    attach_price_per_qr:Number(document.getElementById('rAttach').value)||0,   /* 0 = ใช้ราคามาตรฐานจาก ServiceSizes */
-    sell_price_per_qr:Number(document.getElementById('rSell').value)||0 };     /* 0 = ใช้ราคาขายเปล่ามาตรฐานของรุ่น */
+    /* โหมด "ใช้ราคามาตรฐาน" = ส่ง 0 ไป แล้วให้เซิร์ฟเวอร์ไปหยิบราคามาตรฐานเอง
+     * ห้ามให้หน้าเว็บก๊อปตัวเลขมาตรฐานมายัดลงล็อต ไม่งั้นราคาจะถูกแช่แข็งไว้ที่ล็อตโดยไม่ตั้งใจ */
+    attach_price_per_qr:(PMODE.attach==='own'?(Number(document.getElementById('rAttach').value)||0):0),
+    sell_price_per_qr:(PMODE.sell==='own'?(Number(document.getElementById('rSell').value)||0):0),
+    set_service_size:(PMODE.attach==='own' && !!document.getElementById('setStdSize').checked) };
   if(vSel==='__NEW__'){ var ht=document.getElementById('nvType').value; if(!ht){ toast('เลือกประเภท/เทคนิค',1); return; }
     var gr=document.getElementById('nvGrade').value.trim(), tx=document.getElementById('nvTexture').value.trim();
     var nm=[ht,(document.getElementById('nvLen').value||'')+'นิ้ว',(gr?('เกรด '+gr):''),tx,document.getElementById('nvColor').value].filter(Boolean).join(' ');
     base.newVariant={ name:nm, hair_type:ht, length_in:document.getElementById('nvLen').value, color:document.getElementById('nvColor').value,
-      grade:gr, texture:tx, grams_per_mad:document.getElementById('nvG').value, strands_per_mad:document.getElementById('nvS').value, sell_price_per_mad:document.getElementById('nvPrice').value };
+      grade:gr, texture:tx, grams_per_mad:document.getElementById('nvG').value, strands_per_mad:document.getElementById('nvS').value,
+      sell_price_per_mad:0 };   /* ราคาขายมากับส่วน "ราคาขาย" ด้านล่าง ไม่ใช่ที่นี่ — ดู applyStdPrices_ ฝั่งเซิร์ฟเวอร์ */
   } else if(vSel){ base.variant_id=vSel; } else { toast('เลือกหรือสร้างรุ่นสินค้า',1); return; }
 
   var action, payload;
@@ -637,7 +727,10 @@ function doReceive(){ if(BUSY)return;
         toast(((r&&r.message)||'ไม่สำเร็จ')+' · หลังบ้าน '+(DATA&&DATA.version||'เก่า⚠️'),1); return; }
       clearPriceBlock_();
       LAST=r.data; renderLabels(r.data); toast((MODE==='produce'?'ผลิต ':'รับเข้า ')+fmt(r.data.count)+' มัด · Batch '+r.data.batch_id+' ✓');
-      ['rQty','rCost','rExtra','rAttach','rSell','pQty','pRaw','pLabor','pMat','pWaste','pShip'].forEach(function(id){var e=document.getElementById(id); if(e)e.value='';}); prev();
+      /* ถ้าระบบไปตั้งราคามาตรฐานให้ด้วย ต้องบอก ไม่ใช่เปลี่ยนให้เงียบ ๆ */
+      if(r.data.std_done && r.data.std_done.length) setTimeout(function(){ toast('✓ '+r.data.std_done.join(' · ')); }, 1200);
+      ['rQty','rCost','rExtra','rAttach','rSell','pQty','pRaw','pLabor','pMat','pWaste','pShip'].forEach(function(id){var e=document.getElementById(id); if(e)e.value='';});
+      resetPriceBox(); loadPriceInfo(); prev();
       /* รีเซ็ตตัวเลือกจองออนไลน์ → ล็อตถัดไปต้องเลือกใหม่ ไม่ติดค่าเดิมมาโดยไม่รู้ตัว */
       BOOKABLE=null; [].forEach.call(document.querySelectorAll('#bkPick .bkopt'),function(b){ b.classList.remove('on'); });
       var hint1=document.getElementById('bkHint'); if(hint1){ hint1.classList.remove('warn'); hint1.innerText='ต้องเลือกก่อนรับเข้า — เลือกแล้วไม่ต้องมาเปิด-ปิดทีหลัง'; }
