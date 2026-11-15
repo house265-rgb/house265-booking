@@ -312,7 +312,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P84-ONEPRICE'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P85-STRANDS'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='',DATA=null,FULL=false,CART=[],CAT='ต่อผม',PAY='เงินสด',BUSY=false,USERTECH='';
 window._disc=0; window._recv=0; window._split=false; window._p2m='พร้อมเพย์'; window._p2a=0; window._slips=[];
 window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName='';
@@ -384,8 +384,17 @@ function svcByAcct(a){ return (DATA.services||[]).filter(function(s){return Stri
 function sellUnitOf(acct){ var s=svcByAcct(techniqueFor(acct)); var su=String((s&&s.sell_unit)||'').trim(); if(su==='ช่อ'||su==='มัด')return su; return (Number(s&&s.strands_per_mad)>0)?'ช่อ':'มัด'; }
 function amtPerQrOf(acct){ var s=svcByAcct(techniqueFor(acct)); return (sellUnitOf(acct)==='ช่อ')?(Number(s&&s.strands_per_mad)||100):0.5; }
 /* ไม่รู้เทคนิค = บอกเป็น QR ตรง ๆ ดีกว่าเดาอัตราแปลงของบริการอื่นมาใช้ */
-function qtyTag(acct,qr){ var t=techniqueFor(acct); if(!t||!svcByAcct(t)) return (Math.round((Number(qr)||0)*100)/100)+' QR';
-  var n=Math.round(amtPerQrOf(acct)*(Number(qr)||0)*100)/100; return n+' '+sellUnitOf(acct); }
+/* strands = ช่อจริงต่อ 1 QR ของรุ่นนั้น (ผมรุ่นพิเศษอัดได้ 230–270 ช่อ ไม่ใช่ 100)
+ * ไม่ส่งมา = ใช้ค่ากลางของเทคนิคเหมือนเดิม · ต้องตรงกับที่พิมพ์บนฉลาก QR เสมอ */
+function qtyTag(acct,qr,strands){ var t=techniqueFor(acct); if(!t||!svcByAcct(t)) return (Math.round((Number(qr)||0)*100)/100)+' QR';
+  var unit=sellUnitOf(acct);
+  var per=(unit==='ช่อ' && Number(strands)>0)?Number(strands):amtPerQrOf(acct);
+  var n=Math.round(per*(Number(qr)||0)*100)/100; return n+' '+unit; }
+/* ช่อจริงของรุ่น — หาได้จากแคตตาล็อกที่โหลดมาแล้ว ไม่ต้องยิงถามเซิร์ฟเวอร์ */
+function strandsOfVariant(vid){ if(!vid) return 0;
+  var v=(DATA.catalog||DATA.variants||[]).filter(function(x){ return String(x.variant_id)===String(vid); })[0];
+  return Number(v&&v.strands_per_mad)||0; }
+function lineStrands(l){ return Number(l&&l.strands_per_mad)||strandsOfVariant(l&&l.variant_id); }
 function sizesFor(acct){ var s=svcByAcct(acct); if(!s)return []; return (DATA.serviceSizes||[]).filter(function(z){return String(z.service_id)===String(s.service_id);}).map(function(z){return {size:String(z.size),price:Number(z.price)||0};}); }
 function acctList(){ return (DATA.services||[]).map(function(s){return String(s.acct_name);}); }
 /* ⚠ ชื่อว่างห้าม fuzzy — '' อยู่ใน indexOf ของทุกสตริง เดิมจึงไปคว้าบริการตัวแรกในรายการมาใช้เงียบ ๆ
@@ -402,18 +411,19 @@ function sizeLabelFor(technique,len){ var zs=sizesFor(technique); var d=digits(l
  * สูตรเดียวอยู่ที่ Core.gs → lineLabor_ (ตัวเดียวกับที่ใช้บันทึกบิลจริง)
  * ⛔ ห้ามคำนวณค่ามือ/ค่าอุปกรณ์ฝั่งหน้าเว็บ — เลขที่ผู้จัดการเห็นต้องเป็นเลขเดียวกับที่บันทึก */
 var CQ={seq:0,tmr:null,cache:{}};
-function cqKey(t,i,q){ return String(t||'')+'|'+String(i||'')+'|'+Math.max(1,Math.round(Number(q)||1)); }
-function commBoxHtml(t,i,q,hint){ var k=cqKey(t,i,q), c=CQ.cache[k];
+/* v = รหัสรุ่น · ต้องอยู่ในคีย์แคชด้วย เพราะรุ่นพิเศษ (1 QR มีช่อมากกว่าปกติ) ค่ามือไม่เท่ากัน */
+function cqKey(t,i,q,v){ return String(t||'')+'|'+String(i||'')+'|'+Math.max(1,Math.round(Number(q)||1))+'|'+String(v||''); }
+function commBoxHtml(t,i,q,hint,v){ var k=cqKey(t,i,q,v), c=CQ.cache[k];
   return '<div class="mini" id="commBox" data-k="'+esc(k)+'" data-h="'+esc(hint||'')+'"><b>ค่ามือช่าง:</b> '+
     (c==null?'<span class="faint">กำลังคิด…</span>':(fmt(c)+(hint||'')))+'</div>'; }
 function commPaint(k){ var e=document.getElementById('commBox'); if(!e||e.getAttribute('data-k')!==k)return;
   var c=CQ.cache[k]; if(c==null)return;
   e.innerHTML='<b>ค่ามือช่าง:</b> '+fmt(c)+(e.getAttribute('data-h')||''); }
-function commAsk(t,i,q){ if(!FULL)return; var k=cqKey(t,i,q);
+function commAsk(t,i,q,v){ if(!FULL)return; var k=cqKey(t,i,q,v);
   if(CQ.cache[k]!=null){ commPaint(k); return; }
   clearTimeout(CQ.tmr);
   CQ.tmr=setTimeout(function(){ var s=++CQ.seq;      /* กันคำตอบเก่ามาช้าแล้วทับของใหม่ */
-    api('lineQuote',{line_type:t,item:i,qty:Math.max(1,Math.round(Number(q)||1)),seq:s}).then(function(j){
+    api('lineQuote',{line_type:t,item:i,qty:Math.max(1,Math.round(Number(q)||1)),variant_id:(v||''),seq:s}).then(function(j){
       if(!j||!j.ok||!j.data)return; if(Number(j.data.seq)!==CQ.seq)return;
       CQ.cache[k]=Math.round(Number(j.data.comm)||0); commPaint(k);
     }).catch(function(){ var e=document.getElementById('commBox');
@@ -524,6 +534,7 @@ function newProductBase(d){ var technique=techniqueFor(d.hair_type); var len=Str
     plainPrice:Number(d.sell_price)||0,
     extPrice:(d.ext_price!=null?(Number(d.ext_price)||0):laborFor(technique,len)),
     extSpecial:!!d.ext_price_special, colorSur:Number(d.color_sur)||0,
+    strands_per_mad:Number(d.strands_per_mad)||0, grams_per_mad:Number(d.grams_per_mad)||0,
     cost:(d.cost!=null?Number(d.cost):null),
     mode:(SCANMODE==='plain'?'plain':'ext'), lockMode:true,
     technique:technique, size:sizeLabelFor(technique,len), techs:[{name:USERTECH||'',split:100}] }; }
@@ -553,10 +564,10 @@ function renderProduct(){ var l=LD, ext=(l.mode==='ext'), multi=l.techs.length>1
       ' <span class="faint" style="font-size:12px">(ตามแท็บที่สแกน)</span></div>'; }
   else h+='<div class="seg"><button class="'+(!ext?'on':'')+'" onclick="pdMode(\'plain\')">ขายเปล่า</button><button class="'+(ext?'on':'')+'" onclick="pdMode(\'ext\')">✂️ ต่อผม (มีช่าง)</button></div>';
   if(!ext){
-    h+='<label class="lbl">ราคาขายเปล่า /QR (฿) <span class="faint" style="font-size:11px">· 1 QR = '+qtyTag(l.technique||l.hair_type,1)+'</span></label><input class="in" type="number" style="text-align:right;font-size:17px;margin-bottom:6px" value="'+l.plainPrice+'" oninput="LD.plainPrice=parseFloat(this.value)||0;pdRefreshTotal()">';
+    h+='<label class="lbl">ราคาขายเปล่า /QR (฿) <span class="faint" style="font-size:11px">· 1 QR = '+qtyTag(l.technique||l.hair_type,1,lineStrands(l))+'</span></label><input class="in" type="number" style="text-align:right;font-size:17px;margin-bottom:6px" value="'+l.plainPrice+'" oninput="LD.plainPrice=parseFloat(this.value)||0;pdRefreshTotal()">';
   } else {
     h+='<div class="lockpill">🔒 เทคนิค: '+esc(l.technique||l.hair_type||'-')+' <span class="faint" style="font-size:12px">(ตามประเภทผม)</span></div>';
-    h+='<label class="lbl">ราคาขายต่อผม /QR (฿) <span class="faint" style="font-size:11px">· 1 QR = '+qtyTag(l.technique||l.hair_type,1)+'</span></label><input class="in" type="number" style="text-align:right;font-size:17px;margin-bottom:11px" value="'+l.extPrice+'" oninput="LD.extPrice=parseFloat(this.value)||0;pdRefreshTotal()">';
+    h+='<label class="lbl">ราคาขายต่อผม /QR (฿) <span class="faint" style="font-size:11px">· 1 QR = '+qtyTag(l.technique||l.hair_type,1,lineStrands(l))+'</span></label><input class="in" type="number" style="text-align:right;font-size:17px;margin-bottom:11px" value="'+l.extPrice+'" oninput="LD.extPrice=parseFloat(this.value)||0;pdRefreshTotal()">';
     h+='<label class="lbl">ช่างที่ต่อ'+(multi?(' · รวม '+sum+'%'+(Math.round(sum)!==100?' ⚠':'')):'')+'</label>';
     h+=l.techs.map(function(t,i){ return '<div class="tw"><select class="in" style="flex:1" onchange="pdName('+i+',this.value)">'+techOpts(t.name)+'</select>'+(multi?('<input class="in" type="number" style="width:56px;text-align:center" value="'+(t.split||0)+'" onchange="pdSplit('+i+',parseFloat(this.value)||0)"><span class="faint">%</span><button class="x" onclick="pdRmTech('+i+')">✕</button>'):'')+'</div>'; }).join('');
     h+='<button class="btn sec" style="width:auto;padding:6px 12px;font-size:12px;margin:2px 0 10px" onclick="pdAddTech()">+ เพิ่มช่างร่วม</button>';
@@ -570,12 +581,12 @@ function renderProduct(){ var l=LD, ext=(l.mode==='ext'), multi=l.techs.length>1
        '<br>คีย์ราคาที่ช่องด้านบนเพื่อขายรอบนี้ไปก่อน แล้วแจ้งผู้จัดการไปตั้งราคาให้ถูกต้อง</div>';
   h+='<div class="tot grand" style="font-size:15px"><span>'+(ext?'ราคาขายต่อผม':'ราคาขายเปล่า')+(pdQ()>1?(' <span class="faint" style="font-size:12px">× '+pdQ()+' QR ('+qtyTag(l.technique||l.hair_type,pdQ())+')</span>'):'')+'</span><b id="pdTot" style="font-size:20px">'+fmt(pdTotal())+'</b></div>';
   var cqT='product_ext', cqI=(l.technique||l.hair_type||''), cqQ=pdQ();
-  if(FULL && ext) h+=commBoxHtml(cqT,cqI,cqQ,'');
+  if(FULL && ext) h+=commBoxHtml(cqT,cqI,cqQ,'',l.variant_id);
   h+='<div style="margin-top:12px"><label class="lbl">ส่วนลดพิเศษเฉพาะรายการนี้ (฿)</label><input class="in" type="number" id="lmDisc" value="'+(Number(l.disc)||'')+'" placeholder="0 (เว้นว่าง=ไม่ลด)"></div>';
   h+='<div class="row2" style="margin-top:16px"><button class="btn sec" onclick="closeLine()">ยกเลิก</button><button class="btn" onclick="confirmProduct()">'+(LEDIT!=null?'บันทึก':'＋ เพิ่มลงบิล')+'</button></div>';
   document.getElementById('lmBody').innerHTML=h;
   document.getElementById('lmTitle').innerText=(LEDIT!=null?'แก้ไขรายการ':esc(l.name||'ขายผม'));
-  if(FULL && ext) commAsk(cqT,cqI,cqQ);
+  if(FULL && ext) commAsk(cqT,cqI,cqQ,l.variant_id);
 }
 function pdRefreshTotal(){ var e=document.getElementById('pdTot'); if(e)e.innerText=fmt(pdTotal()); }
 function confirmProduct(){ var l=LD; var price=pdTotal();
@@ -614,17 +625,17 @@ function renderLine(){ var l=LD, multi=l.techs.length>1, sum=lmSum(); var h='';
   if(l.kind==='custom'){ h+='<label class="lbl">ชื่อรายการ</label><input class="in" value="'+esc(l.item)+'" oninput="LD.item=this.value" placeholder="เช่น แชมพู / ทรีตเมนต์" style="margin-bottom:11px">'; }
   var qtyBlock='';
   if(l.kind==='removal'){ qtyBlock='<div style="flex:0 0 auto"><label class="lbl">งานถอด</label><div class="lockpill" style="margin:0">🧴 ราคาเหมา (ไม่คิดตามจำนวน)</div></div>'; }
-  else { var disp=(l.kind==='custom')?(l.qty+' ชิ้น'):qtyTag(l.technique||l.item,l.qty);
+  else { var disp=(l.kind==='custom')?(l.qty+' ชิ้น'):qtyTag(l.technique||l.item,l.qty,lineStrands(l));
     qtyBlock='<div><label class="lbl">จำนวน'+(l.kind!=='custom'?' <span class="faint" style="font-size:11px">('+esc(sellUnitOf(l.technique||l.item))+' · กด±1 ชุด)</span>':'')+'</label><div class="stp"><button onclick="lmStep(-1)">−</button><span class="v" style="min-width:76px">'+esc(disp)+'</span><button onclick="lmStep(1)">＋</button></div></div>'; }
   h+='<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:11px">'+qtyBlock+'<div style="flex:1"><label class="lbl">ราคารวม (฿)</label><input class="in" type="number" style="text-align:right;font-size:17px" value="'+l.price+'" oninput="LD.price=parseFloat(this.value)||0"></div></div>';
   h+='<label class="lbl">ช่างที่ทำ'+(multi?(' · รวม '+sum+'%'+(Math.round(sum)!==100?' ⚠':'')):'')+'</label>';
   h+=l.techs.map(function(t,i){ return '<div class="tw"><select class="in" style="flex:1" onchange="lmName('+i+',this.value)">'+techOpts(t.name)+'</select>'+(multi?('<input class="in" type="number" style="width:56px;text-align:center" value="'+(t.split||0)+'" onchange="lmSplit('+i+',parseFloat(this.value)||0)"><span class="faint">%</span><button class="x" onclick="lmRmTech('+i+')">✕</button>'):'')+'</div>'; }).join('');
   h+='<button class="btn sec" style="width:auto;padding:6px 12px;font-size:12px;margin:2px 0 10px" onclick="lmAddTech()">+ เพิ่มช่างร่วม</button>';
-  if(FULL) h+=commBoxHtml(l.kind,l.item,l.qty,cqHint);
+  if(FULL) h+=commBoxHtml(l.kind,l.item,l.qty,cqHint,l.variant_id);
   h+='<div style="margin-top:12px"><label class="lbl">ส่วนลดพิเศษเฉพาะรายการนี้ (฿)</label><input class="in" type="number" id="lmDisc" value="'+(Number(l.disc)||'')+'" placeholder="0 (เว้นว่าง=ไม่ลด)"></div>';
   h+='<div class="row2" style="margin-top:16px"><button class="btn sec" onclick="closeLine()">ยกเลิก</button><button class="btn" onclick="confirmLine()">'+(LEDIT!=null?'บันทึก':'＋ เพิ่มลงบิล')+'</button></div>';
   document.getElementById('lmBody').innerHTML=h; document.getElementById('lmTitle').innerText=(LEDIT!=null?'แก้ไขรายการ':esc(l.item||'รายการ'));
-  if(FULL) commAsk(l.kind,l.item,l.qty); }
+  if(FULL) commAsk(l.kind,l.item,l.qty,l.variant_id); }
 function confirmLine(){ var l=LD; if(!l.item){ toast('กรอกชื่อรายการ',1); return; } if(!(Number(l.price)>0)){ toast('ใส่ราคา',1); return; }
   var tc=l.techs.filter(function(t){return t.name;}); if(tc.length>1&&Math.round(lmSum())!==100){ toast('สัดส่วนช่างต้องรวม 100%',1); return; }
   l.disc=Number((document.getElementById('lmDisc')||{}).value)||0;
@@ -713,7 +724,7 @@ function renderCart(){ var box=document.getElementById('cartBody');
   cust=bkBanner+guideCardHtml()+cust;
   if(!CART.length){ box.innerHTML=cust+'<div class="empty">ยังไม่มีรายการ<br><span class="faint">สแกน QR · หรือเพิ่มบริการ/สินค้า</span></div>'; return; }
   var lines=CART.map(function(l,i){ var det=[], tag='';
-    if(l.kind==='product'){ if(l.hair_type)det.push(l.hair_type); if(l.length_in)det.push(l.length_in+'นิ้ว'); if(l.grade)det.push('เกรด '+l.grade); if(l.texture)det.push(l.texture); if(l.color)det.push('สี '+l.color); det.push(qtyTag(l.hair_type,prodQty(l))); if(l.barcode)det.push(l.barcode);
+    if(l.kind==='product'){ if(l.hair_type)det.push(l.hair_type); if(l.length_in)det.push(l.length_in+'นิ้ว'); if(l.grade)det.push('เกรด '+l.grade); if(l.texture)det.push(l.texture); if(l.color)det.push('สี '+l.color); det.push(qtyTag(l.hair_type,prodQty(l),lineStrands(l))); if(l.barcode)det.push(l.barcode);
       if(l.mode==='ext'){ tag='<span style="color:var(--gold-soft);font-size:11px;background:var(--gold-ghost);border:1px solid var(--gold-dim);border-radius:6px;padding:1px 6px;margin-left:4px">✂️ ต่อผม'+(lineTechNames(l)?(' · '+esc(lineTechNames(l))):'')+'</span>'; }
       else { tag='<span style="color:var(--faint);font-size:11px;margin-left:4px">· ขายเปล่า</span>'; }
     } else { if(l.kind==='custom')det.push((l.qty||1)+' ชิ้น'); else if(l.kind==='removal')det.push('เหมา'); else { det.push('นำผมมาเอง'); if(l.size)det.push(/^\d+$/.test(String(l.size))?(l.size+'นิ้ว'):l.size); if(l.color)det.push('สี '+l.color); det.push(qtyTag(l.technique||l.item,l.qty||1)); } var tn=lineTechNames(l); if(tn)det.push('ช่าง '+tn); }
@@ -878,7 +889,8 @@ function receiptHtml(rc){ var h='<h3>'+esc(rc.shopName)+'</h3><div class="c">ใ
     if(l.byob) det.push('นำผมมาเอง');
     if(!isP && l.size) det.push(/^\d+$/.test(String(l.size))?(l.size+'นิ้ว'):l.size);
     if(l.color) det.push('สี '+l.color);
-    var q=(l.type==='removal')?'เหมา':qtyTag(l.unit_ref||l.item,l.qty); if(q)det.push(q);
+    /* ใช้ป้ายจำนวนที่เซิร์ฟเวอร์คิดมา (รู้ช่อจริงของล็อตที่ขายไป) ไม่มีค่อยคิดเอง */
+    var q=(l.type==='removal')?'เหมา':(l.qty_label||qtyTag(l.unit_ref||l.item,l.qty,l.strands_per_qr)); if(q)det.push(q);
     if(l.tech) det.push('ช่าง '+l.tech); else if(l.ext) det.push('ต่อผม');
     h+='<div class="rr"><span>'+esc(l.item)+'</span><span>'+fmt(l.price)+'</span></div>';
     if(det.length) h+='<div class="rr sub"><span>'+esc(det.join(' · '))+'</span><span></span></div>';
@@ -1060,7 +1072,7 @@ function qDateLabel(d){ if(!d||d==='-')return 'ไม่ระบุวัน'; 
 /* จำนวนท้ายบรรทัด: detail มักเขียนจำนวนไว้อยู่แล้ว ("...30นิ้ว · 300 ช่อ | ถอด:...")
  * จึงต่อท้ายเฉพาะตอนที่ยังไม่มี — ถ้าสองค่าไม่ตรงกันจะเห็นทั้งคู่ ซึ่งเป็นสัญญาณว่าข้อมูลเพี้ยน ไม่ใช่ของซ้ำ */
 function qtyChip(b){ if(!b.qty_mad) return '';
-  var t=qtyTag(b.technique,b.qty_mad);
+  var t=qtyTag(b.technique,b.qty_mad,strandsOfVariant(b.variant_id));
   return (t && String(b.detail||'').indexOf(t)>=0) ? '' : (' · '+esc(t)); }
 function qRow(b){ return '<div class="sliprow" style="cursor:pointer;align-items:flex-start" onclick="openQueueBooking(\''+esc(b.booking_id)+'\')">'+
   '<div style="text-align:center;min-width:54px"><b style="color:var(--gold-soft);font-size:16px">'+esc(b.start||'--')+'</b><div class="mini">'+esc(b.end||'')+'</div></div>'+
@@ -1077,7 +1089,7 @@ function openQueueBooking(id){ QCANCEL=false; RS=null; RSSLIP=null; var body=doc
     h+='<div class="hr2"></div><div class="idrow">'+
        '<span class="pill">บริการ <b>'+esc(bk.detail||(svcById(bk.service_id)||{}).acct_name||'-')+'</b></span>'+
        (v?('<span class="pill">ผม <b>'+esc(v.hair_type)+' '+esc(v.length_in)+'นิ้ว</b></span>'+(v.grade?('<span class="pill">เกรด <b>'+esc(v.grade)+'</b></span>'):'')+(v.texture?('<span class="pill">'+esc(v.texture)+'</span>'):'')+(v.color?('<span class="pill">สี <b>'+esc(v.color)+'</b></span>'):'')):'')+
-       '<span class="pill">จำนวน <b>'+qtyTag(bk.technique||(v&&v.hair_type),bk.qty_mad)+'</b></span></div>';
+       '<span class="pill">จำนวน <b>'+qtyTag(bk.technique||(v&&v.hair_type),bk.qty_mad,(v&&Number(v.strands_per_mad))||strandsOfVariant(bk.variant_id))+'</b></span></div>';
     h+='<div class="tot"><span>ยอดประเมิน</span><b>'+fmt(bk.suggest_total)+' ฿</b></div>';
     h+='<div class="tot"><span>มัดจำที่ชำระแล้ว</span><b style="color:var(--ok)">'+fmt(bk.deposit)+' ฿</b></div>';
     h+='<div class="tot grand"><span>คงเหลือเก็บหน้าร้าน</span><b>'+fmt(Math.max(0,Number(bk.suggest_total)-Number(bk.deposit)))+'</b></div>';
@@ -1313,6 +1325,7 @@ function checkoutToCart(bk,v){ if(!bk)return;
     var perMad=laborFor(technique,len)||0; if(!perMad && Number(bk.suggest_total)&&qty) perMad=Math.round(Number(bk.suggest_total)/qty);
     QGUIDE.push({ type:'ต่อผม (ใช้ผมของร้าน)', scan:true, line:{ kind:'product', variant_id:bk.variant_id, barcode:'', name:(v&&v.name)||('ต่อผม '+ht),
       hair_type:ht, length_in:len, color:(v&&v.color)||'', grade:(v&&v.grade)||'', texture:(v&&v.texture)||'', plainPrice:perMad, extPrice:perMad, cost:null,
+      strands_per_mad:(v&&Number(v.strands_per_mad))||0,
       mode:'ext', technique:technique, size:sizeLabelFor(technique,len), techs:defTech.slice(), qty_mad:qty } });
   } else { var svc=svcById(bk.service_id)||svcByAcct(bk.detail)||{}; var it=svc.acct_name||bk.service_id||'บริการต่อผม';
     var bb=Number(svc.byob_base)||0, bp=Number(svc.byob_per_bundle)||0; var bprice=Math.round(bb+bp*qty)||Math.round(Number(bk.suggest_total)||0); /* คิดจากสูตร byob ไม่ใช้ค่าประเมินเก่า */
@@ -1322,6 +1335,7 @@ function checkoutToCart(bk,v){ if(!bk)return;
     var aprice=laborFor(atech,alen)||0;
     QGUIDE.push({ type:'ซื้อผมเพิ่ม (ใช้ผมของร้าน)', scan:true, line:{ kind:'product', variant_id:bk.addon_variant_id, barcode:'', name:(av.name||('ผมซื้อเพิ่ม '+aht)),
       hair_type:aht, length_in:alen, color:av.color||'', grade:av.grade||'', texture:av.texture||'', plainPrice:aprice, extPrice:aprice, cost:null,
+      strands_per_mad:Number(av.strands_per_mad)||0,
       mode:'plain', technique:atech, size:sizeLabelFor(atech,alen), techs:defTech.slice(), qty_mad:aq } }); }
   /* ถอดผมเก่า */
   if(bk.rm_addon_id){ var rma=bk.rm_addon||{}, rmrow=(DATA.removals||[]).filter(function(x){return String(x.removal_id)===String(bk.rm_addon_id);})[0]||{};
@@ -1338,7 +1352,7 @@ function checkoutToCart(bk,v){ if(!bk)return;
 function guideSpec(g){ var l=g.line, p=[];
   if(l.kind==='product'){ p.push(g.scan?'ใช้ผมของร้าน':'นำผมมาเอง'); p.push(l.hair_type||l.name);
     if(l.length_in)p.push(l.length_in+'นิ้ว'); if(l.grade)p.push('เกรด '+l.grade); if(l.texture)p.push(l.texture); if(l.color)p.push('สี '+l.color);
-    p.push(qtyTag(l.hair_type,Math.round(l.qty_mad||1))); }
+    p.push(qtyTag(l.hair_type,Math.round(l.qty_mad||1),lineStrands(l))); }
   else if(l.kind==='removal'){ p.push(l.item); p.push(qtyTag(l.technique||l.item,l.qty||1)); }
   else { p.push('นำผมมาเอง'); p.push(l.technique||l.item); if(l.size)p.push(l.size); if(l.color)p.push('สี '+l.color); p.push(qtyTag(l.technique||l.item,l.qty||1)); }
   return p.filter(Boolean).join(' : '); }
