@@ -312,7 +312,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P86-STRANDCONF'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P87-COMMFIX'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='',DATA=null,FULL=false,CART=[],CAT='ต่อผม',PAY='เงินสด',BUSY=false,USERTECH='';
 window._disc=0; window._recv=0; window._split=false; window._p2m='พร้อมเพย์'; window._p2a=0; window._slips=[];
 window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName='';
@@ -410,22 +410,26 @@ function sizeLabelFor(technique,len){ var zs=sizesFor(technique); var d=digits(l
 /* ---- ค่ามือช่าง: ถามเซิร์ฟเวอร์เสมอ ----
  * สูตรเดียวอยู่ที่ Core.gs → lineLabor_ (ตัวเดียวกับที่ใช้บันทึกบิลจริง)
  * ⛔ ห้ามคำนวณค่ามือ/ค่าอุปกรณ์ฝั่งหน้าเว็บ — เลขที่ผู้จัดการเห็นต้องเป็นเลขเดียวกับที่บันทึก */
-var CQ={seq:0,tmr:null,cache:{}};
+var CQ={seq:0,tmr:null,cache:{},ratio:{}};
 /* v = รหัสรุ่น · ต้องอยู่ในคีย์แคชด้วย เพราะรุ่นพิเศษ (1 QR มีช่อมากกว่าปกติ) ค่ามือไม่เท่ากัน */
 function cqKey(t,i,q,v){ return String(t||'')+'|'+String(i||'')+'|'+Math.max(1,Math.round(Number(q)||1))+'|'+String(v||''); }
-function commBoxHtml(t,i,q,hint,v){ var k=cqKey(t,i,q,v), c=CQ.cache[k];
+/* ผมรุ่นพิเศษค่ามือสูงกว่าปกติ ต้องบอกด้วยว่าทำไม ไม่งั้นดูเหมือนระบบคิดผิด */
+function commText_(k){ var c=CQ.cache[k]; if(c==null) return null;
+  var r=Number(CQ.ratio[k])||1;
+  return fmt(c.comm!=null?c.comm:c)+(r>1?(' <span class="faint">(ช่อมากกว่ามาตรฐาน '+(Math.round(r*100)/100)+' เท่า)</span>'):''); }
+function commBoxHtml(t,i,q,hint,v){ var k=cqKey(t,i,q,v), txt=commText_(k);
   return '<div class="mini" id="commBox" data-k="'+esc(k)+'" data-h="'+esc(hint||'')+'"><b>ค่ามือช่าง:</b> '+
-    (c==null?'<span class="faint">กำลังคิด…</span>':(fmt(c)+(hint||'')))+'</div>'; }
+    (txt==null?'<span class="faint">กำลังคิด…</span>':(txt+(hint||'')))+'</div>'; }
 function commPaint(k){ var e=document.getElementById('commBox'); if(!e||e.getAttribute('data-k')!==k)return;
-  var c=CQ.cache[k]; if(c==null)return;
-  e.innerHTML='<b>ค่ามือช่าง:</b> '+fmt(c)+(e.getAttribute('data-h')||''); }
+  var txt=commText_(k); if(txt==null)return;
+  e.innerHTML='<b>ค่ามือช่าง:</b> '+txt+(e.getAttribute('data-h')||''); }
 function commAsk(t,i,q,v){ if(!FULL)return; var k=cqKey(t,i,q,v);
   if(CQ.cache[k]!=null){ commPaint(k); return; }
   clearTimeout(CQ.tmr);
   CQ.tmr=setTimeout(function(){ var s=++CQ.seq;      /* กันคำตอบเก่ามาช้าแล้วทับของใหม่ */
     api('lineQuote',{line_type:t,item:i,qty:Math.max(1,Math.round(Number(q)||1)),variant_id:(v||''),seq:s}).then(function(j){
       if(!j||!j.ok||!j.data)return; if(Number(j.data.seq)!==CQ.seq)return;
-      CQ.cache[k]=Math.round(Number(j.data.comm)||0); commPaint(k);
+      CQ.cache[k]=Math.round(Number(j.data.comm)||0); CQ.ratio[k]=Number(j.data.ratio)||1; commPaint(k);
     }).catch(function(){ var e=document.getElementById('commBox');
       if(e&&e.getAttribute('data-k')===k)e.innerHTML='<b>ค่ามือช่าง:</b> <span class="faint">เชื่อมต่อไม่ได้</span>'; }); },180); }
 /* ---- categories ---- */
