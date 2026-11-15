@@ -123,6 +123,7 @@ td.r,th.r{text-align:right}
 .bkq{font-size:14px;margin-bottom:2px}
 .bkhint{font-size:11.5px;color:var(--muted);margin-bottom:10px}
 .bkhint.warn{color:var(--crit)}
+#lblWarn .warn,#priceBlock .warn{background:rgba(217,138,138,.12);border:1px solid var(--crit);color:var(--crit);border-radius:9px;padding:10px 12px;font-size:12.5px;line-height:1.7;margin-top:12px}
 .bkopts{display:grid;gap:8px}
 .bkopt{text-align:left;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:transparent;
   color:var(--fg);font-family:inherit;cursor:pointer;display:block;width:100%}
@@ -282,6 +283,7 @@ button.is-busy,.is-busy{cursor:progress!important;opacity:.78}
             <b>🏪 ขายหน้าร้านเท่านั้น</b><span>ล็อตพิเศษ/ของหายาก คนละราคา · ไม่โผล่ในระบบจอง</span></button>
         </div>
       </div>
+      <div id="priceBlock"></div>
       <button class="btn" id="btnReceive" style="margin-top:12px" onclick="doReceive()">รับเข้า + สร้าง QR</button>
     </div>
     </div><!-- /tabReceive -->
@@ -330,6 +332,7 @@ button.is-busy,.is-busy{cursor:progress!important;opacity:.78}
         <div><label class="lbl">ต่อแถว</label><input class="in" id="lcols" type="number" value="3" style="width:68px" oninput="applyLabelSize()"></div>
         <div class="mini" style="margin:0;flex:1;min-width:140px">ปรับให้ตรงสติกเกอร์ของคุณ · ค่าเริ่มต้น 32×25mm แถวละ 3</div>
       </div>
+      <div class="noprint" id="lblWarn"></div>
       <div class="noprint mini" id="previewHead" style="margin-top:12px;color:var(--gold-soft)"></div>
       <div class="labels noprint" id="labelPreview"></div>
       <label class="mini noprint" style="display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer">
@@ -365,7 +368,7 @@ button.is-busy,.is-busy{cursor:progress!important;opacity:.78}
 /* ===== ตั้งค่า: ใส่ลิงก์ /exec ของโปรเจกต์ระบบใหม่ ===== */
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
 
-var BUILD='P82-LOTPRICE'; /* เวอร์ชันหน้าเว็บ — เทียบกับ APP.VERSION ของหลังบ้าน แสดงที่มุมบนขวา */
+var BUILD='P83-NOPRICE'; /* เวอร์ชันหน้าเว็บ — เทียบกับ APP.VERSION ของหลังบ้าน แสดงที่มุมบนขวา */
 var TOKEN='', DATA=null, BUSY=false, LAST=null;
 
 /* ---- สถานะ "กำลังทำงาน" ----
@@ -506,6 +509,14 @@ function varMoney_(v){
   if(v.supplier_name) rows.push(L('ผู้จำหน่าย',esc(v.supplier_name)));
   if(!rows.length) return '<div class="vmoney" style="color:var(--faint)">ยังไม่เคยรับล็อตของรุ่นนี้</div>';
   return '<div class="vmoney">'+rows.join('<br>')+'</div>'; }
+/* กล่องเตือน "รับเข้าไม่ได้ ยังไม่มีราคา" — ค้างไว้จนกว่าจะแก้ ไม่ใช่ toast ที่หายไปเอง */
+function clearPriceBlock_(){ var el=document.getElementById('priceBlock'); if(el) el.innerHTML=''; }
+function showPriceBlock_(msg){
+  var el=document.getElementById('priceBlock'); if(!el){ toast(msg,1); return; }
+  el.innerHTML='<div class="warn">'+esc(msg).replace(/\n/g,'<br>')+'</div>';
+  el.scrollIntoView({behavior:'smooth',block:'center'});
+  var f=document.getElementById('rAttach'); if(f){ f.focus(); }
+  toast('รับเข้าไม่ได้ — ยังไม่มีราคาขาย',1); }
 function setVarFacet(k,v){ if(k==='__clear__'){VARF={};} else { if(VARF[k]===v||!v)delete VARF[k]; else VARF[k]=v; } renderVariantList(); }
 function renderVariantList(){ var box=document.getElementById('varList'); if(!box)return;
   renderFacetBar('varTypes',(DATA.variants||[]),VFACETS,VARF,'setVarFacet');
@@ -619,7 +630,12 @@ function doReceive(){ if(BUSY)return;
   var newSup=document.getElementById('supNew').value.trim();
   BUSY=true; var b=document.getElementById('btnReceive'); b.disabled=true; b.innerHTML='⏳ กำลังบันทึก…';
   var go=function(){ api(action,payload).then(function(r){ BUSY=false; b.disabled=false; b.innerHTML='รับเข้า + สร้าง QR';
-      if(!r||!r.ok){ toast(((r&&r.message)||'ไม่สำเร็จ')+' · หลังบ้าน '+(DATA&&DATA.version||'เก่า⚠️'),1); return; }
+      if(!r||!r.ok){
+        /* "ยังไม่มีราคา" เป็นเรื่องต้องอ่านและลงมือแก้ ไม่ใช่ toast ที่หายไปใน 3 วินาที
+         * โชว์เป็นกล่องค้างไว้ตรงปุ่มรับเข้า พร้อมพาไปที่ช่องราคาให้เลย */
+        if(r && r.code==='NO_PRICE'){ showPriceBlock_(String(r.message||'')); return; }
+        toast(((r&&r.message)||'ไม่สำเร็จ')+' · หลังบ้าน '+(DATA&&DATA.version||'เก่า⚠️'),1); return; }
+      clearPriceBlock_();
       LAST=r.data; renderLabels(r.data); toast((MODE==='produce'?'ผลิต ':'รับเข้า ')+fmt(r.data.count)+' มัด · Batch '+r.data.batch_id+' ✓');
       ['rQty','rCost','rExtra','rAttach','rSell','pQty','pRaw','pLabor','pMat','pWaste','pShip'].forEach(function(id){var e=document.getElementById(id); if(e)e.value='';}); prev();
       /* รีเซ็ตตัวเลือกจองออนไลน์ → ล็อตถัดไปต้องเลือกใหม่ ไม่ติดค่าเดิมมาโดยไม่รู้ตัว */
@@ -679,7 +695,10 @@ function mkLabel_(d,code){ var el=document.createElement('div'); el.className='l
     (col.trim()?('<div class="l">'+col+'</div>'):'')+
     (l4?('<div class="l">'+l4+'</div>'):'')+
     '<div class="l">เปล่า <b>'+fmt(d.sell_price_per_mad)+'</b>฿'+(d.sell_price_special?' ★':'')+'</div>'+
-    (Number(d.ext_price)>0?('<div class="l">ต่อ <b>'+fmt(d.ext_price)+'</b>฿</div>'):'')+
+    /* ไม่มีราคาค่าต่อ = ห้ามเงียบ ฉลากต้องฟ้องเอง ไม่งั้นผมถูกติดฉลากไปแล้วค่อยรู้ทีหลัง
+     * (15 พ.ย. 2026: ความยาวพิมพ์ผิดเป็น 500นิ้ว ไม่มีใน ServiceSizes ฉลากเลยไม่มีบรรทัดราคาต่อเฉย ๆ) */
+    (Number(d.ext_price)>0?('<div class="l">ต่อ <b>'+fmt(d.ext_price)+'</b>฿</div>')
+                          :'<div class="l" style="font-weight:700">ต่อ ⚠ ยังไม่ตั้งราคา</div>')+
     '</div></div>'; return el; }
 function drawQRin_(container, codes){ var qrs=container.querySelectorAll('.qr');
   for(var i=0;i<qrs.length;i++){ var code=codes[i], el=qrs[i]; el.innerHTML='';
@@ -691,6 +710,13 @@ function renderLabels(d){
   loadLabelSize(); loadLeadBlank();
   document.getElementById('lblCount').innerText=fmt(d.count);
   document.getElementById('batchInfo').innerHTML=(d.reprint?'🔁 พิมพ์ซ้ำ · ':'')+'Batch <b class="mono">'+esc(d.batch_id||'-')+'</b> · '+esc(d.variant_name||'')+(d.reprint?'':(' · ต้นทุน/QR '+fmt(d.cost_per_mad)+' ฿ (ไม่พิมพ์บนฉลาก)'));
+  /* เตือนเสียงดังตั้งแต่ก่อนพิมพ์ ดีกว่าให้ไปเจอเองตอนฉลากติดอยู่บนมัดผมแล้ว */
+  var warnBox=document.getElementById('lblWarn');
+  if(warnBox){ warnBox.innerHTML = Number(d.ext_price)>0 ? '' :
+    ('<div class="warn">⚠ <b>ล็อตนี้ยังไม่มีราคาค่าต่อ</b> — ไม่พบราคามาตรฐานของ '+esc(String(d.variant_name||''))+
+     ' ในชีต ServiceSizes และตอนรับเข้าก็ไม่ได้ใส่ราคาค่าต่อของล็อตนี้<br>'+
+     'ฉลากจะพิมพ์ว่า “ยังไม่ตั้งราคา” และ POS จะคิดราคาไม่ได้ → ไปตั้งราคาใน ServiceSizes หรือใส่ราคาค่าต่อของล็อตนี้ในชีต Batches คอลัมน์ attach_price_per_qr แล้วพิมพ์ฉลากซ้ำ<br>'+
+     '<span class="mini">เช็กด้วยว่าความยาวที่กรอกถูกต้องไหม — พิมพ์เกินหนึ่งตัวก็กลายเป็นความยาวที่ไม่มีในระบบ</span></div>'); }
   var codes=d.barcodes||[], full=document.getElementById('labels'), prev=document.getElementById('labelPreview');
   full.innerHTML=''; prev.innerHTML='';
   codes.forEach(function(code){ full.appendChild(mkLabel_(d,code)); });                 // ชุดเต็ม (ไว้พิมพ์ · นอกจอ)

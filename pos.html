@@ -312,7 +312,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P82-LOTPRICE'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P83-NOPRICE'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='',DATA=null,FULL=false,CART=[],CAT='ต่อผม',PAY='เงินสด',BUSY=false,USERTECH='';
 window._disc=0; window._recv=0; window._split=false; window._p2m='พร้อมเพย์'; window._p2a=0; window._slips=[];
 window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName='';
@@ -392,7 +392,11 @@ function acctList(){ return (DATA.services||[]).map(function(s){return String(s.
  * ผลคือคิวที่ไม่รู้เทคนิคถูกแปลงหน่วยด้วยอัตรา ช่อ/QR ของบริการอื่น (ขนนก 4 QR โชว์ 200 ช่อ แทน 400 ช่อ) */
 function techniqueFor(ht){ ht=String(ht||'').trim(); if(!ht)return ''; var al=acctList(); if(al.indexOf(ht)>=0)return ht;
   var hit=al.filter(function(a){return a && (a.indexOf(ht)>=0||ht.indexOf(a)>=0);})[0]; return hit||ht; }
-function laborFor(technique,sizeOrLen){ var zs=sizesFor(technique); if(!zs.length)return 0; var d=digits(sizeOrLen); var hit=zs.filter(function(z){return digits(z.size)===d;})[0]; return hit?hit.price:(zs[0].price||0); }
+/* ราคาค่าต่อมาตรฐานตามความยาว — ⛔ ห้าม fallback ไปราคาความยาวอื่นเด็ดขาด
+ * (15 พ.ย. 2026: เดิมคืน zs[0].price เมื่อหาไม่เจอ → ความยาวที่ยังไม่ได้ตั้งราคา เช่น พิมพ์ผิดเป็น 500นิ้ว
+ *  จะถูกคิดเป็นราคาของอีกความยาวเงียบ ๆ เก็บเงินลูกค้าผิดโดยไม่มีใครรู้ · Core.gs ก็ใช้กฎเดียวกัน)
+ * หาไม่เจอ = 0 แล้วให้หน้าจอฟ้องว่ายังไม่ได้ตั้งราคา */
+function laborFor(technique,sizeOrLen){ var zs=sizesFor(technique); if(!zs.length)return 0; var d=digits(sizeOrLen); var hit=zs.filter(function(z){return digits(z.size)===d;})[0]; return hit?hit.price:0; }
 function sizeLabelFor(technique,len){ var zs=sizesFor(technique); var d=digits(len); var hit=zs.filter(function(z){return digits(z.size)===d;})[0]; return hit?hit.size:(len?(len+'นิ้ว'):''); }
 /* ---- ค่ามือช่าง: ถามเซิร์ฟเวอร์เสมอ ----
  * สูตรเดียวอยู่ที่ Core.gs → lineLabor_ (ตัวเดียวกับที่ใช้บันทึกบิลจริง)
@@ -514,7 +518,13 @@ var LD=null, LEDIT=null;
 function newProductBase(d){ var technique=techniqueFor(d.hair_type); var len=String(d.length_in||'');
   return { kind:'product', barcode:d.barcode, variant_id:d.variant_id, name:String(d.name||d.hair_type||''),
     hair_type:String(d.hair_type||''), length_in:len, color:String(d.color||''), grade:String(d.grade||''), texture:String(d.texture||''),
-    plainPrice:Number(d.sell_price)||0, extPrice:laborFor(technique,len), cost:(d.cost!=null?Number(d.cost):null),
+    /* ราคาต้องมาจากเซิร์ฟเวอร์ เพราะที่นั่นรู้ราคาพิเศษของล็อตและค่าสีเพิ่ม
+     * ⛔ ห้ามคิดราคาเองจาก ServiceSizes ฝั่งหน้าเว็บ — ฉลากกับ POS จะคิดคนละราคาทันที
+     * (ของจริง: ผมน้ำตาลเข้ม +250/QR ฉลากคิด POS ไม่คิด · ล็อตเกรดพิเศษตั้งราคาเองก็หาย) */
+    plainPrice:Number(d.sell_price)||0,
+    extPrice:(d.ext_price!=null?(Number(d.ext_price)||0):laborFor(technique,len)),
+    extSpecial:!!d.ext_price_special, colorSur:Number(d.color_sur)||0,
+    cost:(d.cost!=null?Number(d.cost):null),
     mode:(SCANMODE==='plain'?'plain':'ext'), lockMode:true,
     technique:technique, size:sizeLabelFor(technique,len), techs:[{name:USERTECH||'',split:100}] }; }
 function openProductFromScan(d){ LEDIT=null; LD=newProductBase(d); renderProduct(); openModal(); }
@@ -551,6 +561,13 @@ function renderProduct(){ var l=LD, ext=(l.mode==='ext'), multi=l.techs.length>1
     h+=l.techs.map(function(t,i){ return '<div class="tw"><select class="in" style="flex:1" onchange="pdName('+i+',this.value)">'+techOpts(t.name)+'</select>'+(multi?('<input class="in" type="number" style="width:56px;text-align:center" value="'+(t.split||0)+'" onchange="pdSplit('+i+',parseFloat(this.value)||0)"><span class="faint">%</span><button class="x" onclick="pdRmTech('+i+')">✕</button>'):'')+'</div>'; }).join('');
     h+='<button class="btn sec" style="width:auto;padding:6px 12px;font-size:12px;margin:2px 0 10px" onclick="pdAddTech()">+ เพิ่มช่างร่วม</button>';
   }
+  /* ราคา 0 = ยังไม่ได้ตั้งราคาในระบบ ไม่ใช่ของแถม — บอกให้ชัดว่าทำไมและต้องไปแก้ที่ไหน
+   * (confirmProduct กันไม่ให้เพิ่มลงบิลอยู่แล้ว แต่ toast สั้น ๆ ไม่พอให้พนักงานหน้าร้านแก้ได้เอง) */
+  if(!(Number(ext?l.extPrice:l.plainPrice)>0))
+    h+='<div class="warn">⚠ <b>ยังไม่มีราคา'+(ext?'ค่าต่อ':'ขายเปล่า')+'ของผมเส้นนี้ในระบบ</b><br>'+
+       'ความยาว <b>'+esc(l.length_in||'-')+'นิ้ว</b> ของ '+esc(l.technique||l.hair_type||'')+
+       ' ยังไม่ได้ตั้งราคา'+(ext?'ในชีต ServiceSizes':'ในชีต Variants')+
+       '<br>คีย์ราคาที่ช่องด้านบนเพื่อขายรอบนี้ไปก่อน แล้วแจ้งผู้จัดการไปตั้งราคาให้ถูกต้อง</div>';
   h+='<div class="tot grand" style="font-size:15px"><span>'+(ext?'ราคาขายต่อผม':'ราคาขายเปล่า')+(pdQ()>1?(' <span class="faint" style="font-size:12px">× '+pdQ()+' QR ('+qtyTag(l.technique||l.hair_type,pdQ())+')</span>'):'')+'</span><b id="pdTot" style="font-size:20px">'+fmt(pdTotal())+'</b></div>';
   var cqT='product_ext', cqI=(l.technique||l.hair_type||''), cqQ=pdQ();
   if(FULL && ext) h+=commBoxHtml(cqT,cqI,cqQ,'');
@@ -561,7 +578,8 @@ function renderProduct(){ var l=LD, ext=(l.mode==='ext'), multi=l.techs.length>1
   if(FULL && ext) commAsk(cqT,cqI,cqQ);
 }
 function pdRefreshTotal(){ var e=document.getElementById('pdTot'); if(e)e.innerText=fmt(pdTotal()); }
-function confirmProduct(){ var l=LD; var price=pdTotal(); if(!(price>0)){ toast('ใส่ราคา',1); return; }
+function confirmProduct(){ var l=LD; var price=pdTotal();
+  if(!(price>0)){ toast('ผมเส้นนี้ยังไม่มีราคาในระบบ — คีย์ราคาก่อนเพิ่มลงบิล',1); return; }
   if(l.mode==='ext'){ var tc=l.techs.filter(function(t){return t.name;}); if(!tc.length && !FULL){ toast('เลือกช่างที่ต่อผม',1); return; }
     if(tc.length>1&&Math.round(pdSum())!==100){ toast('สัดส่วนช่างต้องรวม 100%',1); return; } l.techs=tc; }
   l.price=price; l.disc=Number((document.getElementById('lmDisc')||{}).value)||0;
