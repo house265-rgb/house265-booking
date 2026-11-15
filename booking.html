@@ -802,27 +802,56 @@ function quoteSel(){ var s=svc(); if(!s&&!isRemoval()) return null;
   return { mode:(isRemoval()?'removal':(isMove()?'move':(isByob()?'byob':'new'))),
     service_id:(s?s.service_id:''), variant_id:(STATE.variantId||''), removal_id:(STATE.removalId||''),
     qty_mad:Math.max(1,STATE.bundle||1), length_in:(STATE.length||'') }; }
+/* ❗ บทเรียน 15 พ.ย. 2026 — ปฏิทินโหลดวนไม่หยุดจนลูกค้าจองไม่ได้
+ * วงจรเดิม: computeEst → applyAddons → confirmEstWithServer → (เจอว่าไม่ตรง) → renderStep
+ *           → prepStep3 → computeEst → ... วนไม่รู้จบ แต่ละรอบโหลดปฏิทินใหม่หนึ่งครั้ง
+ * ทำไมถึงไม่ตรงตลอด: เอา "ยอดรวมของเซิร์ฟเวอร์ (รวมค่าสีแล้ว)" ไปเทียบกับ
+ *   "ยอดฐานของฝั่งเว็บ (ยังไม่รวมค่าสี)" → ต่างกันเท่าค่าสีทุกครั้ง แก้เท่าไรก็ไม่มีวันตรง
+ * แก้ 2 ชั้น: เทียบให้เป็นของอย่างเดียวกัน + กันไม่ให้การวาดใหม่ย้อนกลับมาเรียกตัวเอง */
+var _estFixing=false;
+function repaintEst(){
+  /* วาดเฉพาะตัวเลขที่เห็น ไม่เรียก renderStep (ซึ่งจะไปคิด EST ใหม่แล้ววนกลับมา) */
+  _estFixing=true;
+  try{
+    if(STEP===2 && typeof updatePriceHint==='function') updatePriceHint();
+    else if(STEP===4 && typeof buildSummary==='function') buildSummary();
+    else if(STEP===3){ var dn=document.getElementById('durNote5');
+      if(dn&&EST){ dn.style.display='block';
+        dn.innerHTML='บริการนี้ใช้เวลาประมาณ <b style="color:var(--gold-soft)">'+durText(estDuration())+'</b> · เลือกวันที่มีเวลาว่างพอ (จุดสีบอกว่าว่างมาก/น้อย)'; } }
+  } finally { _estFixing=false; }
+}
 function confirmEstWithServer(){
+  if(_estFixing) return;                           /* กำลังวาดผลที่เพิ่งแก้ไป อย่าถามซ้ำ */
   var sel=quoteSel(); if(!sel) return;
   var seq=++QSEQ; clearTimeout(QT);
   QT=setTimeout(function(){
     callApi('bookQuote',sel).then(function(r){
       if(seq!==QSEQ) return;                       /* ลูกค้าเปลี่ยนตัวเลือกไปแล้ว ทิ้งคำตอบเก่า */
       if(!r||!r.ok||!EST) return;
-      var d=r.data, sBase=Math.round(Number(d.total)||0), sDur=Math.round(Number(d.durationMin)||0);
-      var cBase=Math.round(Number(EST.base)||0);
-      if(sBase>0 && sBase!==cBase){                /* สูตรสองฝั่งไม่ตรง → ยึดของเซิร์ฟเวอร์ */
-        var diff=sBase-cBase;
-        EST.base=sBase; EST.total=Math.round(Number(EST.total)||0)+diff; EST.deposit=depositOf(EST.total);
-        EST.serverFixed=true;
+      var d=r.data, sTotal=Math.round(Number(d.total)||0), sDur=Math.round(Number(d.durationMin)||0);
+      /* เซิร์ฟเวอร์ตอบ "ยอดบริการรวมค่าสีแล้ว" (ยังไม่รวมของแถมที่เว็บบวกเอง)
+       * ฝั่งเว็บจึงต้องเทียบด้วย ฐาน + ค่าสี ให้เป็นหน่วยเดียวกัน */
+      var cTotal=Math.round((Number(EST.base)||0)+(Number(EST.colorSur)||0));
+      var changed=false;
+      if(sTotal>0 && sTotal!==cTotal){             /* สูตรสองฝั่งไม่ตรง → ยึดของเซิร์ฟเวอร์ */
+        var diff=sTotal-cTotal;
+        EST.base=sTotal-(Number(EST.colorSur)||0);
+        EST.total=Math.round(Number(EST.total)||0)+diff;
+        EST.deposit=depositOf(EST.total);
+        EST.serverFixed=true; changed=true;
       }
       if(sDur>0){ var cd=Math.round(Number(EST.durationMin)||0), ad=Math.round(Number(EST.addonDur)||0);
-        if(sDur!==cd-ad){ EST.durationMin=sDur+ad; EST.serverFixed=true; } }
-      if(EST.serverFixed && typeof renderStep==='function') renderStep();
+        if(sDur!==cd-ad){ EST.durationMin=sDur+ad; EST.serverFixed=true; changed=true;
+          /* เวลาที่ใช้เปลี่ยน → ช่วงเวลาว่างที่คำนวณไว้ใช้ไม่ได้แล้ว ต้องโหลดใหม่ "ครั้งเดียว" */
+          if(STEP===3 && !_durReloaded){ _durReloaded=true;
+            if(typeof loadMonthAvail==='function') loadMonthAvail();
+            if(STATE.date && typeof loadAvailability==='function') loadAvailability(); } } }
+      if(changed) repaintEst();
     }).catch(function(){});
   }, 350);
 }
-function computeEst(){ var s=svc(); EST=null; var qty=Math.max(1,STATE.bundle||1);
+var _durReloaded=false;
+function computeEst(){ var s=svc(); EST=null; if(!_estFixing) _durReloaded=false; var qty=Math.max(1,STATE.bundle||1);
   if(isRemoval()){ var rm=(CAT.removals||[]).filter(function(r){return String(r.removal_id)===String(STATE.removalId);})[0]; if(!rm)return; var t=Math.round(rm.price);
     EST={total:t,deposit:depositOf(t),base:t,durationMin:Math.round(Number(rm.addon_duration_min))||30,label:'ถอดผม: '+rm.name}; applyAddons(); return; }
   if(!s)return; var pm=Number(s.per_mad_min)||30;

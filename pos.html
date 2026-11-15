@@ -69,6 +69,33 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(17,16,16,.92);backdr
 .in,select.in{width:100%;padding:11px 12px;border:1px solid var(--line);background:var(--bg2);color:var(--fg);border-radius:10px;font-size:15px;font-family:inherit}
 .in:focus{border-color:var(--gold);outline:none}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+/* ===== เลื่อนคิว (ย้ายมาจากหน้า Admin — การจัดการคิวอยู่ที่ POS ที่เดียว) =====
+ * ปฏิทินวาดเอง เพราะช่อง date ของเบราว์เซอร์บอกไม่ได้ว่าวันไหนร้านหยุดหรือคิวเต็ม */
+.cal-wrap{border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--bg2)}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.cal-head b{font-size:14px;font-weight:500}
+.cal-nav{background:transparent;border:1px solid var(--line);color:var(--fg);border-radius:8px;width:30px;height:30px;cursor:pointer;font-family:inherit;font-size:15px}
+.cal-nav:disabled{opacity:.3;cursor:not-allowed}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
+.cal-dow{font-size:10.5px;color:var(--muted);padding:3px 0}
+.cal-day{padding:9px 0;border-radius:8px;font-size:14px;cursor:pointer;color:var(--fg);position:relative;border:0;background:transparent;font-family:inherit}
+.cal-day.off,.cal-day.full,.cal-day.past{cursor:not-allowed}
+.cal-day.off{color:var(--faint);opacity:.4;text-decoration:line-through}
+.cal-day.past{color:var(--faint);opacity:.3}
+.cal-day.full{color:var(--faint);opacity:.55}
+.cal-day.full::after{content:'เต็ม';position:absolute;left:0;right:0;bottom:1px;font-size:8px;opacity:.8}
+.cal-day.sel{background:linear-gradient(135deg,var(--gold-dim),var(--gold-soft));color:#000;font-weight:600}
+.cal-day.today{box-shadow:inset 0 0 0 1px var(--gold-dim)}
+.cal-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:10.5px;color:var(--muted);margin-top:8px}
+.rsnow{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface2);font-size:13px;line-height:1.6;margin-bottom:10px}
+.rsslots{display:flex;flex-wrap:wrap;gap:7px}
+.rsslot{padding:8px 13px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--fg);font-family:'IBM Plex Mono';font-size:13px;cursor:pointer}
+.rsslot.on{border-color:var(--gold);background:var(--gold-ghost);color:var(--gold-soft)}
+.rsfee{margin-top:14px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface2)}
+.rsdiff{margin-top:12px;padding:9px 12px;border-radius:9px;background:var(--gold-ghost);border:1px solid var(--gold-dim);font-size:13.5px;text-align:center;font-family:'IBM Plex Mono'}
+.insrow{font-size:13px;border-radius:9px;padding:8px 11px;border:1px solid var(--line);background:var(--bg2)}
+.insrow.ins-warn{border-color:rgba(217,138,138,.4);color:var(--crit)}
 .chips{display:flex;flex-wrap:wrap;gap:7px}
 .sc{border:1px solid var(--line);background:var(--bg2);color:var(--muted);border-radius:9px;padding:7px 11px;font-size:13px}
 .sc.on{border-color:var(--gold);color:var(--gold-soft);background:var(--gold-ghost)}
@@ -285,7 +312,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P79-DUPFIX'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P80-FIX9'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='',DATA=null,FULL=false,CART=[],CAT='ต่อผม',PAY='เงินสด',BUSY=false,USERTECH='';
 window._disc=0; window._recv=0; window._split=false; window._p2m='พร้อมเพย์'; window._p2a=0; window._slips=[];
 window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName='';
@@ -584,7 +611,7 @@ function confirmLine(){ var l=LD; if(!l.item){ toast('กรอกชื่อ�
   var tc=l.techs.filter(function(t){return t.name;}); if(tc.length>1&&Math.round(lmSum())!==100){ toast('สัดส่วนช่างต้องรวม 100%',1); return; }
   l.disc=Number((document.getElementById('lmDisc')||{}).value)||0;
   if(LEDIT!=null)CART[LEDIT]=l; else CART.push(l); closeLine(); renderCart(); if(LEDIT==null)toast('เพิ่มลงบิลแล้ว'); }
-function closeLine(){ QNOSHOW=null; document.getElementById('lineModal').classList.remove('show'); LD=null; LEDIT=null; }
+function closeLine(){ QNOSHOW=null; RS=null; RSSLIP=null; document.getElementById('lineModal').classList.remove('show'); LD=null; LEDIT=null; }
 
 /* ===================================================================
  * CART / BILL
@@ -619,9 +646,21 @@ function promoDiscount(p){ var attrs=CART.map(lineAttrs);
   var match=hasCond?attrs.filter(function(a){return promoMatch(p,a);}):attrs; if(!match.length)return 0;
   var qty=match.reduce(function(s,a){return s+a.qty;},0); /* รวม QR ของรายการที่เข้าเงื่อนไข */
   if(p.min_qr && qty < Number(p.min_qr)) return 0;   /* ขั้นต่ำนับเป็น QR (1 มัดใหญ่ = 2 QR) */
-  var base=match.reduce(function(s,a){return s+a.amount;},0), disc=0;
-  if(p.type==='percent')disc=Math.round(base*p.value/100); else disc=(p.per==='mad')?Math.round(p.value*qty):Math.round(p.value);
-  return Math.min(disc, cartSub()); }
+  var base=match.reduce(function(s,a){return s+a.amount;},0);
+  return Math.min(promoAmount(p, base, qty), cartSub()); }
+/* ===== นิยามเดียวของ "ลดเท่าไหร่" — คอลัมน์ per ในชีต Promotions =====
+ *   bill = ลดก้อนเดียวทั้งบิล (ซื้อเท่าไหร่ก็ลดเท่าเดิม)
+ *   mad  = ลดต่อ 1 QR (1 มัดเล็ก)   → 2 QR ลด 2 เท่า
+ *   item = ลดต่อ 1 มัดใหญ่ (2 QR)   → 1 มัดใหญ่ ลด 310 · 1.5 มัดใหญ่ (3 QR) ลด 465 · 2 มัดใหญ่ ลด 620
+ * qty ที่ส่งเข้ามาเป็น "QR" เสมอ เหมือนทุกอย่างในระบบ ห้ามแปลงหน่วยที่อื่นอีก
+ * (15 พ.ย. 2026: เดิม item ตกไปเข้าเงื่อนไขเดียวกับ bill จึงลด 310 เท่าเดิมไม่ว่าซื้อกี่มัด) */
+function promoPerUnits(p, qr){ var per=String(p.per||'bill').trim().toLowerCase();
+  if(per==='mad'||per==='qr') return Number(qr)||0;
+  if(per==='item'||per==='bundle') return (Number(qr)||0)/2;
+  return 1; }
+function promoAmount(p, base, qr){
+  if(p.type==='percent') return Math.round(base*p.value/100);
+  return Math.round(p.value * promoPerUnits(p, qr)); }
 var PROMOLIST=[];
 function matchingPromos(){ return (DATA&&DATA.promos||[]).map(function(p){ return {p:p,disc:promoDiscount(p)}; }).filter(function(x){ return x.disc>0; }).sort(function(a,b){return b.disc-a.disc;}); }
 function promoBar(){ if(!CART.length)return '';
@@ -914,10 +953,47 @@ function openBill(sid){ var body=document.getElementById('lmBody'); document.get
         (match?'<span class="badge ok">✓ ตรงยอดโอน</span>':'<span class="badge bad">⚠️ ต่าง '+(diff>0?'+':'')+fmt(diff)+'</span>')):'')+'</div>';
     if(slips.length){ h+='<div class="sgrid">'+slips.map(function(x){ return '<button class="slipthumbbtn" onclick="viewSlip(\''+esc(x.file_id)+'\',\''+esc(sid)+'\')"><span style="font-size:22px">🧾</span><span class="mini">'+esc(x.method||'')+'<br>'+fmt(x.amount)+'฿</span></button>'; }).join('')+'</div>'; }
     else { h+='<div class="mini faint">— ไม่มีสลิปแนบ —</div>'; }
-    h+='<div class="row2" style="margin-top:14px"><button class="btn sec" onclick="closeLine()">ปิด</button>'+
-       '<button class="btn" onclick="printRcpt(\'billRcpt\')">🖨️ พิมพ์ใบเสร็จซ้ำ</button></div>';
-    body.innerHTML=h;
+    h+='<div id="billAct" style="margin-top:14px"></div>';
+    body.innerHTML=h; BILLSALE=s; VOIDASK=false; renderBillActions();
   }).catch(function(){ body.innerHTML='<div class="empty">เชื่อมต่อไม่สำเร็จ</div>'; }); }
+/* ---- ยกเลิกใบเสร็จ (void) — ทำที่หน้า POS ที่เดียว ----
+ * เรียงปุ่มแบบเดียวกับหน้าต่างจัดการคิว: แถวบนเป็นปุ่มรอง แถวล่าง "ปิด" เป็นปุ่มหลัก
+ * ระบบจะ: ยกเลิกรายการขาย · คืนสต๊อก (หน่วย QR + ยอดคงเหลือของล็อต) · ยกเลิกค่ามือ ·
+ *         ส่วนลดของบิลตกไปพร้อมบิล · คิวกลับเป็น "รอ" เพื่อทำบิลใหม่ได้ตั้งแต่ต้น
+ * เงินสด/เงินโอนที่รับไปแล้ว หน้าร้านตรวจและคืนลูกค้าเอง แล้วเริ่มทำบิลใหม่ */
+var BILLSALE=null, VOIDASK=false;
+function renderBillActions(){ var w=document.getElementById('billAct'); if(!w)return;
+  var s=BILLSALE||{}, sid=String(s.sale_id||'');
+  if(String(s.status)==='void'){
+    w.innerHTML='<div class="warn" style="margin-bottom:10px">บิลนี้ถูกยกเลิกไปแล้ว</div>'+
+      '<button class="btn" onclick="closeLine()">ปิด</button>'; return; }
+  if(VOIDASK){
+    w.innerHTML='<div class="warn">ยืนยันยกเลิกใบเสร็จ '+esc(sid)+'?<br>'+
+      'ระบบจะคืนสต๊อก ยกเลิกค่ามือ ยกเลิกส่วนลดของบิลนี้ และคืนคิวเป็น “รอ” ให้ทำบิลใหม่<br>'+
+      '<b>เงินที่รับมาแล้วต้องตรวจและคืนลูกค้าหน้าร้านเอง</b></div>'+
+      '<label class="lbl" style="margin-top:10px">เหตุผล <span style="color:var(--crit)">*</span></label>'+
+      '<input class="in" id="voidReason" placeholder="เช่น คิดเงินผิดรายการ / ลูกค้าเปลี่ยนบริการ">'+
+      '<div class="row2" style="margin-top:10px"><button class="btn sec" onclick="VOIDASK=false;renderBillActions()">ไม่ยกเลิก</button>'+
+      '<button class="btn" style="background:var(--crit);color:#fff" onclick="doVoidBill()">ยืนยันยกเลิกใบเสร็จ</button></div>'; return; }
+  var canVoid=(typeof FULL!=='undefined')&&FULL;
+  w.innerHTML='<div class="row2">'+
+      (canVoid?'<button class="btn sec" style="color:var(--crit)" onclick="VOIDASK=true;renderBillActions()">ยกเลิกใบเสร็จ</button>'
+             :'<button class="btn sec" disabled title="เฉพาะผู้จัดการ/เจ้าของ">ยกเลิกใบเสร็จ</button>')+
+      '<button class="btn sec" onclick="printRcpt(\'billRcpt\')">🖨️ พิมพ์ใบเสร็จซ้ำ</button></div>'+
+    '<button class="btn" style="margin-top:8px" onclick="closeLine()">ปิด</button>'; }
+function doVoidBill(){ if(!BILLSALE)return;
+  var sid=String(BILLSALE.sale_id||'');
+  var reason=String((document.getElementById('voidReason')||{}).value||'').trim();
+  if(!reason){ toast('ใส่เหตุผลที่ยกเลิก',1); return; }
+  var w=document.getElementById('billAct'); if(w) w.innerHTML='<div class="mini" style="text-align:center">กำลังยกเลิกใบเสร็จ…</div>';
+  api('voidSale',{sale_id:sid,reason:reason}).then(function(r){
+    if(!r||!r.ok){ toast((r&&r.message)||'ยกเลิกไม่สำเร็จ',1); VOIDASK=false; renderBillActions(); return; }
+    var d=r.data||{};
+    toast('ยกเลิกใบเสร็จแล้ว · คืนสต๊อก '+(d.restocked||0)+' · ยกเลิกค่ามือ '+(d.voidedComm||0)+(d.booking_restored?(' · คิว '+d.booking_restored+' กลับเป็นรอ'):''));
+    VOIDASK=false; if(BILLSALE) BILLSALE.status='void'; renderBillActions();
+    if(typeof loadHistory==='function') loadHistory();
+    if(typeof loadQueue==='function') loadQueue();
+  }).catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); VOIDASK=false; renderBillActions(); }); }
 function viewSlip(fid,sid){ document.getElementById('imTitle').innerText='สลิป '+(sid||''); document.getElementById('imBody').innerHTML='กำลังโหลด…'; document.getElementById('imgModal').classList.add('show');
   api('getSlip',{file_id:fid}).then(function(r){ if(!r||!r.ok){ document.getElementById('imBody').innerHTML='<div class="empty">เปิดรูปไม่ได้</div>'; return; }
     document.getElementById('imBody').innerHTML='<img src="'+r.data.dataUrl+'" style="max-width:100%;border-radius:10px"><div class="row2" style="margin-top:12px"><button class="btn sec" onclick="closeImg()">ปิด</button><a class="btn" style="text-align:center;text-decoration:none;color:#231b08" href="'+r.data.dataUrl+'" download="'+esc(sid||'slip')+'.jpg">บันทึกรูป</a></div>';
@@ -964,7 +1040,7 @@ function qRow(b){ return '<div class="sliprow" style="cursor:pointer;align-items
   '<div class="mini" style="margin-top:2px">'+esc(b.detail||'')+qtyChip(b)+(b.tech_name?(' · '+esc(b.tech_name)):'')+'</div>'+
   '<div style="margin-top:5px">'+qStatusBadge(b.status)+(b.deposit>0?(' <span class="mini">มัดจำ '+fmt(b.deposit)+'฿</span>'):'')+'</div></div>'+
   '<div style="text-align:right;white-space:nowrap"><b style="color:var(--gold-soft);font-size:16px">'+fmt(b.suggest_total)+'</b> <span class="faint">฿</span><div class="mini" style="color:var(--gold)">จัดการ ›</div></div></div>'; }
-function openQueueBooking(id){ QCANCEL=false; var body=document.getElementById('lmBody'); document.getElementById('lmTitle').innerText='คิว '+id;
+function openQueueBooking(id){ QCANCEL=false; RS=null; RSSLIP=null; var body=document.getElementById('lmBody'); document.getElementById('lmTitle').innerText='คิว '+id;
   body.innerHTML='<div class="empty">กำลังโหลด…</div>'; document.getElementById('lineModal').classList.add('show');
   api('bookingDetail',{booking_id:id}).then(function(r){ if(!r||!r.ok){ body.innerHTML='<div class="empty">'+esc((r&&r.message)||'โหลดไม่สำเร็จ')+'</div>'; return; }
     var bk=r.data.booking, v=bk.variant; QBK=bk; QBV=v;
@@ -987,10 +1063,164 @@ function renderQueueActions(){ var w=document.getElementById('qAct'); if(!w||!QB
   if(bk.status==='ไม่มาตามนัด'){ w.innerHTML='<div class="mini" style="text-align:center">คิวนี้บันทึกว่า<b style="color:var(--crit)">ลูกค้าผิดนัด</b>แล้ว<br>ถ้ากดผิด ให้ผู้จัดการยกเลิกให้ที่หน้า Admin</div>'+
     '<button class="btn sec" style="margin-top:10px;color:var(--gold-soft)" onclick="closeLine()">ปิด</button>'; return; }
   if(QNOSHOW){ renderNoShow(); return; }
+  if(RS){ renderResched(); return; }
   w.innerHTML='<button class="btn" onclick="checkoutToCart(QBK,QBV)">✅ เช็คเอาท์ — ทำบิล</button>'+
-    '<div class="row2" style="margin-top:8px"><button class="btn sec" style="color:var(--crit)" onclick="openNoShow()">🚫 ผิดนัด</button>'+
+    '<div class="row3" style="margin-top:8px"><button class="btn sec" style="color:var(--crit)" onclick="openNoShow()">🚫 ผิดนัด</button>'+
+    '<button class="btn sec" style="color:var(--gold-soft)" onclick="openResched()">🔁 เลื่อนคิว</button>'+
     '<button class="btn sec" style="color:var(--crit)" onclick="QCANCEL=true;renderQueueActions()">ยกเลิกคิว</button></div>'+
     '<button class="btn sec" style="margin-top:8px;color:var(--gold-soft)" onclick="closeLine()">ปิด</button>'; }
+
+/* =================== เลื่อนคิว (ย้ายมาจากหน้า Admin 15 พ.ย. 2026) ===================
+ * การจัดการคิวทั้งหมดอยู่ที่ POS ที่เดียว · หน้า Admin เหลือไว้ดูอย่างเดียว
+ * ใช้แถวคิวเดิม มัดจำและสลิปโอนเงินเดิมจึงติดไปด้วย ไม่ต้องให้ลูกค้าโอนใหม่
+ * ลูกค้าเลื่อนเองไม่ได้ ต้องโทรมาให้ร้านเลื่อนให้ (หน้าจองไม่มีปุ่มนี้) */
+var RS=null, RSSLIP=null;
+/* วันที่ "วันนี้" ตามเวลาเครื่อง — ห้ามใช้ toISOString() เพราะนั่นคือ UTC ไทยจะเพี้ยนไป 1 วันช่วงเช้ามืด */
+function localToday(){ var d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function openResched(){ if(!QBK)return;
+  RS={ id:QBK.booking_id, booking:QBK, date:QBK.date, start:'', tech:String(QBK.tech_id||''), slots:null, days:null };
+  RS.month=RS.date.slice(0,7); RSSLIP=null;
+  renderQueueActions(); rsLoadSlots(); rsLoadMonth(); }
+function rsBack(){ RS=null; RSSLIP=null; renderQueueActions(); }
+function rsSetDate(v){ RS.date=v; RS.start=''; RS.month=v.slice(0,7); renderResched(); rsLoadSlots(); }
+function rsSetTech(v){ RS.tech=v; RS.start=''; renderResched(); rsLoadSlots(); rsLoadMonth(); }
+function rsPick(t){ RS.start=t; renderResched(); }
+function rsLoadMonth(){ if(!RS||!RS.booking||!RS.month) return;
+  var b=RS.booking, key=RS.month;
+  RS.days=null; renderResched();
+  api('bookMonth',{ month:key, mode:(b.variant_id?'new':'byob'), service_id:b.service_id,
+    variant_id:b.variant_id, qty_mad:b.qty_mad, tech_id:(RS.tech||'any') })
+    .then(function(r){ if(!RS||RS.month!==key) return;     /* ผู้ใช้เปลี่ยนเดือนไปแล้ว ทิ้งผลเก่า */
+      RS.days=(r&&r.ok&&r.data&&r.data.days)?r.data.days:{}; renderResched(); })
+    .catch(function(){ if(RS){ RS.days={}; renderResched(); } }); }
+function rsShiftMonth(n){ if(!RS||!RS.month)return;
+  var y=Number(RS.month.slice(0,4)), m=Number(RS.month.slice(5,7))-1+n;
+  var d=new Date(y,m,1); RS.month=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  RS.days=null; renderResched(); rsLoadMonth(); }
+function rsCal(){
+  var TH=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  var y=Number(RS.month.slice(0,4)), m=Number(RS.month.slice(5,7))-1;
+  var first=new Date(y,m,1), nDays=new Date(y,m+1,0).getDate(), lead=first.getDay();
+  /* ใช้วันที่ของเซิร์ฟเวอร์ก่อน — แท็บเล็ตหน้าร้านตั้งนาฬิกาผิดได้ */
+  var todayStr=(DATA&&DATA.today)||localToday(), nowKey=todayStr.slice(0,7);
+  var h='<div class="cal-wrap"><div class="cal-head">'+
+    '<button type="button" class="cal-nav" onclick="rsShiftMonth(-1)"'+(RS.month<=nowKey?' disabled':'')+'>‹</button>'+
+    '<b>'+TH[m]+' '+(y+543)+'</b>'+
+    '<button type="button" class="cal-nav" onclick="rsShiftMonth(1)">›</button></div><div class="cal-grid">';
+  ['อา','จ','อ','พ','พฤ','ศ','ส'].forEach(function(d){ h+='<div class="cal-dow">'+d+'</div>'; });
+  for(var i=0;i<lead;i++) h+='<div></div>';
+  var loading=(RS.days===null);
+  for(var d=1;d<=nDays;d++){
+    var dk=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    var info=(RS.days||{})[dk]||{}, cls=['cal-day'], dis=false;
+    if(dk<todayStr){ cls.push('past'); dis=true; }
+    else if(!loading){ if(info.off){ cls.push('off'); dis=true; } else if(info.full){ cls.push('full'); dis=true; } }
+    if(dk===todayStr) cls.push('today');
+    if(dk===RS.date) cls.push('sel');
+    h+='<button type="button" class="'+cls.join(' ')+'"'+(dis?' disabled':'')+
+       (dis?'':' onclick="rsSetDate(\''+dk+'\')"')+'>'+d+'</button>';
+  }
+  h+='</div><div class="cal-legend">'+(loading?'<span>กำลังตรวจวันว่าง…</span>':
+     '<span>⬜ ว่าง</span><span style="opacity:.55">เต็ม = คิวเต็ม</span><span style="opacity:.4;text-decoration:line-through">หยุด</span>')+
+     '</div></div>';
+  return h; }
+function rsLoadSlots(){ if(!RS||!RS.booking||!RS.date) return;
+  RS.slots=null; renderResched();
+  var b=RS.booking, want=RS.date;
+  api('bookAvailability',{date:RS.date,tech_id:(RS.tech||'any'),
+    mode:(b.variant_id?'new':'byob'), service_id:b.service_id, variant_id:b.variant_id, qty_mad:b.qty_mad})
+    .then(function(r){ if(!RS||RS.date!==want) return;
+      RS.slots=(r&&r.ok&&r.data&&r.data.slots)?r.data.slots:[];
+      RS.holiday=!!(r&&r.ok&&r.data&&r.data.holiday); RS.hreason=(r&&r.ok&&r.data&&r.data.reason)||'';
+      renderResched(); })
+    .catch(function(){ if(RS){ RS.slots=[]; renderResched(); } }); }
+function renderResched(){ var box=document.getElementById('qAct'); if(!box||!RS) return;
+  var b=RS.booking, fee=b.resched_fee||{}, dep=Number(b.deposit)||0;
+  /* ข้อมูลเกณฑ์ขาดไม่ควรโชว์คำว่า undefined ให้คนที่กำลังตัดสินใจเรื่องเงิน */
+  if(fee.leadDays==null||fee.freeDays==null) fee={late:false,leadDays:null,freeDays:null,forfeit:0,pct:0,_unknown:true};
+  var techs=((DATA&&DATA.technicians)||[]).filter(function(t){ return String(t.name||'').trim(); });
+  var h='<div class="rsnow"><div class="mini" style="margin:0 0 4px">คิวเดิม</div>'+
+    '<b>'+esc(b.name||'ลูกค้า')+'</b> · 📞 '+esc(b.phone||'-')+
+    '<div>'+esc(b.date)+' '+esc(b.start)+'–'+esc(b.end)+' · ✂ '+esc(b.tech_name||'—')+'</div>'+
+    '<div class="mini" style="margin:2px 0 0">มัดจำจ่ายแล้ว ฿'+fmt(dep)+(b.slip_file_id?' · มีสลิปแนบ (ใช้ใบเดิมต่อได้)':'')+'</div>'+
+    (Number(b.reschedule_count)>0?('<div class="mini" style="color:var(--gold-soft);margin-top:2px">เคยเลื่อนมาแล้ว '+Number(b.reschedule_count)+' ครั้ง</div>'):'')+
+    '</div>';
+  h+='<label class="lbl">วันใหม่</label>'+rsCal();
+  h+='<label class="lbl" style="margin-top:12px">ช่าง</label><select class="in" onchange="rsSetTech(this.value)">'+
+     '<option value="any"'+(RS.tech==='any'?' selected':'')+'>— ใครก็ได้ที่ว่าง —</option>'+
+     techs.map(function(t){ return '<option value="'+esc(t.tech_id)+'"'+(String(t.tech_id)===String(RS.tech)?' selected':'')+'>'+esc(t.name)+'</option>'; }).join('')+
+     '</select>';
+  h+='<label class="lbl" style="margin-top:12px">เวลาที่ว่าง</label>';
+  if(RS.slots===null){ h+='<div class="mini">กำลังหาเวลาว่าง…</div>'; }
+  else if(RS.holiday){ h+='<div class="insrow ins-warn">'+(RS.hreason==='no_tech'?'วันนี้ไม่มีช่างเข้างาน':'วันนี้ร้านหยุด')+' — เลือกวันอื่น</div>'; }
+  else if(!RS.slots.length){ h+='<div class="insrow ins-warn">วันนี้ไม่มีเวลาว่างพอสำหรับงานนี้ — เลือกวันอื่นหรือเปลี่ยนช่าง</div>'; }
+  else { h+='<div class="rsslots">'+RS.slots.map(function(x){
+      return '<button type="button" class="rsslot'+(RS.start===x.time?' on':'')+'" onclick="rsPick(\''+esc(x.time)+'\')">'+esc(x.time)+'</button>'; }).join('')+'</div>'; }
+  /* มัดจำ: ระบบคิดให้ตามเกณฑ์ แต่แก้ทับได้ตามดุลพินิจ */
+  var sug=Number(fee.forfeit)||0;
+  h+='<div class="rsfee"><div class="mini" style="margin:0 0 6px">'+
+    (fee._unknown?'⚠ ดึงเกณฑ์หักมัดจำไม่สำเร็จ — กรอกยอดหักเองตามดุลพินิจ':
+    (fee.late?('⚠ เหลืออีก '+fee.leadDays+' วันถึงคิวเดิม (น้อยกว่าเกณฑ์ '+fee.freeDays+' วัน) → เข้าเกณฑ์หักมัดจำ '+fee.pct+'%')
+             :('✓ เหลืออีก '+fee.leadDays+' วันถึงคิวเดิม (เกณฑ์ '+fee.freeDays+' วัน) → ไม่เข้าเกณฑ์หักมัดจำ')))+'</div>'+
+    '<label class="lbl">หักมัดจำครั้งนี้ (฿) · แก้ได้ตามดุลพินิจ</label>'+
+    '<input type="number" class="in" id="rsFee" value="'+sug+'" min="0" max="'+dep+'" oninput="rsFeeHint()">'+
+    '<div class="mini" id="rsFeeHint"></div>'+
+    '<div class="mini" style="margin-top:6px;color:var(--faint)">ตั้ง <b>0</b> ได้ถ้าเป็นเหตุสุดวิสัย หรือร้านเป็นฝ่ายขอเลื่อนเอง</div>'+
+    '<div style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)">'+
+      '<label class="lbl">รับมัดจำเพิ่มในวันนี้ (฿) · ถ้าลูกค้าโอนมาใหม่</label>'+
+      '<input type="number" class="in" id="rsTopup" value="0" min="0" oninput="rsFeeHint()">'+
+      '<div class="row2" style="margin-top:8px">'+
+        '<button type="button" class="btn sec" onclick="rsMakeQR()">📱 สร้าง QR ให้สแกนจ่าย</button>'+
+        '<label class="btn sec" style="cursor:pointer;display:flex;align-items:center;justify-content:center">📎 แนบสลิปใบใหม่'+
+          '<input type="file" accept="image/*" style="display:none" onchange="rsPickSlip(this)"></label>'+
+      '</div>'+
+      '<div id="rsSlipName" class="mini" style="margin-top:6px"></div>'+
+      '<div id="rsQRBox" style="margin-top:10px;text-align:center"></div>'+
+      '<div class="mini" style="margin-top:6px;color:var(--faint)">สลิปใบใหม่จะเก็บ<b>เพิ่ม</b> ไม่ทับใบเดิม เพราะใบเดิมคือหลักฐานของเงินที่ถูกริบไปแล้ว</div>'+
+    '</div></div>';
+  h+='<label class="lbl" style="margin-top:12px">เหตุผลที่เลื่อน <span style="color:var(--crit)">*</span></label>'+
+     '<input class="in" id="rsReason" placeholder="เช่น ลูกค้าติดธุระ / ช่างลาป่วย" oninput="rsValid()">';
+  if(RS.start){ h+='<div class="rsdiff">'+esc(b.date)+' '+esc(b.start)+'  →  <b>'+esc(RS.date)+' '+esc(RS.start)+'</b></div>'; }
+  h+='<button class="btn" id="rsGo" style="margin-top:12px" onclick="doResched()" disabled>ยืนยันเลื่อนคิว</button>'+
+     '<button class="btn sec" style="margin-top:8px" onclick="rsBack()">ย้อนกลับ</button>';
+  box.innerHTML=h; rsFeeHint(); rsValid(); }
+function rsFeeHint(){ var el=document.getElementById('rsFeeHint'); if(!el||!RS||!RS.booking) return;
+  var dep=Number(RS.booking.deposit)||0, f=Number((document.getElementById('rsFee')||{}).value)||0;
+  el.innerHTML = f>0 ? ('ลูกค้าเหลือมัดจำใช้ได้ <b>฿'+fmt(Math.max(0,dep-f))+'</b> จาก ฿'+fmt(dep))
+                     : ('ยกยอดมัดจำ <b>฿'+fmt(dep)+'</b> ไปคิวใหม่ทั้งหมด'); }
+function rsValid(){ var btn=document.getElementById('rsGo'); if(!btn||!RS) return;
+  var ok=!!RS.start && !!String((document.getElementById('rsReason')||{}).value||'').trim();
+  btn.disabled=!ok; btn.style.opacity=ok?'1':'.5'; }
+function rsPickSlip(inp){ var f=inp.files&&inp.files[0]; if(!f) return;
+  if(f.size>6*1024*1024){ toast('ไฟล์ใหญ่เกิน 6MB',1); inp.value=''; return; }
+  var rd=new FileReader();
+  rd.onload=function(){ RSSLIP=rd.result;
+    var el=document.getElementById('rsSlipName'); if(el) el.innerHTML='✓ แนบแล้ว: '+esc(f.name); };
+  rd.readAsDataURL(f); }
+function rsMakeQR(){ var amt=Number((document.getElementById('rsTopup')||{}).value)||0;
+  var box=document.getElementById('rsQRBox'); if(!box) return;
+  if(!(amt>0)){ box.innerHTML='<div class="mini" style="color:var(--crit)">ใส่ยอดที่จะให้ลูกค้าโอนก่อน</div>'; return; }
+  box.innerHTML='<div class="mini">กำลังสร้าง QR…</div>';
+  api('payQR',{amount:amt}).then(function(r){
+    if(!r||!r.ok){ box.innerHTML='<div class="mini" style="color:var(--crit)">'+esc((r&&r.message)||'สร้าง QR ไม่สำเร็จ')+'</div>'; return; }
+    box.innerHTML='<div id="rsQRImg" style="display:inline-block;background:#fff;padding:10px;border-radius:10px"></div>'+
+      '<div class="mini" style="margin-top:6px">สแกนเพื่อโอน <b style="color:var(--gold-soft)">฿'+fmt(r.data.amount)+'</b></div>';
+    var el=document.getElementById('rsQRImg');
+    if(typeof QRCode==='undefined'){ el.innerHTML='<div class="mini" style="color:var(--crit)">โหลดตัวสร้าง QR ไม่สำเร็จ</div>'; return; }
+    new QRCode(el,{text:r.data.payload,width:200,height:200,correctLevel:QRCode.CorrectLevel.M});
+  }).catch(function(){ box.innerHTML='<div class="mini" style="color:var(--crit)">เชื่อมต่อไม่สำเร็จ</div>'; }); }
+function doResched(){ if(!RS||!RS.start) return;
+  var reason=String((document.getElementById('rsReason')||{}).value||'').trim();
+  if(!reason){ toast('ใส่เหตุผลที่เลื่อน',1); return; }
+  var fee=Number((document.getElementById('rsFee')||{}).value)||0;
+  var topup=Number((document.getElementById('rsTopup')||{}).value)||0;
+  api('rescheduleBooking',{booking_id:RS.id,date:RS.date,start:RS.start,tech_id:(RS.tech||'any'),reason:reason,forfeit:fee,
+    new_deposit:topup, new_slip_data_url:(topup>0?(RSSLIP||''):'')})
+    .then(function(r){ if(!r||!r.ok){ toast((r&&r.message)||'เลื่อนไม่สำเร็จ',1); return; }
+      var d=r.data; toast('เลื่อนคิวแล้ว · '+d.to.date+' '+d.to.start+(d.forfeit>0?(' · หักมัดจำ ฿'+fmt(d.forfeit)):' · ไม่หักมัดจำ'));
+      RS=null; RSSLIP=null; closeLine(); loadQueue(); })
+    .catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
 
 /* ---- ลูกค้าผิดนัด ----
  * ค่าคอมคิดที่เซิร์ฟเวอร์เสมอ หน้าเว็บแค่แสดง (กฎเดียวกับราคาจอง) */
@@ -1074,12 +1304,15 @@ function checkoutToCart(bk,v){ if(!bk)return;
   var cn=document.getElementById('cName'); if(cn)cn.value=bk.name||''; var cp=document.getElementById('cPhone'); if(cp)cp.value=bk.phone||'';
   toast('ดึงคิวแล้ว · หยิบของจริง/สแกน QR ตามไกด์ไลน์ แล้วเลือกช่าง'); }
 /* ไกด์ไลน์ตามจอง (อ้างอิง) — โชว์เหนือบิล · กด "เพิ่ม" เพื่อนำลงบิล แล้วแก้/สแกนทับได้ */
+/* ลำดับที่พนักงานต้องรู้ก่อนเป็นอันดับแรกคือ "ใช้ผมของร้าน" หรือ "นำผมมาเอง"
+ * เพราะเป็นตัวตัดสินว่าต้องเดินไปหยิบผม+สแกน QR หรือไม่ จึงขึ้นหน้าสุดและตัดคำอธิบายทิ้ง
+ * ตัวอย่าง: ใช้ผมของร้าน : ขนนก : 30นิ้ว : เกรด ตัดสด : ผมตรงธรรมชาติ : สี ดำธรรมชาติ : 300 ช่อ */
 function guideSpec(g){ var l=g.line, p=[];
-  if(l.kind==='product'){ p.push(l.hair_type||l.name); p.push(g.scan?'ใช้ผมของร้าน · ต้องสแกน QR':'');
+  if(l.kind==='product'){ p.push(g.scan?'ใช้ผมของร้าน':'นำผมมาเอง'); p.push(l.hair_type||l.name);
     if(l.length_in)p.push(l.length_in+'นิ้ว'); if(l.grade)p.push('เกรด '+l.grade); if(l.texture)p.push(l.texture); if(l.color)p.push('สี '+l.color);
     p.push(qtyTag(l.hair_type,Math.round(l.qty_mad||1))); }
   else if(l.kind==='removal'){ p.push(l.item); p.push(qtyTag(l.technique||l.item,l.qty||1)); }
-  else { p.push(l.technique||l.item); p.push('นำผมมาเอง'); if(l.size)p.push(l.size); if(l.color)p.push('สี '+l.color); p.push(qtyTag(l.technique||l.item,l.qty||1)); }
+  else { p.push('นำผมมาเอง'); p.push(l.technique||l.item); if(l.size)p.push(l.size); if(l.color)p.push('สี '+l.color); p.push(qtyTag(l.technique||l.item,l.qty||1)); }
   return p.filter(Boolean).join(' : '); }
 function guideCardHtml(){ if(!QGUIDE.length)return '';
   var rows=QGUIDE.map(function(g){ return '<div style="display:flex;gap:8px;align-items:center;padding:7px 0;border-top:1px solid var(--line)">'+

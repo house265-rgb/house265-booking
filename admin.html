@@ -15,12 +15,6 @@
 .mfoot{position:sticky;bottom:0;margin:14px -16px -16px;padding:12px 16px;
   background:var(--surface);border-top:1px solid var(--line);
   display:grid;grid-template-columns:1fr 1fr;gap:10px;z-index:2}
-/* จอกว้าง: หน้าต่างเลื่อนคิวแบ่ง 2 คอลัมน์ ปฏิทินซ้าย รายละเอียดขวา ไม่ต้องเลื่อนยาว */
-#reschedModal .mbox{max-width:400px}
-@media (min-width:900px){
-  #reschedModal .mbox{max-width:860px}
-  #reschedModal .rs2col{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:18px;align-items:start}
-}
 
 /* บนมือถือ ปุ่มเล็ก ๆ (ชิปกรอง, ปุ่มล้าง) กดพลาดง่าย — บังคับความสูงขั้นต่ำให้กดด้วยนิ้วได้
  * 34px เป็นค่าต่ำสุดที่ยังไม่ทำให้แถวชิปสูงจนเปลืองจอ */
@@ -29,28 +23,6 @@
   button,.bkflag,.chip{display:inline-flex;align-items:center;justify-content:center}
 }
 
-/* ปฏิทินเลือกวันในหน้าต่างเลื่อนคิว — ใช้กติกาเดียวกับหน้าจองของลูกค้า
- * ช่อง date ของเบราว์เซอร์บอกไม่ได้ว่าวันไหนร้านหยุดหรือคิวเต็ม จึงต้องวาดเอง */
-.cal-wrap{border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--bg2)}
-.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-.cal-head b{font-size:14px;font-weight:500}
-.cal-nav{background:transparent;border:1px solid var(--line);color:var(--fg);border-radius:8px;
-  width:30px;height:30px;cursor:pointer;font-family:inherit;font-size:15px}
-.cal-nav:disabled{opacity:.3;cursor:not-allowed}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
-.cal-dow{font-size:10.5px;color:var(--muted);padding:3px 0}
-.cal-day{padding:9px 0;border-radius:8px;font-size:14px;cursor:pointer;color:var(--fg);position:relative;
-  border:0;background:transparent;font-family:inherit}
-.cal-day:hover{background:var(--elev)}
-.cal-day.off,.cal-day.full,.cal-day.past{cursor:not-allowed}
-.cal-day.off{color:var(--faint);opacity:.4;text-decoration:line-through}
-.cal-day.past{color:var(--faint);opacity:.3}
-.cal-day.full{color:var(--faint);opacity:.55}
-.cal-day.off:hover,.cal-day.full:hover,.cal-day.past:hover{background:none}
-.cal-day.full::after{content:'เต็ม';position:absolute;left:0;right:0;bottom:1px;font-size:8px;opacity:.8}
-.cal-day.sel{background:linear-gradient(135deg,var(--gold-dim),var(--gold-soft));color:#000;font-weight:600}
-.cal-day.today{box-shadow:inset 0 0 0 1px var(--gold-dim)}
-.cal-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:10.5px;color:var(--muted);margin-top:8px}
 
 /* iOS/Safari: input[type=date|month|time] มีความกว้างขั้นต่ำในตัวที่ไม่ยอมหดตาม flex/grid
  * ทำให้ช่องล้นออกนอกคอลัมน์แล้วกรอบไปทับช่องข้าง ๆ บนไอแพดกับมือถือ
@@ -277,15 +249,6 @@ textarea.in{min-height:70px;resize:vertical;font-size:12px;font-family:'IBM Plex
 .statchip{display:inline-flex;gap:6px;align-items:center;background:var(--bg2);border:1px solid var(--line);border-radius:999px;padding:7px 13px;font-size:13px;margin:0 6px 6px 0}
 .statchip b{color:var(--gold-soft)}
 
-/* เลื่อนคิว */
-.rsnow{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface2);font-size:13px;line-height:1.6;margin-bottom:4px}
-.rsslots{display:flex;flex-wrap:wrap;gap:7px}
-.rsslot{padding:8px 13px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--fg);
-  font-family:'IBM Plex Mono';font-size:13px;cursor:pointer}
-.rsslot.on{border-color:var(--gold);background:var(--gold-ghost);color:var(--gold-soft)}
-.rsfee{margin-top:14px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface2)}
-.rsdiff{margin-top:12px;padding:9px 12px;border-radius:9px;background:var(--gold-ghost);border:1px solid var(--gold-dim);
-  font-size:13.5px;text-align:center;font-family:'IBM Plex Mono'}
 /* ตัวเลือกเวลา 24 ชม. */
 .tsel{display:flex;align-items:center;gap:6px}
 .tsel select{width:auto;flex:1 1 0;min-width:0;margin:0;text-align:center}
@@ -366,7 +329,6 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
   <!-- ===== QUEUE ===== -->
   <div id="paneQueue" class="tabpane hide"><div id="queueBody"><div class="empty">กำลังโหลด…</div></div></div>
-  <div class="modal" id="reschedModal"><div class="mbox"><div class="mh">🔁 เลื่อนคิว</div><div class="mc" id="reschedBody"></div></div></div>
 
   <!-- ===== TECH ===== -->
   <div id="paneTech" class="tabpane hide"><div id="techBody"><div class="empty">กำลังโหลด…</div></div>
@@ -435,7 +397,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P79-DUPFIX'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P80-FIX9'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='', SCHED=null, SETTINGS=null, TAB='dash', FULL=false, ROLE='', MYTECH='';
 var THD=['อา','จ','อ','พ','พฤ','ศ','ส'];
 /* ===== สถานะ "กำลังทำงาน" — ใช้ร่วมกันทุกหน้า (admin / pos / receive / Booking) =====
@@ -1178,16 +1140,16 @@ function qBk(b){ var parts=[];
       ?('<div class="bd" style="color:var(--crit);margin-top:6px">🚫 บันทึกว่าลูกค้าผิดนัดแล้ว</div>'+
         '<button type="button" class="btn sec" style="margin-top:6px;width:auto;padding:7px 14px;font-size:13px" onclick="openUndoNoShow(\''+esc(b.booking_id)+'\')">↩ ยกเลิกผิดนัด</button>')
       :'')+
-    /* คิวที่จบแล้วเลื่อนไม่ได้ — เดิมปุ่มหายไปเฉย ๆ ทำให้เข้าใจว่าฟังก์ชันพัง ตอนนี้บอกเหตุผลไว้ */
+    /* 15 พ.ย. 2026: ปุ่มเลื่อนคิวย้ายไปอยู่ที่ POS แท็บ "คิว" แล้ว
+     * การจัดการคิว (ผิดนัด · เลื่อนคิว · ยกเลิกคิว) ต้องอยู่ที่เดียว หน้านี้ไว้ "ดู" อย่างเดียว */
     ((b.status==='ยกเลิก'||b.status==='เช็คเอาต์'||b.status==='ไม่มาตามนัด')
-      ?('<div class="bd" style="color:var(--faint);margin-top:6px">🔒 '+(b.status==='เช็คเอาต์'?'เช็คเอาต์แล้ว':'ยกเลิกแล้ว')+' — เลื่อนคิวไม่ได้</div>'):
-      ('<div style="margin-top:7px"><button class="btn sec" style="width:auto;padding:5px 12px;font-size:12px" onclick="openResched(\''+esc(b.booking_id)+'\')">🔁 เลื่อนคิว</button></div>'))+
+      ?('<div class="bd" style="color:var(--faint);margin-top:6px">🔒 '+(b.status==='เช็คเอาต์'?'เช็คเอาต์แล้ว':'ยกเลิกแล้ว')+'</div>'):
+      ('<div class="bd" style="color:var(--faint);margin-top:6px">จัดการคิว (เลื่อน · ผิดนัด · ยกเลิก) ที่หน้า POS แท็บ “คิว”</div>'))+
     '</div></div>'; }
 
-/* =================== เลื่อนคิว ===================
- * ใช้แถวคิวเดิม มัดจำและสลิปโอนเงินเดิมจึงติดไปด้วย ไม่ต้องให้ลูกค้าโอนใหม่
- * ลูกค้าเลื่อนเองไม่ได้ ต้องโทรมาให้ร้านเลื่อนให้ (หน้าจองไม่มีปุ่มนี้) */
-var RS=null;
+/* =================== เลื่อนคิว — ย้ายไปอยู่ที่ POS แท็บ "คิว" แล้ว (15 พ.ย. 2026) ===================
+ * การจัดการคิวทั้งหมด (เช็คเอาท์ · ผิดนัด · เลื่อนคิว · ยกเลิกคิว) ต้องอยู่ที่ POS ที่เดียว
+ * หน้านี้เหลือไว้ "ดูคิว" อย่างเดียว · เหลือเฉพาะ "ยกเลิกผิดนัด" ที่เป็นอำนาจผู้จัดการโดยเฉพาะ */
 /* ยกเลิกผิดนัด — เฉพาะเจ้าของ/ผู้จัดการ · ไม่ลบของเก่า ออกบิลกลับรายการให้ตรวจย้อนหลังได้ */
 function openUndoNoShow(id){
   var reason=prompt('ยกเลิกผิดนัดของคิว '+id+'\n\nระบบจะออกบิลกลับรายการ ยกเลิกค่าคอมที่ยังไม่จ่าย และคืนสถานะคิว\nบิลเดิมจะไม่ถูกลบ เพื่อให้ตรวจย้อนหลังได้\n\nเหตุผล:');
@@ -1199,177 +1161,6 @@ function openUndoNoShow(id){
     toast('ยกเลิกผิดนัดแล้ว · ยกเลิกค่าคอม '+r.data.commissions_cancelled+' รายการ');
     loadQueue();
   }).catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
-function openResched(id){ RS={id:id,booking:null,date:'',start:'',tech:'',slots:[],loading:true};
-  document.getElementById('reschedModal').classList.add('show'); renderResched();
-  api('bookingDetail',{booking_id:id}).then(function(r){
-    if(!r||!r.ok){ toast((r&&r.message)||'โหลดคิวไม่สำเร็จ',1); closeResched(); return; }
-    RS.booking=r.data.booking; RS.loading=false;
-    RS.tech=String(RS.booking.tech_id||''); RS.date=RS.booking.date;
-    RS.month=rsMonthKey(RS.date||(DASHDATA&&DASHDATA.today)||localToday());
-    renderResched(); rsLoadSlots(); rsLoadMonth();
-  }).catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); closeResched(); }); }
-function closeResched(){ document.getElementById('reschedModal').classList.remove('show'); RS=null; }
-function rsSetDate(v){ RS.date=v; RS.start=''; RS.month=rsMonthKey(v); renderResched(); rsLoadSlots(); }
-function rsSetTech(v){ RS.tech=v; RS.start=''; renderResched(); rsLoadSlots(); rsLoadMonth(); }
-function rsPick(t){ RS.start=t; renderResched(); }
-/* ดึงเวลาว่างจริงของวันนั้น (เช็กตารางช่าง วันหยุด คิวชน ให้เสร็จจากหลังบ้าน) */
-
-/* ---- ปฏิทินเลือกวันใหม่ (จาง = หยุด/เต็ม เหมือนหน้าจองลูกค้า) ---- */
-/* วันที่ "วันนี้" ตามเวลาเครื่องผู้ใช้ — ห้ามใช้ toISOString() เพราะนั่นคือเวลา UTC
- * ไทย UTC+7 ช่วงเที่ยงคืนถึง 7 โมงเช้า UTC จะยังเป็นเมื่อวาน ทำให้ปฏิทินเพี้ยนไป 1 วัน */
-function localToday(){ var d=new Date();
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-function rsMonthKey(d){ return d.slice(0,7); }
-function rsLoadMonth(){ if(!RS||!RS.booking||!RS.month) return;
-  var b=RS.booking, key=RS.month;
-  RS.days=null; renderResched();
-  api('bookMonth',{ month:key, mode:(b.variant_id?'new':'byob'), service_id:b.service_id,
-    variant_id:b.variant_id, qty_mad:b.qty_mad, tech_id:(RS.tech||'any') })
-    .then(function(r){ RS.days=(r&&r.ok&&r.data&&r.data.days)?r.data.days:{};
-      if(RS.month!==key) return;                    /* ผู้ใช้เปลี่ยนเดือนไปแล้ว ทิ้งผลเก่า */
-      renderResched(); })
-    .catch(function(){ RS.days={}; renderResched(); }); }
-function rsShiftMonth(n){ if(!RS||!RS.month)return;
-  var y=Number(RS.month.slice(0,4)), m=Number(RS.month.slice(5,7))-1+n;
-  var d=new Date(y,m,1); RS.month=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-  RS.days=null; renderResched(); rsLoadMonth(); }
-function rsCal(){
-  var TH=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-  var y=Number(RS.month.slice(0,4)), m=Number(RS.month.slice(5,7))-1;
-  var first=new Date(y,m,1), nDays=new Date(y,m+1,0).getDate(), lead=first.getDay();
-  var todayStr=(DASHDATA&&DASHDATA.today)||localToday();
-  var nowKey=todayStr.slice(0,7);
-  var h='<div class="cal-wrap"><div class="cal-head">'+
-    '<button type="button" class="cal-nav" onclick="rsShiftMonth(-1)"'+(RS.month<=nowKey?' disabled':'')+'>‹</button>'+
-    '<b>'+TH[m]+' '+(y+543)+'</b>'+
-    '<button type="button" class="cal-nav" onclick="rsShiftMonth(1)">›</button></div><div class="cal-grid">';
-  ['อา','จ','อ','พ','พฤ','ศ','ส'].forEach(function(d){ h+='<div class="cal-dow">'+d+'</div>'; });
-  for(var i=0;i<lead;i++) h+='<div></div>';
-  var loading=(RS.days===null);
-  for(var d=1;d<=nDays;d++){
-    var dk=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
-    var info=(RS.days||{})[dk]||{}, cls=['cal-day'], dis=false;
-    if(dk<todayStr){ cls.push('past'); dis=true; }
-    else if(!loading){
-      if(info.off){ cls.push('off'); dis=true; }
-      else if(info.full){ cls.push('full'); dis=true; }
-    }
-    if(dk===todayStr) cls.push('today');
-    if(dk===RS.date) cls.push('sel');
-    h+='<button type="button" class="'+cls.join(' ')+'"'+(dis?' disabled':'')+
-       ' title="'+(info.off?'ร้านหยุด/ไม่มีช่าง':(info.full?'คิวเต็ม':''))+'"'+
-       (dis?'':' onclick="rsSetDate(\''+dk+'\')"')+'>'+d+'</button>';
-  }
-  h+='</div><div class="cal-legend">'+(loading?'<span>กำลังตรวจวันว่าง…</span>':
-     '<span>⬜ ว่าง</span><span style="opacity:.55">เต็ม = คิวเต็ม</span><span style="opacity:.4;text-decoration:line-through">หยุด</span>')+
-     '</div></div>';
-  return h; }
-function rsLoadSlots(){ if(!RS||!RS.booking||!RS.date) return;
-  RS.slots=null; renderResched();
-  var b=RS.booking;
-  api('bookAvailability',{date:RS.date,tech_id:(RS.tech||'any'),
-    mode:(b.variant_id?'new':'byob'), service_id:b.service_id, variant_id:b.variant_id, qty_mad:b.qty_mad})
-    .then(function(r){ RS.slots=(r&&r.ok&&r.data&&r.data.slots)?r.data.slots:[];
-      RS.holiday=!!(r&&r.ok&&r.data&&r.data.holiday); RS.hreason=(r&&r.ok&&r.data&&r.data.reason)||'';
-      renderResched(); })
-    .catch(function(){ RS.slots=[]; renderResched(); }); }
-function renderResched(){ var box=document.getElementById('reschedBody'); if(!box) return;
-  if(!RS||RS.loading){ box.innerHTML='<div class="mini">กำลังโหลด…</div>'; return; }
-  var b=RS.booking, fee=b.resched_fee||{}, dep=Number(b.deposit)||0;
-  /* ข้อมูลเกณฑ์ขาดไม่ควรโชว์คำว่า undefined ให้ผู้จัดการที่กำลังตัดสินใจเรื่องเงิน */
-  if(fee.leadDays==null||fee.freeDays==null) fee={late:false,leadDays:null,freeDays:null,forfeit:0,pct:0,_unknown:true};
-  var h='<div class="rsnow"><div class="mini" style="margin:0 0 4px">คิวเดิม</div>'+
-    '<b>'+esc(b.name||'ลูกค้า')+'</b> · 📞 '+esc(b.phone||'-')+
-    '<div>'+esc(b.date)+' '+esc(b.start)+'–'+esc(b.end)+' · ✂ '+esc(b.tech_name||'—')+'</div>'+
-    '<div class="mini" style="margin:2px 0 0">'+esc(b.detail||'')+' · มัดจำจ่ายแล้ว ฿'+fmt(dep)+
-      (b.slip_file_id?' · มีสลิปแนบ (ใช้ใบเดิมต่อได้)':'')+'</div>'+
-    (Number(b.reschedule_count)>0?('<div class="mini" style="color:var(--warn);margin-top:2px">เคยเลื่อนมาแล้ว '+Number(b.reschedule_count)+' ครั้ง</div>'):'')+
-    '</div>';
-
-  h+='<div class="rs2col"><div><label class="lbl" style="margin-top:0">วันใหม่</label>'+rsCal()+'</div><div>';
-  h+='<label class="lbl">ช่าง</label><select class="in" onchange="rsSetTech(this.value)">'+
-     '<option value="any"'+(RS.tech==='any'?' selected':'')+'>— ใครก็ได้ที่ว่าง —</option>'+
-     (USERTECHS||[]).map(function(t){ return '<option value="'+esc(t.tech_id)+'"'+(String(t.tech_id)===String(RS.tech)?' selected':'')+'>'+esc(t.name)+(t.accepting===false?' · พักรับคิว':'')+'</option>'; }).join('')+
-     '</select>';
-
-  h+='<label class="lbl">เวลาที่ว่าง</label>';
-  if(RS.slots===null){ h+='<div class="mini">กำลังหาเวลาว่าง…</div>'; }
-  else if(RS.holiday){ h+='<div class="insrow ins-warn">'+(RS.hreason==='no_tech'?'วันนี้ไม่มีช่างเข้างาน':'วันนี้ร้านหยุด')+' — เลือกวันอื่น</div>'; }
-  else if(!RS.slots.length){ h+='<div class="insrow ins-warn">วันนี้ไม่มีเวลาว่างพอสำหรับงานนี้ — เลือกวันอื่นหรือเปลี่ยนช่าง</div>'; }
-  else { h+='<div class="rsslots">'+RS.slots.map(function(s){
-      return '<button type="button" class="rsslot'+(RS.start===s.time?' on':'')+'" onclick="rsPick(\''+esc(s.time)+'\')">'+esc(s.time)+'</button>'; }).join('')+'</div>'; }
-
-  /* มัดจำ: ระบบคิดให้ตามเกณฑ์ แต่ผู้จัดการแก้ทับได้ */
-  var sug=Number(fee.forfeit)||0;
-  h+='<div class="rsfee"><div class="mini" style="margin:0 0 6px">'+
-    (fee._unknown?'⚠ ดึงเกณฑ์หักมัดจำไม่สำเร็จ — กรอกยอดหักเองตามดุลพินิจ':
-    (fee.late?('⚠ เหลืออีก '+fee.leadDays+' วันถึงคิวเดิม (น้อยกว่าเกณฑ์ '+fee.freeDays+' วัน) → เข้าเกณฑ์หักมัดจำ '+fee.pct+'%')
-             :('✓ เหลืออีก '+fee.leadDays+' วันถึงคิวเดิม (เกณฑ์ '+fee.freeDays+' วัน) → ไม่เข้าเกณฑ์หักมัดจำ')))+'</div>'+
-    '<label class="lbl" style="margin-top:0">หักมัดจำครั้งนี้ (฿) · แก้ได้ตามดุลพินิจ</label>'+
-    '<input type="number" class="in" id="rsFee" value="'+sug+'" min="0" max="'+dep+'" oninput="rsFeeHint()">'+
-    '<div class="mini" id="rsFeeHint"></div>'+
-    /* ดุลพินิจผู้จัดการ: สุดวิสัย หรือร้านเป็นฝ่ายขอเลื่อน → ตั้ง 0 ได้ */
-    '<div class="mini" style="margin-top:6px;color:var(--faint)">ตั้ง <b>0</b> ได้ถ้าเป็นเหตุสุดวิสัย หรือร้านเป็นฝ่ายขอเลื่อนเอง</div>'+
-    /* ---- รับมัดจำใหม่ เมื่อหักมัดจำเดิมไปแล้ว ---- */
-    '<div id="rsTopupBox" style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)">'+
-      '<label class="lbl" style="margin-top:0">รับมัดจำเพิ่มในวันนี้ (฿) · ถ้าลูกค้าโอนมาใหม่</label>'+
-      '<input type="number" class="in" id="rsTopup" value="0" min="0" oninput="rsFeeHint()">'+
-      '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">'+
-        '<button type="button" class="btn sec" style="width:auto;padding:8px 14px;font-size:13px;margin:0" onclick="rsMakeQR()">📱 สร้าง QR ให้ลูกค้าสแกนจ่าย</button>'+
-        '<label class="btn sec" style="width:auto;padding:8px 14px;font-size:13px;margin:0;cursor:pointer">📎 แนบสลิปใบใหม่'+
-          '<input type="file" accept="image/*" style="display:none" onchange="rsPickSlip(this)"></label>'+
-      '</div>'+
-      '<div id="rsSlipName" class="mini" style="margin-top:6px"></div>'+
-      '<div id="rsQRBox" style="margin-top:10px;text-align:center"></div>'+
-      '<div class="mini" style="margin-top:6px;color:var(--faint)">สลิปใบใหม่จะเก็บ<b>เพิ่ม</b> ไม่ทับใบเดิม เพราะใบเดิมคือหลักฐานของเงินที่ถูกริบไปแล้ว</div>'+
-    '</div></div>';
-
-  h+='<label class="lbl">เหตุผลที่เลื่อน <span style="color:var(--crit)">*</span></label>'+
-     '<input class="in" id="rsReason" placeholder="เช่น ลูกค้าติดธุระ / ช่างลาป่วย" oninput="rsValid()">';
-
-  if(RS.start){ h+='<div class="rsdiff">'+esc(b.date)+' '+esc(b.start)+'  →  <b>'+esc(RS.date)+' '+esc(RS.start)+'</b></div>'; }
-  h+='</div>';                                   /* ปิดคอลัมน์ขวาของ rs2col */
-  h+='<div class="mfoot"><button class="btn sec" onclick="closeResched()">ยกเลิก</button>'+
-     '<button class="btn" id="rsGo" onclick="doResched()" disabled style="opacity:.5">ยืนยันเลื่อนคิว</button></div>';
-  box.innerHTML=h; rsFeeHint(); rsValid(); }
-function rsFeeHint(){ var el=document.getElementById('rsFeeHint'); if(!el||!RS||!RS.booking) return;
-  var dep=Number(RS.booking.deposit)||0, f=Number((document.getElementById('rsFee')||{}).value)||0;
-  el.innerHTML = f>0 ? ('ลูกค้าเหลือมัดจำใช้ได้ <b>฿'+fmt(Math.max(0,dep-f))+'</b> จาก ฿'+fmt(dep))
-                     : ('ยกยอดมัดจำ <b>฿'+fmt(dep)+'</b> ไปคิวใหม่ทั้งหมด'); }
-function rsValid(){ var btn=document.getElementById('rsGo'); if(!btn||!RS) return;
-  var ok=!!RS.start && !!String((document.getElementById('rsReason')||{}).value||'').trim();
-  btn.disabled=!ok; btn.style.opacity=ok?'1':'.5'; }
-/* ---- มัดจำรอบใหม่ตอนเลื่อนคิว ---- */
-var RSSLIP=null;
-function rsPickSlip(inp){ var f=inp.files&&inp.files[0]; if(!f) return;
-  if(f.size>6*1024*1024){ toast('ไฟล์ใหญ่เกิน 6MB',1); inp.value=''; return; }
-  var rd=new FileReader();
-  rd.onload=function(){ RSSLIP=rd.result;
-    var el=document.getElementById('rsSlipName'); if(el) el.innerHTML='✓ แนบแล้ว: '+esc(f.name); };
-  rd.readAsDataURL(f); }
-function rsMakeQR(){ var amt=Number((document.getElementById('rsTopup')||{}).value)||0;
-  var box=document.getElementById('rsQRBox'); if(!box) return;
-  if(!(amt>0)){ box.innerHTML='<div class="mini" style="color:var(--crit)">ใส่ยอดที่จะให้ลูกค้าโอนก่อน</div>'; return; }
-  box.innerHTML='<div class="mini">กำลังสร้าง QR…</div>';
-  api('payQR',{amount:amt}).then(function(r){
-    if(!r||!r.ok){ box.innerHTML='<div class="mini" style="color:var(--crit)">'+esc((r&&r.message)||'สร้าง QR ไม่สำเร็จ')+'</div>'; return; }
-    box.innerHTML='<div id="rsQRImg" style="display:inline-block;background:#fff;padding:10px;border-radius:10px"></div>'+
-      '<div class="mini" style="margin-top:6px">สแกนเพื่อโอน <b style="color:var(--gold-soft)">฿'+fmt(r.data.amount)+'</b> · ให้ลูกค้าสแกนจากหน้าจอนี้ได้เลย</div>';
-    var el=document.getElementById('rsQRImg');
-    if(typeof QRCode==='undefined'){ el.innerHTML='<div class="mini" style="color:var(--crit)">โหลดตัวสร้าง QR ไม่สำเร็จ</div>'; return; }
-    new QRCode(el,{text:r.data.payload,width:200,height:200,correctLevel:QRCode.CorrectLevel.M});
-  }).catch(function(){ box.innerHTML='<div class="mini" style="color:var(--crit)">เชื่อมต่อไม่สำเร็จ</div>'; }); }
-function doResched(){ if(!RS||!RS.start) return;
-  var reason=String((document.getElementById('rsReason')||{}).value||'').trim();
-  if(!reason){ toast('ใส่เหตุผลที่เลื่อน',1); return; }
-  var fee=Number((document.getElementById('rsFee')||{}).value)||0;
-  var topup=Number((document.getElementById('rsTopup')||{}).value)||0;
-  api('rescheduleBooking',{booking_id:RS.id,date:RS.date,start:RS.start,tech_id:(RS.tech||'any'),reason:reason,forfeit:fee,
-    new_deposit:topup, new_slip_data_url:(topup>0?(RSSLIP||''):'')})
-    .then(function(r){ if(!r||!r.ok){ toast((r&&r.message)||'เลื่อนไม่สำเร็จ',1); return; }
-      var d=r.data; toast('เลื่อนคิวแล้ว · '+d.to.date+' '+d.to.start+(d.forfeit>0?(' · หักมัดจำ ฿'+fmt(d.forfeit)):' · ไม่หักมัดจำ'));
-      RSSLIP=null; closeResched(); loadQueue(); })
-    .catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
 function qSetFTech(v){ QFTECH=v; renderQueue(); }
 function qSetFTQ(v){ QFTQ=v; renderQueue(); }
 function qToggleCancel(){ QFCANCEL=!QFCANCEL; renderQueue(); }

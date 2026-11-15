@@ -71,6 +71,7 @@ td.r,th.r{text-align:right}
 .varcard .vmain b{font-weight:600;font-size:15px}
 .varcard .vstock{font-size:13px;font-weight:500;white-space:nowrap}
 .varcard .vchips{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.varcard .vmoney{font-size:11.5px;line-height:1.75;margin-top:6px;padding-top:6px;border-top:1px dashed var(--line)}
 .vchip{display:inline-block;font-size:12px;background:var(--surface2);border:1px solid var(--line);border-radius:6px;padding:2px 8px;color:var(--muted)}
 .vchip.g{color:var(--gold-soft);border-color:var(--gold-dim)}
 .tabbar{display:flex;gap:6px;margin:0 0 14px}
@@ -356,7 +357,7 @@ button.is-busy,.is-busy{cursor:progress!important;opacity:.78}
 /* ===== ตั้งค่า: ใส่ลิงก์ /exec ของโปรเจกต์ระบบใหม่ ===== */
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
 
-var BUILD='P79-DUPFIX'; /* เวอร์ชันหน้าเว็บ — เทียบกับ APP.VERSION ของหลังบ้าน แสดงที่มุมบนขวา */
+var BUILD='P80-FIX9'; /* เวอร์ชันหน้าเว็บ — เทียบกับ APP.VERSION ของหลังบ้าน แสดงที่มุมบนขวา */
 var TOKEN='', DATA=null, BUSY=false, LAST=null;
 
 /* ---- สถานะ "กำลังทำงาน" ----
@@ -476,6 +477,21 @@ var VARF={};
 function openVariantPicker(){ document.getElementById('varModal').classList.add('show'); document.getElementById('varSearch').value=''; VARF={}; renderVariantList(); setTimeout(function(){ try{document.getElementById('varSearch').focus();}catch(e){} },60); }
 function closeVarPicker(){ document.getElementById('varModal').classList.remove('show'); }
 function varChips_(v){ var c=[]; if(v.grade)c.push('<span class="vchip g">เกรด '+esc(v.grade)+'</span>'); if(v.texture)c.push('<span class="vchip">'+esc(v.texture)+'</span>'); if(v.color)c.push('<span class="vchip">'+esc(v.color)+'</span>'); return c.join(''); }
+/* ต้นทุน/ราคา/ผู้จำหน่ายของรุ่น — ช่วยให้เลือกรุ่นไม่ผิดตัว
+ * ตัวเลขมาจากล็อตล่าสุดของรุ่นนั้น · หน้านี้เปิดได้เฉพาะเจ้าของกับผู้จัดการอยู่แล้ว */
+function varMoney_(v){
+  var has=(v.hair_raw_per_qr!==undefined);
+  if(!has) return '';
+  var L=function(k,val,strong){ return '<span style="color:var(--muted)">'+k+'</span> '+(strong?('<b>'+val+'</b>'):val); };
+  var rows=[];
+  if(Number(v.hair_raw_per_qr)>0) rows.push(L('ทุนผม',fmt(v.hair_raw_per_qr)+'/QR',true)+(Number(v.cost_per_qr)>0?('<span style="color:var(--faint)"> · รวมทุกอย่าง '+fmt(v.cost_per_qr)+'</span>'):''));
+  var line2=[];
+  if(Number(v.sell_price_per_mad)>0) line2.push(L('ขายเปล่า',fmt(v.sell_price_per_mad)+'฿',true));
+  if(Number(v.attach_price)>0) line2.push(L('ค่าต่อ',fmt(v.attach_price)+'฿',true)+(v.attach_special?' <span style="color:var(--gold-soft)">★</span>':''));
+  if(line2.length) rows.push(line2.join(' · '));
+  if(v.supplier_name) rows.push(L('ผู้จำหน่าย',esc(v.supplier_name)));
+  if(!rows.length) return '<div class="vmoney" style="color:var(--faint)">ยังไม่เคยรับล็อตของรุ่นนี้</div>';
+  return '<div class="vmoney">'+rows.join('<br>')+'</div>'; }
 function setVarFacet(k,v){ if(k==='__clear__'){VARF={};} else { if(VARF[k]===v||!v)delete VARF[k]; else VARF[k]=v; } renderVariantList(); }
 function renderVariantList(){ var box=document.getElementById('varList'); if(!box)return;
   renderFacetBar('varTypes',(DATA.variants||[]),VFACETS,VARF,'setVarFacet');
@@ -487,7 +503,8 @@ function renderVariantList(){ var box=document.getElementById('varList'); if(!bo
   var card=function(v){ var stock=Number(v.available)||0, sc=stock<=0?'var(--crit)':(stock<5?'var(--gold-soft)':'var(--ok)');
     return '<button type="button" class="varcard" onclick="pickVariant(\''+esc(v.variant_id)+'\')">'+
       '<div class="vmain"><b>'+esc(v.hair_type)+' '+esc(v.length_in)+'นิ้ว</b><span class="vstock" style="color:'+sc+'">เหลือ '+fmt(stock)+' QR</span></div>'+
-      (varChips_(v)?('<div class="vchips">'+varChips_(v)+'</div>'):'')+'</button>'; };
+      (varChips_(v)?('<div class="vchips">'+varChips_(v)+'</div>'):'')+
+      varMoney_(v)+'</button>'; };
   h+=order.map(function(t){ var g=groups[t].sort(function(a,b){return (parseInt(a.length_in,10)||0)-(parseInt(b.length_in,10)||0);});
     var head=(order.length>1)?('<div class="grphead"><b>'+esc(t)+'</b><span class="gq">'+g.length+' รุ่น</span></div>'):'';
     return head+g.map(card).join(''); }).join('');
@@ -498,9 +515,14 @@ function updateVarBtn(){ var id=(document.getElementById('vSel')||{}).value||'',
   if(id==='__NEW__'){ btn.className='in selbtn'; btn.innerHTML='➕ สร้างรุ่นใหม่…'; return; }
   var v=(DATA.variants||[]).filter(function(x){return String(x.variant_id)===String(id);})[0];
   if(!v){ btn.className='in selbtn ph'; btn.innerHTML='— เลือกรุ่นสินค้า —'; return; }
-  var sub=[v.grade?('เกรด '+v.grade):'', v.texture||'', v.color||''].filter(Boolean).join(' · ');
+  var sub=esc([v.grade?('เกรด '+v.grade):'', v.texture||'', v.color||''].filter(Boolean).join(' · '));
+  var money=esc([Number(v.hair_raw_per_qr)>0?('ทุนผม '+fmt(v.hair_raw_per_qr)):'',
+             Number(v.sell_price_per_mad)>0?('ขายเปล่า '+fmt(v.sell_price_per_mad)):'',
+             Number(v.attach_price)>0?('ค่าต่อ '+fmt(v.attach_price)):'',
+             v.supplier_name?('ผู้จำหน่าย '+v.supplier_name):''].filter(Boolean).join(' · '));
+  if(money) sub=(sub?(sub+'<br>'):'')+money;
   btn.className='in selbtn';
-  btn.innerHTML='<span><b>'+esc(v.hair_type)+' '+esc(v.length_in)+'นิ้ว</b>'+(sub?('<br><span class="btnsub">'+esc(sub)+'</span>'):'')+'</span><span class="btnsub" style="margin-left:auto;white-space:nowrap">เหลือ '+fmt(Number(v.available)||0)+'</span>'; }
+  btn.innerHTML='<span><b>'+esc(v.hair_type)+' '+esc(v.length_in)+'นิ้ว</b>'+(sub?('<br><span class="btnsub">'+sub+'</span>'):'')+'</span><span class="btnsub" style="margin-left:auto;white-space:nowrap">เหลือ '+fmt(Number(v.available)||0)+'</span>'; }
 function loadSuppliers(){ api('suppliersList',{}).then(function(r){ if(!r||!r.ok)return; var sup=r.data.suppliers||[];
   document.getElementById('supSel').innerHTML='<option value="">— ไม่ระบุ —</option>'+sup.map(function(s){return '<option value="'+esc(s.supplier_id)+'">'+esc(s.name)+'</option>';}).join(''); }); }
 
