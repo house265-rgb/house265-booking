@@ -312,7 +312,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P89-COMB'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P90-RS'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='',DATA=null,FULL=false,CART=[],CAT='ต่อผม',PAY='เงินสด',BUSY=false,USERTECH='';
 window._disc=0; window._recv=0; window._split=false; window._p2m='พร้อมเพย์'; window._p2a=0; window._slips=[];
 window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName='';
@@ -615,30 +615,26 @@ function confirmProduct(){ var l=LD; var price=pdTotal();
   if(l.mode==='ext'){ var tc=l.techs.filter(function(t){return t.name;}); if(!tc.length && !FULL){ toast('เลือกช่างที่ต่อผม',1); return; }
     if(tc.length>1&&Math.round(pdSum())!==100){ toast('สัดส่วนช่างต้องรวม 100%',1); return; } l.techs=tc; }
   l.price=price; l.disc=Number((document.getElementById('lmDisc')||{}).value)||0;
-  /* ต้องตอบเรื่องปั้นช่อก่อน — เป็นเงินที่ลืมเก็บได้ง่ายที่สุดในเคสนำผมมาเอง */
-  if(l.kind==='service' && l.comb!==true && l.comb!==false){ toast('เลือกก่อนว่าผมชุดนี้ร้านปั้นช่อให้ด้วยหรือไม่',1); return; }
-  var combLine=null;
-  if(l.kind==='service' && l.comb===true){
-    var cq=Math.max(1,Math.round(Number(l.combQty)||1));
-    var cprice=Number(l.combPriceOverride)>0?Number(l.combPriceOverride):combPriceOf(l.technique||l.item,cq);
-    if(!(cprice>0)){ toast('ใส่ค่าปั้นช่อก่อน',1); return; }
-    combLine={ kind:'comb', item:String(l.technique||l.item), technique:String(l.technique||l.item),
-      qty:cq, price:cprice, size:'', disc:0, techs:(l.combTechs||[]) };
-  }
   if(LEDIT!=null)CART[LEDIT]=l; else CART.push(l);
-  if(combLine) CART.push(combLine);
-  closeLine(); renderCart(); if(LEDIT==null)toast(combLine?'เพิ่มลงบิลแล้ว (ค่าต่อ + ค่าปั้น)':'เพิ่มลงบิลแล้ว'); }
+  closeLine(); renderCart(); if(LEDIT==null)toast('เพิ่มลงบิลแล้ว'); }
 
 /* ===================================================================
  * SERVICE(ลูกค้าเอาผมมาเอง) / MOVE / REMOVAL / CUSTOM popup
  * =================================================================== */
+var LSEQ=0;
 function openLine(kind,key,editIndex){ LEDIT=(editIndex==null?null:editIndex);
-  if(LEDIT!=null){ LD=JSON.parse(JSON.stringify(CART[editIndex])); if(!LD.techs||!LD.techs.length)LD.techs=[{name:USERTECH||'',split:100}]; }
+  if(LEDIT!=null){ LD=JSON.parse(JSON.stringify(CART[editIndex])); if(!LD.techs||!LD.techs.length)LD.techs=[{name:USERTECH||'',split:100}];
+    /* เคยตั้งจำนวนปั้นไว้ไม่เท่าจำนวนที่ต่อ = พนักงานตั้งใจ ห้ามรีเซ็ตทับตอนแก้บรรทัด */
+    if(Number(LD.combQty)>0 && Number(LD.combQty)!==Number(LD.qty)) LD.combQtyTouched=true;
+    if(LD.kind==='service' && !LD.cid) LD.cid='L'+(++LSEQ); }
   else { var base={kind:kind,qty:1,price:0,unit:0,techs:[{name:USERTECH||'',split:100}],size:'',technique:''};
     if(kind==='service'){ /* นำผมมาเอง (byob) — ตรงระบบจอง: byob_base + byob_per_bundle×qty · ไม่มีขนาด ไม่คิดค่าผม */
       var sv=svcByAcct(key); base.item=key; base.technique=key; base.byobBase=Number(sv&&sv.byob_base)||0; base.byobPer=Number(sv&&sv.byob_per_bundle)||0; base.price=Math.round(base.byobBase+base.byobPer);
       /* ลูกค้าหลายรายส่งผมมาให้ร้านปั้นช่อก่อนแล้วค่อยมาต่อ — ต้องตอบก่อนเพิ่มลงบิล จะได้ไม่ลืมเก็บค่าปั้น */
-      base.comb=null; base.combQty=1; base.combAsked=false; }
+      /* จำนวนที่ส่งปั้น = จำนวนที่ต่อ โดยปริยาย (เคสจริงเกือบทุกครั้งเท่ากัน) และวิ่งตามจำนวนที่ต่อไปเรื่อยๆ
+       * จนกว่าพนักงานจะกด ± ที่ช่องนี้เอง — กันลืมปรับแล้วเก็บค่าปั้นขาด */
+      base.comb=null; base.combQty=base.qty; base.combQtyTouched=false; base.combAsked=false;
+      base.cid='L'+(++LSEQ); }
     else if(kind==='comb'){ /* ปั้นช่ออย่างเดียว — ไม่ได้ต่อ */
       var sc=svcByAcct(key); base.item=key; base.technique=key;
       base.combPrice=Number(sc&&sc.comb_price_per_mad)||0; base.price=Math.round(base.combPrice);
@@ -654,10 +650,15 @@ function lmRecalc(){ var l=LD; if(l.kind==='service')l.price=Math.round((l.byobB
   else if(l.kind==='move')l.price=Math.round((l.movePrice||0)+(l.moveAdd||0)*((l.qty||1)-1));
   else if(l.kind==='comb')l.price=Math.round((l.combPrice||0)*(l.qty||1)); }
 /* ปั้นช่อที่พ่วงมากับงานต่อผม — คนละจำนวนกับที่ต่อได้ */
-function lmCombSet(v){ LD.comb=v; LD.combAsked=true; if(v&&!(LD.combQty>0))LD.combQty=LD.qty||1; renderLine(); }
-function lmCombStep(d){ LD.combQty=Math.max(1,Math.round((Number(LD.combQty)||1)+d)); renderLine(); }
+function lmCombSet(v){ LD.comb=v; LD.combAsked=true; if(v&&!LD.combQtyTouched)LD.combQty=LD.qty||1; renderLine(); }
+function lmCombStep(d){ LD.combQty=Math.max(1,Math.round((Number(LD.combQty)||1)+d)); LD.combQtyTouched=true;
+  LD.combPriceOverride=0;              /* ปรับจำนวนแล้วให้คิดค่าปั้นใหม่ตามจำนวนจริง */
+  renderLine(); }
 function combPriceOf(acct,qr){ var sv=svcByAcct(techniqueFor(acct)); return Math.round((Number(sv&&sv.comb_price_per_mad)||0)*(Number(qr)||1)); }
-function lmStep(d){ if(LD.kind==='removal')return; LD.qty=Math.max(1,Math.round((Number(LD.qty)||1)+d)); lmRecalc(); renderLine(); }
+function lmStep(d){ if(LD.kind==='removal')return; LD.qty=Math.max(1,Math.round((Number(LD.qty)||1)+d));
+  /* จำนวนที่ส่งปั้นยังไม่ถูกแก้มือ = ให้วิ่งตามจำนวนที่ต่อ (และคิดค่าปั้นใหม่ตามนั้น) */
+  if(LD.kind==='service' && !LD.combQtyTouched){ LD.combQty=LD.qty; LD.combPriceOverride=0; }
+  lmRecalc(); renderLine(); }
 function lmSum(){ return LD.techs.reduce(function(a,t){return a+(Number(t.split)||0);},0); }
 function lmAddTech(){ LD.techs.push({name:'',split:0}); lmEven(); renderLine(); }
 function lmRmTech(i){ LD.techs.splice(i,1); if(!LD.techs.length)LD.techs=[{name:'',split:100}]; lmEven(); renderLine(); }
@@ -695,7 +696,9 @@ function renderLine(){ var l=LD, multi=l.techs.length>1, sum=lmSum(); var h='';
         '<div style="flex:1"><label class="lbl">ค่าปั้นช่อ (฿)</label>'+
           '<input class="in" type="number" id="lmCombPrice" style="text-align:right" value="'+(Number(l.combPriceOverride)>0?l.combPriceOverride:combPriceOf(l.technique||l.item,l.combQty||1))+'" oninput="LD.combPriceOverride=Number(this.value)||0"></div>'+
       '</div>'+
-      '<div class="mini" style="margin-top:6px;color:var(--faint)">จะเพิ่มเป็นอีก 1 บรรทัดในบิล แยกจากค่าต่อผม</div>';
+      '<div class="mini" style="margin-top:6px;color:var(--faint)">'+
+        (l.combQtyTouched?'ปรับจำนวนเองแล้ว (ไม่วิ่งตามจำนวนที่ต่ออีก)':'ยึดตามจำนวนที่ต่อ — กด ± เพื่อปรับเฉพาะจำนวนที่ส่งปั้น')+
+        ' · จะเพิ่มเป็นอีก 1 บรรทัดในบิล แยกจากค่าต่อผม</div>';
     }
     h+='</div>';
   }
@@ -709,7 +712,25 @@ function renderLine(){ var l=LD, multi=l.techs.length>1, sum=lmSum(); var h='';
 function confirmLine(){ var l=LD; if(!l.item){ toast('กรอกชื่อรายการ',1); return; } if(!(Number(l.price)>0)){ toast('ใส่ราคา',1); return; }
   var tc=l.techs.filter(function(t){return t.name;}); if(tc.length>1&&Math.round(lmSum())!==100){ toast('สัดส่วนช่างต้องรวม 100%',1); return; }
   l.disc=Number((document.getElementById('lmDisc')||{}).value)||0;
-  if(LEDIT!=null)CART[LEDIT]=l; else CART.push(l); closeLine(); renderCart(); if(LEDIT==null)toast('เพิ่มลงบิลแล้ว'); }
+  /* ===== ค่าปั้นช่อของงาน "ลูกค้าเอาผมมาเอง" =====
+   * ❗ โค้ดก้อนนี้เคยไปอยู่ใน confirmProduct() (ป๊อปอัปผมของร้าน) ซึ่ง kind ไม่เคยเป็น 'service'
+   *   ผล: คำถามปั้นช่อถามแล้วไม่มีผล ค่าปั้นไม่เคยเข้าบิลเลย = เงินหายทั้งก้อน
+   *   ป๊อปอัปนำผมมาเองยืนยันด้วย confirmLine() ตัวนี้ ค่าปั้นจึงต้องอยู่ที่นี่ */
+  if(l.kind==='service' && l.comb!==true && l.comb!==false){ toast('เลือกก่อนว่าผมชุดนี้ร้านปั้นช่อให้ด้วยหรือไม่',1); return; }
+  var combLine=null;
+  if(l.kind==='service' && l.comb===true){
+    var cq=Math.max(1,Math.round(Number(l.combQty)||1));
+    var cprice=Number(l.combPriceOverride)>0?Number(l.combPriceOverride):combPriceOf(l.technique||l.item,cq);
+    if(!(cprice>0)){ toast('ใส่ค่าปั้นช่อก่อน',1); return; }
+    combLine={ kind:'comb', item:String(l.technique||l.item), technique:String(l.technique||l.item),
+      qty:cq, price:cprice, size:'', disc:0, techs:(l.combTechs||[]), from:String(l.cid||'') };
+  }
+  if(LEDIT!=null)CART[LEDIT]=l; else CART.push(l);
+  /* ค่าปั้นผูกกับบรรทัดต่อผมแม่ด้วย cid — แก้บรรทัดเดิมซ้ำๆ ต้องไม่เกิดค่าปั้นซ้อนกันหลายบรรทัด */
+  var oldC=-1; if(l.cid) CART.forEach(function(x,i){ if(x.kind==='comb'&&String(x.from||'')===String(l.cid)) oldC=i; });
+  if(combLine){ if(oldC>=0)CART[oldC]=combLine; else CART.push(combLine); }
+  else if(oldC>=0) CART.splice(oldC,1);
+  closeLine(); renderCart(); if(LEDIT==null)toast(combLine?'เพิ่มลงบิลแล้ว (ค่าต่อ + ค่าปั้น)':'เพิ่มลงบิลแล้ว'); }
 function closeLine(){ QNOSHOW=null; RS=null; RSSLIP=null; document.getElementById('lineModal').classList.remove('show'); LD=null; LEDIT=null; }
 
 /* ===================================================================
@@ -717,7 +738,11 @@ function closeLine(){ QNOSHOW=null; RS=null; RSSLIP=null; document.getElementByI
  * =================================================================== */
 function clearCart(){ CART=[]; QGUIDE=[]; QGTECH=''; window._disc=0; window._recv=0; window._split=false; window._p2a=0; window._slips=[]; window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName=''; PAY='เงินสด';
   var cn=document.getElementById('cName'); if(cn)cn.value=''; var cp=document.getElementById('cPhone'); if(cp)cp.value=''; renderCart(); toast('ล้างบิลแล้ว'); }
-function delLine(i){ CART.splice(i,1); renderCart(); }
+function delLine(i){ var l=CART[i]||{};
+  CART.splice(i,1);
+  /* ลบบรรทัดต่อผมแม่ ต้องลบค่าปั้นที่พ่วงมาด้วย ไม่ให้เหลือค่าปั้นลอยในบิล */
+  if(l.cid) for(var k=CART.length-1;k>=0;k--){ if(CART[k].kind==='comb'&&String(CART[k].from||'')===String(l.cid)) CART.splice(k,1); }
+  renderCart(); }
 function editLine(i){ if(CART[i].kind==='product')openProductEdit(i); else openLine(null,null,i); }
 function prodQty(l){ return Math.max(1, Math.round(Number(l.qty_mad)||1)); }
 function lineTotal(l){ if(l.kind==='product') return Math.round((l.mode==='ext'?(Number(l.extPrice)||0):(Number(l.plainPrice)||0))*prodQty(l)); return Number(l.price)||0; }
@@ -1184,7 +1209,10 @@ function renderQueueActions(){ var w=document.getElementById('qAct'); if(!w||!QB
  * การจัดการคิวทั้งหมดอยู่ที่ POS ที่เดียว · หน้า Admin เหลือไว้ดูอย่างเดียว
  * ใช้แถวคิวเดิม มัดจำและสลิปโอนเงินเดิมจึงติดไปด้วย ไม่ต้องให้ลูกค้าโอนใหม่
  * ลูกค้าเลื่อนเองไม่ได้ ต้องโทรมาให้ร้านเลื่อนให้ (หน้าจองไม่มีปุ่มนี้) */
-var RS=null, RSSLIP=null;
+var RS=null, RSSLIP=null, RSTODAY='';
+/* วันที่ของเซิร์ฟเวอร์ ณ ตอนกดเลื่อนคิว — แท็บหน้าร้านมักเปิดค้างข้ามวัน
+ * ถ้าใช้ DATA.today ที่โหลดมาตอนเปิดหน้า ปฏิทินจะชี้ "วันนี้" ผิดวัน และวันที่ผ่านมาแล้วยังกดได้ */
+function rsToday(){ return RSTODAY||(DATA&&DATA.today)||localToday(); }
 /* วันที่ "วันนี้" ตามเวลาเครื่อง — ห้ามใช้ toISOString() เพราะนั่นคือ UTC ไทยจะเพี้ยนไป 1 วันช่วงเช้ามืด */
 function localToday(){ var d=new Date();
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -1199,9 +1227,14 @@ function rsPick(t){ RS.start=t; renderResched(); }
 function rsLoadMonth(){ if(!RS||!RS.booking||!RS.month) return;
   var b=RS.booking, key=RS.month;
   RS.days=null; renderResched();
-  api('bookMonth',{ month:key, mode:(b.variant_id?'new':'byob'), service_id:b.service_id,
-    variant_id:b.variant_id, qty_mad:b.qty_mad, tech_id:(RS.tech||'any') })
+  /* เซิร์ฟเวอร์ต้องได้ year + month(0=ม.ค.) — ส่ง 'YYYY-MM' เฉยๆ เคยทำให้คีย์วันเพี้ยนทั้งเดือน
+   * ส่ง month เดิมไปด้วยเพื่อให้เข้ากันได้กับเวอร์ชันเซิร์ฟเวอร์ที่รับสองแบบ */
+  api('bookMonth',{ year:Number(key.slice(0,4)), month:Number(key.slice(5,7))-1,
+    mode:(b.variant_id?'new':'byob'), service_id:b.service_id,
+    variant_id:b.variant_id, qty_mad:b.qty_mad, rm_addon_id:(b.rm_addon_id||''),
+    tech_id:(RS.tech||'any'), exclude_id:RS.id })
     .then(function(r){ if(!RS||RS.month!==key) return;     /* ผู้ใช้เปลี่ยนเดือนไปแล้ว ทิ้งผลเก่า */
+      if(r&&r.ok&&r.data&&r.data.today) RSTODAY=String(r.data.today);   /* แท็บที่เปิดค้างหลายวันจะได้ไม่เพี้ยน */
       RS.days=(r&&r.ok&&r.data&&r.data.days)?r.data.days:{}; renderResched(); })
     .catch(function(){ if(RS){ RS.days={}; renderResched(); } }); }
 function rsShiftMonth(n){ if(!RS||!RS.month)return;
@@ -1212,8 +1245,8 @@ function rsCal(){
   var TH=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
   var y=Number(RS.month.slice(0,4)), m=Number(RS.month.slice(5,7))-1;
   var first=new Date(y,m,1), nDays=new Date(y,m+1,0).getDate(), lead=first.getDay();
-  /* ใช้วันที่ของเซิร์ฟเวอร์ก่อน — แท็บเล็ตหน้าร้านตั้งนาฬิกาผิดได้ */
-  var todayStr=(DATA&&DATA.today)||localToday(), nowKey=todayStr.slice(0,7);
+  /* ใช้วันที่ของเซิร์ฟเวอร์ก่อน — แท็บเล็ตหน้าร้านตั้งนาฬิกาผิดได้ และแท็บเปิดค้างข้ามวันได้ */
+  var todayStr=rsToday(), nowKey=todayStr.slice(0,7);
   var h='<div class="cal-wrap"><div class="cal-head">'+
     '<button type="button" class="cal-nav" onclick="rsShiftMonth(-1)"'+(RS.month<=nowKey?' disabled':'')+'>‹</button>'+
     '<b>'+TH[m]+' '+(y+543)+'</b>'+
@@ -1239,12 +1272,27 @@ function rsLoadSlots(){ if(!RS||!RS.booking||!RS.date) return;
   RS.slots=null; renderResched();
   var b=RS.booking, want=RS.date;
   api('bookAvailability',{date:RS.date,tech_id:(RS.tech||'any'),
-    mode:(b.variant_id?'new':'byob'), service_id:b.service_id, variant_id:b.variant_id, qty_mad:b.qty_mad})
+    mode:(b.variant_id?'new':'byob'), service_id:b.service_id, variant_id:b.variant_id, qty_mad:b.qty_mad,
+    rm_addon_id:(b.rm_addon_id||''), exclude_id:RS.id})   /* ไม่ให้คิวตัวเองกันเวลาตัวเอง */
     .then(function(r){ if(!RS||RS.date!==want) return;
       RS.slots=(r&&r.ok&&r.data&&r.data.slots)?r.data.slots:[];
       RS.holiday=!!(r&&r.ok&&r.data&&r.data.holiday); RS.hreason=(r&&r.ok&&r.data&&r.data.reason)||'';
+      RS.diag=(r&&r.ok&&r.data&&r.data.techs)?r.data.techs:null;
+      RS.dur=(r&&r.ok&&r.data)?Number(r.data.durationMin)||0:0;
+      if(r&&r.ok&&r.data&&r.data.today) RSTODAY=String(r.data.today);
       renderResched(); })
     .catch(function(){ if(RS){ RS.slots=[]; renderResched(); } }); }
+/* บอกเหตุผลว่าเวลาที่หายไปติดอะไร — พนักงานไม่ต้องเดา/ไม่ต้องไปเปิดชีตดู
+ * แสดงแค่เวลาทำงานกับช่วงที่มีคิวอยู่ ไม่มีข้อมูลต้นทุนหรือส่วนต่างราคาในนี้ */
+function rsWhy(){ if(!RS||!RS.diag||!RS.diag.length) return '';
+  var dur=Number(RS.dur)||0;
+  var h='<div class="mini" style="margin-top:8px;line-height:1.7">'+
+        (dur>0?('งานนี้ใช้เวลา '+Math.floor(dur/60)+' ชม.'+(dur%60?' '+(dur%60)+' นาที':'')+' · '):'');
+  h+=RS.diag.map(function(t){
+    var bz=(t.busy||[]).map(function(r){ return esc(r.start)+'–'+esc(r.end); }).join(', ');
+    return esc(t.tech_name||t.tech_id)+' เข้างาน '+esc(t.open)+'–'+esc(t.close)+(bz?(' · ติดคิว '+bz):' · ยังไม่มีคิว');
+  }).join('<br>');
+  return h+'</div>'; }
 function renderResched(){ var box=document.getElementById('qAct'); if(!box||!RS) return;
   var b=RS.booking, fee=b.resched_fee||{}, dep=Number(b.deposit)||0;
   /* ข้อมูลเกณฑ์ขาดไม่ควรโชว์คำว่า undefined ให้คนที่กำลังตัดสินใจเรื่องเงิน */
@@ -1267,6 +1315,7 @@ function renderResched(){ var box=document.getElementById('qAct'); if(!box||!RS)
   else if(!RS.slots.length){ h+='<div class="insrow ins-warn">วันนี้ไม่มีเวลาว่างพอสำหรับงานนี้ — เลือกวันอื่นหรือเปลี่ยนช่าง</div>'; }
   else { h+='<div class="rsslots">'+RS.slots.map(function(x){
       return '<button type="button" class="rsslot'+(RS.start===x.time?' on':'')+'" onclick="rsPick(\''+esc(x.time)+'\')">'+esc(x.time)+'</button>'; }).join('')+'</div>'; }
+  h+=rsWhy();
   /* มัดจำ: ระบบคิดให้ตามเกณฑ์ แต่แก้ทับได้ตามดุลพินิจ */
   var sug=Number(fee.forfeit)||0;
   h+='<div class="rsfee"><div class="mini" style="margin:0 0 6px">'+
