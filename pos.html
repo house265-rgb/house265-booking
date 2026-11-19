@@ -312,7 +312,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P90-RS'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P92-NOTE'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='',DATA=null,FULL=false,CART=[],CAT='ต่อผม',PAY='เงินสด',BUSY=false,USERTECH='';
 window._disc=0; window._recv=0; window._split=false; window._p2m='พร้อมเพย์'; window._p2a=0; window._slips=[];
 window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName='';
@@ -744,6 +744,10 @@ function delLine(i){ var l=CART[i]||{};
   if(l.cid) for(var k=CART.length-1;k>=0;k--){ if(CART[k].kind==='comb'&&String(CART[k].from||'')===String(l.cid)) CART.splice(k,1); }
   renderCart(); }
 function editLine(i){ if(CART[i].kind==='product')openProductEdit(i); else openLine(null,null,i); }
+/* ชื่อรายการที่คนตรวจบิลต้องเข้าใจทันที — งานปั้นช่อต้องขึ้นต้นว่า "ปั้นช่อ"
+ * ไม่งั้นในบิลจะเห็นแค่ "ขนนก" เหมือนค่าต่อผม แยกไม่ออกว่าบรรทัดไหนคืออะไร
+ * ❗ นิยามเดียว ใช้ทั้งสรุปบิลหน้า POS · ใบเสร็จตอนขาย · ใบเสร็จพิมพ์ซ้ำ */
+function lineTitle(kind,name){ return (String(kind||'')==='comb')?('ปั้นช่อ '+String(name||'')):String(name||''); }
 function prodQty(l){ return Math.max(1, Math.round(Number(l.qty_mad)||1)); }
 function lineTotal(l){ if(l.kind==='product') return Math.round((l.mode==='ext'?(Number(l.extPrice)||0):(Number(l.plainPrice)||0))*prodQty(l)); return Number(l.price)||0; }
 function lineDisc(l){ return Math.max(0, Math.min(lineTotal(l), Math.round(Number(l.disc)||0))); } /* ส่วนลดพิเศษเฉพาะรายการ */
@@ -822,9 +826,12 @@ function renderCart(){ var box=document.getElementById('cartBody');
     if(l.kind==='product'){ if(l.hair_type)det.push(l.hair_type); if(l.length_in)det.push(l.length_in+'นิ้ว'); if(l.grade)det.push('เกรด '+l.grade); if(l.texture)det.push(l.texture); if(l.color)det.push('สี '+l.color); det.push(qtyTag(l.hair_type,prodQty(l),lineStrands(l))); if(l.barcode)det.push(l.barcode);
       if(l.mode==='ext'){ tag='<span style="color:var(--gold-soft);font-size:11px;background:var(--gold-ghost);border:1px solid var(--gold-dim);border-radius:6px;padding:1px 6px;margin-left:4px">✂️ ต่อผม'+(lineTechNames(l)?(' · '+esc(lineTechNames(l))):'')+'</span>'; }
       else { tag='<span style="color:var(--faint);font-size:11px;margin-left:4px">· ขายเปล่า</span>'; }
+    } else if(l.kind==='comb'){ /* ปั้นช่อ — คนละงานกับต่อผม ต้องอ่านออกทันทีตอนตรวจบิล */
+      det.push('ส่งปั้นช่อ'); det.push(qtyTag(l.technique||l.item,l.qty||1));
+      var tnc=lineTechNames(l); det.push(tnc?('ช่างร้านปั้น · '+tnc):'ส่งโรงงานปั้น');
     } else { if(l.kind==='custom')det.push((l.qty||1)+' ชิ้น'); else if(l.kind==='removal')det.push('เหมา'); else { det.push('นำผมมาเอง'); if(l.size)det.push(/^\d+$/.test(String(l.size))?(l.size+'นิ้ว'):l.size); if(l.color)det.push('สี '+l.color); det.push(qtyTag(l.technique||l.item,l.qty||1)); } var tn=lineTechNames(l); if(tn)det.push('ช่าง '+tn); }
     var ld=lineDisc(l); var priceHtml=ld>0?('<span style="text-decoration:line-through;color:var(--faint);font-size:12px">'+fmt(lineTotal(l))+'</span> <span class="mono" style="color:var(--gold-soft)">'+fmt(lineNet(l))+'</span>'):('<span class="mono" style="color:var(--gold-soft)">'+fmt(lineTotal(l))+'</span>');
-    return '<div style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)"><div style="flex:1;min-width:0;cursor:pointer" onclick="editLine('+i+')"><b style="font-weight:500">'+esc(l.kind==='product'?l.name:l.item)+'</b>'+tag+' <span style="color:var(--gold);font-size:12px">✎</span><div class="mini" style="margin-top:2px">'+esc(det.join(' · '))+(ld>0?(' · <span style="color:var(--gold-soft)">ลดพิเศษ -'+fmt(ld)+'</span>'):'')+'</div></div><div style="text-align:right">'+priceHtml+'</div><button class="x" onclick="delLine('+i+')">✕</button></div>';
+    return '<div style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)"><div style="flex:1;min-width:0;cursor:pointer" onclick="editLine('+i+')"><b style="font-weight:500">'+esc(lineTitle(l.kind,(l.kind==='product'?l.name:l.item)))+'</b>'+tag+' <span style="color:var(--gold);font-size:12px">✎</span><div class="mini" style="margin-top:2px">'+esc(det.join(' · '))+(ld>0?(' · <span style="color:var(--gold-soft)">ลดพิเศษ -'+fmt(ld)+'</span>'):'')+'</div></div><div style="text-align:right">'+priceHtml+'</div><button class="x" onclick="delLine('+i+')">✕</button></div>';
   }).join('');
   var gross=CART.reduce(function(a,l){return a+lineTotal(l);},0), ldTot=cartLineDisc(), sub=cartSub(), disc=window._disc||0, dep=cartDeposit(), due=cartDue();
   var pay=promoBar()+
@@ -980,14 +987,15 @@ function finishSale(rc){ showReceipt(rc); CART=[]; QGUIDE=[]; QGTECH=''; window.
 function showReceipt(rc){ document.getElementById('rcpt').innerHTML=receiptHtml(rc); document.getElementById('rcptModal').classList.add('show'); }
 /* เลย์เอาต์ใบเสร็จ — ใช้ร่วมกันระหว่าง "ออกใบเสร็จตอนขาย" กับ "เปิดบิลย้อนหลัง/พิมพ์ซ้ำ" จะได้ตรงกันเสมอ */
 function receiptHtml(rc){ var h='<h3>'+esc(rc.shopName)+'</h3><div class="c">ใบเสร็จรับเงิน</div><div class="c">'+esc(rc.bill)+' · '+esc(rc.datetime)+'</div><div class="c">ลูกค้า: '+esc(rc.customer)+'</div><div class="hr"></div>';
-  (rc.lines||[]).forEach(function(l){ var isP=(l.type==='product'), det=[];
-    if(l.byob) det.push('นำผมมาเอง');
+  (rc.lines||[]).forEach(function(l){ var isP=(l.type==='product'), isComb=(String(l.type||'')==='comb'), det=[];
+    if(isComb) det.push('ส่งปั้นช่อ'); else if(l.byob) det.push('นำผมมาเอง');
     if(!isP && l.size) det.push(/^\d+$/.test(String(l.size))?(l.size+'นิ้ว'):l.size);
     if(l.color) det.push('สี '+l.color);
     /* ใช้ป้ายจำนวนที่เซิร์ฟเวอร์คิดมา (รู้ช่อจริงของล็อตที่ขายไป) ไม่มีค่อยคิดเอง */
     var q=(l.type==='removal')?'เหมา':(l.qty_label||qtyTag(l.unit_ref||l.item,l.qty,l.strands_per_qr)); if(q)det.push(q);
-    if(l.tech) det.push('ช่าง '+l.tech); else if(l.ext) det.push('ต่อผม');
-    h+='<div class="rr"><span>'+esc(l.item)+'</span><span>'+fmt(l.price)+'</span></div>';
+    if(isComb) det.push(l.tech?('ช่างร้านปั้น · '+l.tech):'ส่งโรงงานปั้น');
+    else if(l.tech) det.push('ช่าง '+l.tech); else if(l.ext) det.push('ต่อผม');
+    h+='<div class="rr"><span>'+esc(lineTitle(l.type,l.item))+'</span><span>'+fmt(l.price)+'</span></div>';
     if(det.length) h+='<div class="rr sub"><span>'+esc(det.join(' · '))+'</span><span></span></div>';
     if(Number(l.disc)>0) h+='<div class="rr sub"><span>ส่วนลดพิเศษ</span><span>-'+fmt(l.disc)+'</span></div>';
   });
@@ -1065,7 +1073,8 @@ function rcFromDetail(d){ var s=d.sale||{};
   return { bill:s.sale_id, datetime:String(s.datetime||'').replace('T',' ').slice(0,16), shopName:s.shopName||'House265',
     customer:s.customer||'ลูกค้า', cashier:s.cashier||'',
     lines:(d.items||[]).map(function(it){ return { type:it.line_type, item:it.name, size:it.size, color:it.color,
-      qty:it.qty, unit_ref:it.name, byob:it.byob, ext:it.ext, tech:it.tech,
+      qty:it.qty, qty_label:it.qty_label, strands_per_qr:it.strands_per_qr,   /* ป้ายจำนวนที่เซิร์ฟเวอร์คิดมาแล้ว (รู้ช่อจริงของล็อต) */
+      unit_ref:it.name, byob:it.byob, ext:it.ext, tech:it.tech,
       price:(it.gross!=null?it.gross:it.amount), disc:it.disc, net:it.amount }; }),
     gross:(s.gross!=null?s.gross:s.subtotal), lineDiscTotal:s.lineDiscTotal||0,
     subtotal:s.subtotal, discount:s.discount, discount_name:s.discount_name||'',
@@ -1173,6 +1182,7 @@ function qRow(b){ return '<div class="sliprow" style="cursor:pointer;align-items
   '<div style="text-align:center;min-width:54px"><b style="color:var(--gold-soft);font-size:16px">'+esc(b.start||'--')+'</b><div class="mini">'+esc(b.end||'')+'</div></div>'+
   '<div class="meta"><b style="font-weight:500">'+esc(b.name||'ลูกค้า')+'</b> <span class="faint">'+esc(b.booking_id)+'</span>'+
   '<div class="mini" style="margin-top:2px">'+esc(b.detail||'')+qtyChip(b)+(b.tech_name?(' · '+esc(b.tech_name)):'')+'</div>'+
+  (b.customer_note?('<div class="mini" style="margin-top:3px;color:var(--gold-soft)">📝 '+esc(b.customer_note)+'</div>'):'')+
   '<div style="margin-top:5px">'+qStatusBadge(b.status)+(b.deposit>0?(' <span class="mini">มัดจำ '+fmt(b.deposit)+'฿</span>'):'')+'</div></div>'+
   '<div style="text-align:right;white-space:nowrap"><b style="color:var(--gold-soft);font-size:16px">'+fmt(b.suggest_total)+'</b> <span class="faint">฿</span><div class="mini" style="color:var(--gold)">จัดการ ›</div></div></div>'; }
 function openQueueBooking(id){ QCANCEL=false; RS=null; RSSLIP=null; var body=document.getElementById('lmBody'); document.getElementById('lmTitle').innerText='คิว '+id;
@@ -1185,6 +1195,8 @@ function openQueueBooking(id){ QCANCEL=false; RS=null; RSSLIP=null; var body=doc
        '<span class="pill">บริการ <b>'+esc(bk.detail||(svcById(bk.service_id)||{}).acct_name||'-')+'</b></span>'+
        (v?('<span class="pill">ผม <b>'+esc(v.hair_type)+' '+esc(v.length_in)+'นิ้ว</b></span>'+(v.grade?('<span class="pill">เกรด <b>'+esc(v.grade)+'</b></span>'):'')+(v.texture?('<span class="pill">'+esc(v.texture)+'</span>'):'')+(v.color?('<span class="pill">สี <b>'+esc(v.color)+'</b></span>'):'')):'')+
        '<span class="pill">จำนวน <b>'+qtyTag(bk.technique||(v&&v.hair_type),bk.qty_mad,(v&&Number(v.strands_per_mad))||strandsOfVariant(bk.variant_id))+'</b></span></div>';
+    /* หมายเหตุของลูกค้า — ช่างต้องเห็นก่อนลงมือ (แพ้สารเคมี · ขอช่างผู้หญิง · มาสาย) */
+    if(bk.customer_note) h+='<div class="insrow" style="margin-top:10px;border-color:var(--gold-dim);background:var(--gold-ghost)"><b>📝 หมายเหตุจากลูกค้า</b><br>'+esc(bk.customer_note).replace(/\n/g,'<br>')+'</div>';
     h+='<div class="tot"><span>ยอดประเมิน</span><b>'+fmt(bk.suggest_total)+' ฿</b></div>';
     h+='<div class="tot"><span>มัดจำที่ชำระแล้ว</span><b style="color:var(--ok)">'+fmt(bk.deposit)+' ฿</b></div>';
     h+='<div class="tot grand"><span>คงเหลือเก็บหน้าร้าน</span><b>'+fmt(Math.max(0,Number(bk.suggest_total)-Number(bk.deposit)))+'</b></div>';

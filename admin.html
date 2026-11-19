@@ -397,7 +397,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P90-RS'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P92-NOTE'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='', SCHED=null, SETTINGS=null, TAB='dash', FULL=false, ROLE='', MYTECH='';
 var THD=['อา','จ','อ','พ','พฤ','ศ','ส'];
 /* ===== สถานะ "กำลังทำงาน" — ใช้ร่วมกันทุกหน้า (admin / pos / receive / Booking) =====
@@ -1134,6 +1134,7 @@ function qBk(b){ var parts=[];
     '<div class="info"><b>'+esc(b.name||'ลูกค้า')+'</b>'+statusBadge(b.status)+'<span class="badge tech">✂ '+esc(b.tech_name||'—')+'</span>'+
     '<div class="bd">'+spec+'</div>'+
     '<div class="bd">📞 '+esc(b.phone||'-')+' · มัดจำ '+fmt(b.deposit)+' ฿ · ยอด '+fmt(b.suggest_total)+' ฿</div>'+
+    (b.customer_note?('<div class="bd" style="color:var(--gold-soft)">📝 '+esc(b.customer_note)+'</div>'):'')+
     (Number(b.reschedule_count)>0?('<div class="bd" style="color:var(--warn)">🔁 เลื่อนมาแล้ว '+Number(b.reschedule_count)+' ครั้ง</div>'):'')+
     /* ผิดนัด: ผู้จัดการยกเลิกให้ได้ ถ้าพนักงานกดผิดคิวหรือลูกค้ามาสาย */
     (b.status==='ไม่มาตามนัด'

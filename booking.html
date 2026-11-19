@@ -82,10 +82,13 @@
 
   .lbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:22px 0 10px;display:block}
   .lbl .en{text-transform:none;letter-spacing:0;color:var(--faint);opacity:.8}
-  select,input{width:100%;padding:14px;border:1px solid var(--line-soft);background:var(--panel);
+  select,input,textarea{width:100%;padding:14px;border:1px solid var(--line-soft);background:var(--panel);
     color:var(--fg);font-size:16px;font-family:var(--f-body);border-radius:10px;outline:none;margin-bottom:10px}
-  select:focus,input:focus{border-color:var(--gold)}
-  input::placeholder{color:var(--faint)}
+  textarea{resize:vertical;line-height:1.5;min-height:84px}
+  select:focus,input:focus,textarea:focus{border-color:var(--gold)}
+  input::placeholder,textarea::placeholder{color:var(--faint)}
+  /* คำอธิบายใต้ช่องกรอก — ต้องจางกว่าตัวอักษรที่ลูกค้าพิมพ์ จะได้รู้ว่าเป็นคำแนะนำ ไม่ใช่ข้อความที่ต้องอ่านทุกบรรทัด */
+  .hint{font-size:11.5px;color:var(--faint);line-height:1.6;margin:-4px 0 12px;padding:0 2px}
 
   .note{font-size:12.5px;color:var(--muted);background:var(--panel);border:1px solid var(--line-soft);
     border-radius:10px;padding:12px 14px;margin-top:6px}
@@ -334,6 +337,10 @@ button:disabled{cursor:not-allowed}
       <input type="text" id="cName" placeholder="ชื่อ - นามสกุล">
       <input type="tel" id="cPhone" placeholder="เบอร์โทรศัพท์ติดต่อ">
       <input type="text" id="cLine" placeholder="ชื่อ / LINE ID (ไม่บังคับ)">
+      <!-- หมายเหตุถึงร้าน — ไม่บังคับ · ลูกค้าหลายคนมีเรื่องอยากบอกก่อนมา (แพ้สารเคมี ขอช่างผู้หญิง มาสาย)
+           เดิมต้องโทรบอกทีหลัง ร้านจดไม่ทันบ้าง · ข้อความนี้ไปโผล่ที่การ์ดคิวในหน้า POS ให้ช่างอ่านก่อนลงมือ -->
+      <textarea id="cNote" rows="3" maxlength="300" placeholder="เช่น ขอช่างผู้หญิง · แพ้กลิ่นน้ำยา · มาถึงประมาณ 19:45 · ขอที่จอดรถ"></textarea>
+      <div class="hint" id="noteHint">ไม่จำเป็นต้องกรอก เว้นว่างได้ — มีอะไรอยากบอกร้านหรือช่างก่อนถึงวันนัด พิมพ์ไว้ตรงนี้ได้เลย (ไม่เกิน 300 ตัวอักษร)</div>
       <div class="pricebox" id="priceBox"></div>
       <div class="qr-box">
         <div class="t" id="depLabel">สแกนจ่ายมัดจำ</div>
@@ -418,7 +425,7 @@ function _busyOff(btn){ _BUSY=Math.max(0,_BUSY-1); if(!_BUSY) _busyBar(false);
  * มือถือลูกค้า (โดยเฉพาะเบราว์เซอร์ใน LINE) แคชหน้าเว็บไว้นานมาก หน้าเก่าคุยกับหลังบ้านใหม่
  * แล้วใบจองโหว่โดยไม่มีใครรู้ (เกิดจริง 16 พ.ย. 2026 — ใบจองขึ้นช่องว่างกับคำว่า undefined)
  * จึงโหลดใหม่ให้เงียบ ๆ ครั้งเดียว ถ้ายังไม่ตรงอีกค่อยบอกลูกค้าให้ติดต่อร้าน */
-var BUILD='P90-RS';
+var BUILD='P92-NOTE';
 function checkStale_(){
   var sv=String((CAT&&CAT.version)||'').trim(); if(!sv||sv===BUILD) return;
   var k='h265_reload_'+sv, tried=false;
@@ -1047,6 +1054,7 @@ function fileDataUrl(file){ return new Promise(function(res,rej){ var r=new File
 function doSubmit(){ var btn=document.getElementById('nextBtn'); btn.disabled=true; btn.innerText='กำลังจอง…';
   var file=document.getElementById('slip')&&document.getElementById('slip').files[0];
   var go=function(slipUrl){ var payload=Object.assign(selForServer(),{ date:STATE.date, start:STATE.startTime, name:v('cName'), phone:v('cPhone'), line_id:v('cLine'),
+      customer_note:v('cNote'),
       lineUserId:(LINE_PROFILE&&LINE_PROFILE.userId)||'', slipDataUrl:slipUrl||'' });
     callApi('createBooking',payload).then(onBooked).catch(function(){ showMsg('เกิดข้อผิดพลาด กรุณาลองใหม่'); btn.disabled=false; btn.innerText='ยืนยันการจอง'; }); };
   if(file){ fileDataUrl(file).then(go).catch(function(){ go(''); }); } else go(''); }
@@ -1072,6 +1080,8 @@ function onBooked(res){ var btn=document.getElementById('nextBtn'); btn.disabled
     srow('รหัสคิว',b.booking_id)+srow('ชื่อผู้จอง',b.name||v('cName'))+srow('วันที่',toDMY(b.date||STATE.date))+srow('เวลา',tm)+
     srow('ช่าง',b.tech_name||(STATE.techId==='any'?'ร้านจัดให้':STATE.techName))+
     srow('รายการ',b.label||((EST&&EST.label)||''))+
+    /* โชว์หมายเหตุกลับให้ลูกค้าเห็นด้วย = หลักฐานว่าข้อความถึงร้านแล้ว */
+    ((b.customer_note||v('cNote'))?srow('หมายเหตุถึงร้าน',b.customer_note||v('cNote')):'')+
     '<div class="srow"><span>มัดจำ (ชำระแล้ว)</span><b style="color:var(--ok)">'+fmt(dep)+' ฿</b></div>'+
     '<div class="srow"><span>คงเหลือหน้าร้าน</span><b style="color:var(--gold-soft)">'+fmt(rem)+' ฿</b></div>';
   document.getElementById('ticketModal').style.display='flex'; }
