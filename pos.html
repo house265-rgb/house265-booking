@@ -312,7 +312,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P87-COMMFIX'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P89-COMB'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='',DATA=null,FULL=false,CART=[],CAT='ต่อผม',PAY='เงินสด',BUSY=false,USERTECH='';
 window._disc=0; window._recv=0; window._split=false; window._p2m='พร้อมเพย์'; window._p2a=0; window._slips=[];
 window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName='';
@@ -381,8 +381,14 @@ function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMon
 /* ---- catalog helpers ---- */
 function svcByAcct(a){ return (DATA.services||[]).filter(function(s){return String(s.acct_name)===a;})[0]; }
 /* หน่วยขาย: 1 QR = 50g = หน่วยเล็กสุด · แสดงเป็น ช่อ/มัด ตามเทค (เหมือนหน้าจองลูกค้า) */
-function sellUnitOf(acct){ var s=svcByAcct(techniqueFor(acct)); var su=String((s&&s.sell_unit)||'').trim(); if(su==='ช่อ'||su==='มัด')return su; return (Number(s&&s.strands_per_mad)>0)?'ช่อ':'มัด'; }
-function amtPerQrOf(acct){ var s=svcByAcct(techniqueFor(acct)); return (sellUnitOf(acct)==='ช่อ')?(Number(s&&s.strands_per_mad)||100):0.5; }
+/* หน่วยที่โชว์ให้คนอ่าน — ภายในนับเป็น QR เสมอ (ต้องตรงกับ svcSellUnit_/svcAmtPerQr_ ฝั่งเซิร์ฟเวอร์) */
+function sellUnitOf(acct){ var s=svcByAcct(techniqueFor(acct)); var su=String((s&&s.sell_unit)||'').trim().toLowerCase();
+  if(su==='ช่อ')return 'ช่อ'; if(su==='มัด')return 'มัด'; if(su==='กรัม'||su==='g')return 'กรัม';
+  return (Number(s&&s.strands_per_mad)>0)?'ช่อ':'มัด'; }
+function amtPerQrOf(acct){ var s=svcByAcct(techniqueFor(acct)), u=sellUnitOf(acct);
+  if(u==='ช่อ') return Number(s&&s.strands_per_mad)||100;
+  if(u==='กรัม') return Number(s&&s.grams_per_mad)||50;
+  return 0.5; }
 /* ไม่รู้เทคนิค = บอกเป็น QR ตรง ๆ ดีกว่าเดาอัตราแปลงของบริการอื่นมาใช้ */
 /* strands = ช่อจริงต่อ 1 QR ของรุ่นนั้น (ผมรุ่นพิเศษอัดได้ 230–270 ช่อ ไม่ใช่ 100)
  * ไม่ส่งมา = ใช้ค่ากลางของเทคนิคเหมือนเดิม · ต้องตรงกับที่พิมพ์บนฉลาก QR เสมอ */
@@ -436,7 +442,7 @@ function commAsk(t,i,q,v){ if(!FULL)return; var k=cqKey(t,i,q,v);
 /* "ต่อผม" = สแกนแล้วคิดราคาบริการต่อ มีช่าง มีค่ามือ
  * "สินค้าอื่นๆ" = สแกนแล้วคิดราคาขายผมเปล่า ไม่ต้องระบุช่าง ไม่มีค่ามือ
  * แยกให้ชัดตั้งแต่แท็บ จะได้ไม่เลือกโหมดผิดตอนปิดบิล */
-var CATS=['ต่อผม','ถอดผม','ขยับปม','สินค้าอื่นๆ'];
+var CATS=['ต่อผม','ถอดผม','ขยับปม','ปั้นช่อ','สินค้าอื่นๆ'];
 var SCANMODE='ext';
 function buildCats(){ document.getElementById('cats').innerHTML=CATS.map(function(c){ return '<button class="cat'+(CAT===c?' on':'')+'" onclick="setCat(\''+c+'\')">'+esc(c)+'</button>'; }).join(''); }
 function setCat(c){ if(SCANNING)stopScan(); CAT=c; buildCats(); renderMenu(); }
@@ -470,6 +476,17 @@ function renderMenu(){ var box=document.getElementById('menuBody');
     h2+='<div class="grid">'+tile('➕','รายการกำหนดเอง','ตั้งราคาเอง','',"openLine('custom','')")+'</div>'+
       '<div class="mini" style="margin-top:12px">💡 สินค้าที่ไม่ใช่ผม เช่น แชมพู / ทรีตเมนต์ — เพิ่มเป็นรายการกำหนดเองไปก่อนได้</div>';
     box.innerHTML=h2; afterMenu(); return; }
+  if(CAT==='ปั้นช่อ'){
+    /* ลูกค้าส่งผมมาให้ร้านปั้นช่ออย่างเดียว ยังไม่ต่อ — ไม่ใช้สต็อกร้าน ไม่มีค่ามือต่อ
+     * เทคนิคที่ยังไม่ตั้งราคาค่าปั้นในชีต Services จะไม่โชว์ จะได้ไม่เผลอขายราคา 0 */
+    var cs=(DATA.services||[]).filter(function(x){ return Number(x.comb_price_per_mad)>0; });
+    var h3='<div style="margin:6px 2px 8px"><b style="font-weight:500;font-size:14px">🧵 บริการปั้นช่อ — ลูกค้าส่งผมมาให้ร้านปั้น</b>'+
+      '<div class="mini">ผมเป็นของลูกค้า · ไม่ตัดสต็อกร้าน · ไม่มีค่ามือต่อผม<br>ถ้าลูกค้าต่อผมในบิลเดียวกันด้วย ให้ใส่ค่าปั้นในหน้าต่าง “นำผมมาเอง” แทน จะได้อยู่ในงานเดียวกัน</div></div>';
+    h3+='<div class="grid">'+(cs.length?cs.map(function(sv){
+        var a=String(sv.acct_name);
+        return tile('🧵', a, fmt(sv.comb_price_per_mad)+' ฿', 'ต่อ '+qtyTag(a,1), "openLine('comb','"+esc(a)+"')"); }).join('')
+      :'<div class="empty" style="grid-column:1/-1">ยังไม่ได้ตั้งราคาค่าปั้นช่อ — ใส่คอลัมน์ <b>comb_price_per_mad</b> ในชีต Services ก่อน</div>')+'</div>';
+    box.innerHTML=h3; afterMenu(); return; }
   if(CAT==='ถอดผม'){ box.innerHTML='<div class="grid">'+((DATA.removals||[]).map(function(r){ return tile('🧴',String(r.name),fmt(r.price)+' ฿','',"openLine('removal','"+esc(r.removal_id)+"')"); }).join('')||'<div class="empty" style="grid-column:1/-1">ยังไม่มีงานถอด</div>')+'</div>'; return; }
   /* ขยับปม */
   box.innerHTML='<div class="grid">'+(DATA.services||[]).map(function(s){ return tile('💆', String(s.acct_name), fmt(s.move_price)+' ฿','',"openLine('move','"+esc(s.acct_name)+"')"); }).join('')+'</div>';
@@ -598,7 +615,19 @@ function confirmProduct(){ var l=LD; var price=pdTotal();
   if(l.mode==='ext'){ var tc=l.techs.filter(function(t){return t.name;}); if(!tc.length && !FULL){ toast('เลือกช่างที่ต่อผม',1); return; }
     if(tc.length>1&&Math.round(pdSum())!==100){ toast('สัดส่วนช่างต้องรวม 100%',1); return; } l.techs=tc; }
   l.price=price; l.disc=Number((document.getElementById('lmDisc')||{}).value)||0;
-  if(LEDIT!=null)CART[LEDIT]=l; else CART.push(l); closeLine(); renderCart(); if(LEDIT==null)toast('เพิ่มลงบิลแล้ว'); }
+  /* ต้องตอบเรื่องปั้นช่อก่อน — เป็นเงินที่ลืมเก็บได้ง่ายที่สุดในเคสนำผมมาเอง */
+  if(l.kind==='service' && l.comb!==true && l.comb!==false){ toast('เลือกก่อนว่าผมชุดนี้ร้านปั้นช่อให้ด้วยหรือไม่',1); return; }
+  var combLine=null;
+  if(l.kind==='service' && l.comb===true){
+    var cq=Math.max(1,Math.round(Number(l.combQty)||1));
+    var cprice=Number(l.combPriceOverride)>0?Number(l.combPriceOverride):combPriceOf(l.technique||l.item,cq);
+    if(!(cprice>0)){ toast('ใส่ค่าปั้นช่อก่อน',1); return; }
+    combLine={ kind:'comb', item:String(l.technique||l.item), technique:String(l.technique||l.item),
+      qty:cq, price:cprice, size:'', disc:0, techs:(l.combTechs||[]) };
+  }
+  if(LEDIT!=null)CART[LEDIT]=l; else CART.push(l);
+  if(combLine) CART.push(combLine);
+  closeLine(); renderCart(); if(LEDIT==null)toast(combLine?'เพิ่มลงบิลแล้ว (ค่าต่อ + ค่าปั้น)':'เพิ่มลงบิลแล้ว'); }
 
 /* ===================================================================
  * SERVICE(ลูกค้าเอาผมมาเอง) / MOVE / REMOVAL / CUSTOM popup
@@ -607,7 +636,13 @@ function openLine(kind,key,editIndex){ LEDIT=(editIndex==null?null:editIndex);
   if(LEDIT!=null){ LD=JSON.parse(JSON.stringify(CART[editIndex])); if(!LD.techs||!LD.techs.length)LD.techs=[{name:USERTECH||'',split:100}]; }
   else { var base={kind:kind,qty:1,price:0,unit:0,techs:[{name:USERTECH||'',split:100}],size:'',technique:''};
     if(kind==='service'){ /* นำผมมาเอง (byob) — ตรงระบบจอง: byob_base + byob_per_bundle×qty · ไม่มีขนาด ไม่คิดค่าผม */
-      var sv=svcByAcct(key); base.item=key; base.technique=key; base.byobBase=Number(sv&&sv.byob_base)||0; base.byobPer=Number(sv&&sv.byob_per_bundle)||0; base.price=Math.round(base.byobBase+base.byobPer); }
+      var sv=svcByAcct(key); base.item=key; base.technique=key; base.byobBase=Number(sv&&sv.byob_base)||0; base.byobPer=Number(sv&&sv.byob_per_bundle)||0; base.price=Math.round(base.byobBase+base.byobPer);
+      /* ลูกค้าหลายรายส่งผมมาให้ร้านปั้นช่อก่อนแล้วค่อยมาต่อ — ต้องตอบก่อนเพิ่มลงบิล จะได้ไม่ลืมเก็บค่าปั้น */
+      base.comb=null; base.combQty=1; base.combAsked=false; }
+    else if(kind==='comb'){ /* ปั้นช่ออย่างเดียว — ไม่ได้ต่อ */
+      var sc=svcByAcct(key); base.item=key; base.technique=key;
+      base.combPrice=Number(sc&&sc.comb_price_per_mad)||0; base.price=Math.round(base.combPrice);
+      base.techs=[{name:'',split:100}]; }
     else if(kind==='move'){ /* ขยับปม — move_price + move_add×(qty−1) (รวมถอดแล้ว) */
       var sm=svcByAcct(key); base.item='ขยับปม'+key; base.technique=key; base.movePrice=Number(sm&&sm.move_price)||0; base.moveAdd=Number(sm&&sm.move_add)||0; base.price=base.movePrice; }
     else if(kind==='removal'){ /* ถอดผม — ราคาเหมา ไม่มีจำนวน */
@@ -616,7 +651,12 @@ function openLine(kind,key,editIndex){ LEDIT=(editIndex==null?null:editIndex);
     LD=base; }
   renderLine(); openModal(); }
 function lmRecalc(){ var l=LD; if(l.kind==='service')l.price=Math.round((l.byobBase||0)+(l.byobPer||0)*(l.qty||1));
-  else if(l.kind==='move')l.price=Math.round((l.movePrice||0)+(l.moveAdd||0)*((l.qty||1)-1)); }
+  else if(l.kind==='move')l.price=Math.round((l.movePrice||0)+(l.moveAdd||0)*((l.qty||1)-1));
+  else if(l.kind==='comb')l.price=Math.round((l.combPrice||0)*(l.qty||1)); }
+/* ปั้นช่อที่พ่วงมากับงานต่อผม — คนละจำนวนกับที่ต่อได้ */
+function lmCombSet(v){ LD.comb=v; LD.combAsked=true; if(v&&!(LD.combQty>0))LD.combQty=LD.qty||1; renderLine(); }
+function lmCombStep(d){ LD.combQty=Math.max(1,Math.round((Number(LD.combQty)||1)+d)); renderLine(); }
+function combPriceOf(acct,qr){ var sv=svcByAcct(techniqueFor(acct)); return Math.round((Number(sv&&sv.comb_price_per_mad)||0)*(Number(qr)||1)); }
 function lmStep(d){ if(LD.kind==='removal')return; LD.qty=Math.max(1,Math.round((Number(LD.qty)||1)+d)); lmRecalc(); renderLine(); }
 function lmSum(){ return LD.techs.reduce(function(a,t){return a+(Number(t.split)||0);},0); }
 function lmAddTech(){ LD.techs.push({name:'',split:0}); lmEven(); renderLine(); }
@@ -625,7 +665,8 @@ function lmName(i,v){ LD.techs[i].name=v; }
 function lmSplit(i,v){ LD.techs[i].split=v; renderLine(); }
 function lmEven(){ var n=LD.techs.length; if(n<=1){if(n)LD.techs[0].split=100;return;} var b=Math.floor(100/n); LD.techs.forEach(function(t,k){t.split=b+(k===0?(100-b*n):0);}); }
 function renderLine(){ var l=LD, multi=l.techs.length>1, sum=lmSum(); var h='';
-  var cqHint=(l.kind==='move'?' <span class="faint">(ต่อ×จำนวน + ถอดเหมา)</span>':(l.kind==='removal'?' <span class="faint">(เหมา)</span>':''));
+  var cqHint=(l.kind==='move'?' <span class="faint">(ต่อ×จำนวน + ถอดเหมา)</span>':(l.kind==='removal'?' <span class="faint">(เหมา)</span>':
+    (l.kind==='comb'?' <span class="faint">(ค่าปั้น · จ่ายเมื่อเลือกช่างร้าน)</span>':'')));
   if(l.kind==='custom'){ h+='<label class="lbl">ชื่อรายการ</label><input class="in" value="'+esc(l.item)+'" oninput="LD.item=this.value" placeholder="เช่น แชมพู / ทรีตเมนต์" style="margin-bottom:11px">'; }
   var qtyBlock='';
   if(l.kind==='removal'){ qtyBlock='<div style="flex:0 0 auto"><label class="lbl">งานถอด</label><div class="lockpill" style="margin:0">🧴 ราคาเหมา (ไม่คิดตามจำนวน)</div></div>'; }
@@ -635,10 +676,35 @@ function renderLine(){ var l=LD, multi=l.techs.length>1, sum=lmSum(); var h='';
   h+='<label class="lbl">ช่างที่ทำ'+(multi?(' · รวม '+sum+'%'+(Math.round(sum)!==100?' ⚠':'')):'')+'</label>';
   h+=l.techs.map(function(t,i){ return '<div class="tw"><select class="in" style="flex:1" onchange="lmName('+i+',this.value)">'+techOpts(t.name)+'</select>'+(multi?('<input class="in" type="number" style="width:56px;text-align:center" value="'+(t.split||0)+'" onchange="lmSplit('+i+',parseFloat(this.value)||0)"><span class="faint">%</span><button class="x" onclick="lmRmTech('+i+')">✕</button>'):'')+'</div>'; }).join('');
   h+='<button class="btn sec" style="width:auto;padding:6px 12px;font-size:12px;margin:2px 0 10px" onclick="lmAddTech()">+ เพิ่มช่างร่วม</button>';
+  if(l.kind==='comb') h+='<div class="mini" style="margin:-4px 0 10px;color:var(--faint)">เว้นช่องช่างไว้ = ส่งโรงงานข้างนอกปั้น · เลือกช่าง = ลงค่ามือปั้นให้ช่างคนนั้น</div>';
+  /* ===== งานต่อผมที่ลูกค้าเอาผมมาเอง: บังคับตอบว่ามีส่งปั้นช่อด้วยไหม =====
+   * เคสจริง: ลูกค้าส่งผมมาให้ร้านปั้นก่อน แล้วค่อยนัดมาต่อ · ถ้าไม่ถามตรงนี้จะลืมเก็บค่าปั้นทั้งก้อน */
+  if(l.kind==='service'){
+    var cp=combPriceOf(l.technique||l.item,1);
+    h+='<div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--line)">'+
+      '<label class="lbl">ผมชุดนี้ส่งให้ร้านปั้นช่อด้วยหรือไม่ <span style="color:var(--crit)">*</span></label>'+
+      '<div class="row2">'+
+        '<button type="button" class="btn sec'+(l.comb===false?' on':'')+'" style="'+(l.comb===false?'border-color:var(--gold);color:var(--gold-soft)':'')+'" onclick="lmCombSet(false)">ไม่มี — ลูกค้าปั้นมาแล้ว</button>'+
+        '<button type="button" class="btn sec'+(l.comb===true?' on':'')+'" style="'+(l.comb===true?'border-color:var(--gold);color:var(--gold-soft)':'')+'" onclick="lmCombSet(true)">มี — ร้านปั้นให้</button>'+
+      '</div>';
+    if(l.comb===true){
+      if(!(cp>0)) h+='<div class="warn" style="margin-top:10px">เทคนิคนี้ยังไม่ได้ตั้งราคาค่าปั้นช่อ (คอลัมน์ <b>comb_price_per_mad</b> ในชีต Services) — ใส่ราคาเองในช่องด้านล่างได้</div>';
+      h+='<div style="display:flex;align-items:flex-end;gap:12px;margin-top:10px">'+
+        '<div><label class="lbl">จำนวนที่ส่งปั้น <span class="faint" style="font-size:11px">('+esc(sellUnitOf(l.technique||l.item))+')</span></label>'+
+          '<div class="stp"><button onclick="lmCombStep(-1)">−</button><span class="v">'+esc(qtyTag(l.technique||l.item,l.combQty||1))+'</span><button onclick="lmCombStep(1)">＋</button></div></div>'+
+        '<div style="flex:1"><label class="lbl">ค่าปั้นช่อ (฿)</label>'+
+          '<input class="in" type="number" id="lmCombPrice" style="text-align:right" value="'+(Number(l.combPriceOverride)>0?l.combPriceOverride:combPriceOf(l.technique||l.item,l.combQty||1))+'" oninput="LD.combPriceOverride=Number(this.value)||0"></div>'+
+      '</div>'+
+      '<div class="mini" style="margin-top:6px;color:var(--faint)">จะเพิ่มเป็นอีก 1 บรรทัดในบิล แยกจากค่าต่อผม</div>';
+    }
+    h+='</div>';
+  }
   if(FULL) h+=commBoxHtml(l.kind,l.item,l.qty,cqHint,l.variant_id);
   h+='<div style="margin-top:12px"><label class="lbl">ส่วนลดพิเศษเฉพาะรายการนี้ (฿)</label><input class="in" type="number" id="lmDisc" value="'+(Number(l.disc)||'')+'" placeholder="0 (เว้นว่าง=ไม่ลด)"></div>';
   h+='<div class="row2" style="margin-top:16px"><button class="btn sec" onclick="closeLine()">ยกเลิก</button><button class="btn" onclick="confirmLine()">'+(LEDIT!=null?'บันทึก':'＋ เพิ่มลงบิล')+'</button></div>';
-  document.getElementById('lmBody').innerHTML=h; document.getElementById('lmTitle').innerText=(LEDIT!=null?'แก้ไขรายการ':esc(l.item||'รายการ'));
+  document.getElementById('lmBody').innerHTML=h;
+  document.getElementById('lmTitle').innerText=(LEDIT!=null?'แก้ไขรายการ'
+    :(l.kind==='comb'?('🧵 ปั้นช่อ — '+esc(l.item||'')):esc(l.item||'รายการ')));
   if(FULL) commAsk(l.kind,l.item,l.qty,l.variant_id); }
 function confirmLine(){ var l=LD; if(!l.item){ toast('กรอกชื่อรายการ',1); return; } if(!(Number(l.price)>0)){ toast('ใส่ราคา',1); return; }
   var tc=l.techs.filter(function(t){return t.name;}); if(tc.length>1&&Math.round(lmSum())!==100){ toast('สัดส่วนช่างต้องรวม 100%',1); return; }
@@ -870,7 +936,7 @@ function saveSale(){ if(BUSY)return; var sub=cartSub(), disc=window._disc||0, du
   var sale={ customer:(cn?cn.value:'')||'ลูกค้า', phone:(cp?cp.value.trim():''), discount:disc, payments:payments,
     booking_id:(window._bookingId||''), deposit_applied:cartDeposit(), note:(window._promoName?('โปร: '+window._promoName):''),
     lines:CART.map(function(l){ if(l.kind==='product') return {type:'product', variant_id:l.variant_id, barcode:l.barcode, qty_mad:prodQty(l), unitPrice:(l.mode==='ext'?l.extPrice:l.plainPrice), disc:lineDisc(l), ext:(l.mode==='ext'?{on:true,technique:l.technique,size:l.size,techs:l.techs.filter(function(t){return t.name;})}:{on:false})};
-      return {type:l.kind,item:l.item,size:l.size,qty_mad:l.qty,price:l.price,disc:lineDisc(l),techs:(l.techs||[]).filter(function(t){return t.name;})}; }) };
+      return {type:l.kind,item:l.item,technique:(l.technique||''),size:l.size,qty_mad:l.qty,price:l.price,disc:lineDisc(l),techs:(l.techs||[]).filter(function(t){return t.name;})}; }) };
   BUSY=true; var b=document.getElementById('btnSave'); if(b){b.disabled=true;b.innerHTML='⏳ กำลังบันทึก…';}
   var slips=(window._slips||[]).slice(); var slipMethod=(payments.filter(function(p){return p.method!=='เงินสด';})[0]||{}).method||'';
   api('createSale',sale).then(function(r){ BUSY=false; if(!r||!r.ok){ var bb=document.getElementById('btnSave'); if(bb){bb.disabled=false;bb.innerHTML='💾 บันทึกการขาย + ใบเสร็จ';} toast((r&&r.message)||'บันทึกไม่สำเร็จ',1); return; }
@@ -1358,6 +1424,7 @@ function guideSpec(g){ var l=g.line, p=[];
     if(l.length_in)p.push(l.length_in+'นิ้ว'); if(l.grade)p.push('เกรด '+l.grade); if(l.texture)p.push(l.texture); if(l.color)p.push('สี '+l.color);
     p.push(qtyTag(l.hair_type,Math.round(l.qty_mad||1),lineStrands(l))); }
   else if(l.kind==='removal'){ p.push(l.item); p.push(qtyTag(l.technique||l.item,l.qty||1)); }
+  else if(l.kind==='comb'){ p.push('ปั้นช่อให้ลูกค้า'); p.push(l.technique||l.item); p.push(qtyTag(l.technique||l.item,l.qty||1,lineStrands(l))); }
   else { p.push('นำผมมาเอง'); p.push(l.technique||l.item); if(l.size)p.push(l.size); if(l.color)p.push('สี '+l.color); p.push(qtyTag(l.technique||l.item,l.qty||1)); }
   return p.filter(Boolean).join(' : '); }
 function guideCardHtml(){ if(!QGUIDE.length)return '';

@@ -260,6 +260,8 @@ button:disabled{cursor:not-allowed}
   <header>
     <h1 id="shopName">House<span class="n">265</span></h1>
     <div class="sub" id="shopSub">Exclusive Hair Extensions</div>
+    <!-- ขึ้นเฉพาะตอนหน้านี้เก่ากว่าหลังบ้านและโหลดใหม่แล้วยังไม่ตรง -->
+    <div id="staleNote" style="display:none;margin-top:10px;padding:9px 12px;border:1px solid var(--gold-dim);border-radius:9px;font-size:12.5px;line-height:1.7;color:var(--gold-soft)"></div>
   </header>
 
   <div id="liffHi" class="liffhi" style="display:none">
@@ -411,6 +413,21 @@ function _busyOff(btn){ _BUSY=Math.max(0,_BUSY-1); if(!_BUSY) _busyBar(false);
   btn.__bn=Math.max(0,(btn.__bn||1)-1);
   if(btn.__bn===0 && btn.__bhtml!=null){ btn.innerHTML=btn.__bhtml; btn.__bhtml=null;
     btn.disabled=false; btn.classList.remove('is-busy'); } }
+/* ===== หน้านี้เก่ากว่าหลังบ้านหรือเปล่า =====
+ * หน้าอื่นมีป้ายเวอร์ชันให้พนักงานเห็น แต่หน้านี้เป็นหน้าลูกค้า จะโชว์ป้ายแดงก็ไม่เหมาะ
+ * มือถือลูกค้า (โดยเฉพาะเบราว์เซอร์ใน LINE) แคชหน้าเว็บไว้นานมาก หน้าเก่าคุยกับหลังบ้านใหม่
+ * แล้วใบจองโหว่โดยไม่มีใครรู้ (เกิดจริง 16 พ.ย. 2026 — ใบจองขึ้นช่องว่างกับคำว่า undefined)
+ * จึงโหลดใหม่ให้เงียบ ๆ ครั้งเดียว ถ้ายังไม่ตรงอีกค่อยบอกลูกค้าให้ติดต่อร้าน */
+var BUILD='P89-COMB';
+function checkStale_(){
+  var sv=String((CAT&&CAT.version)||'').trim(); if(!sv||sv===BUILD) return;
+  var k='h265_reload_'+sv, tried=false;
+  try{ tried=(sessionStorage.getItem(k)==='1'); sessionStorage.setItem(k,'1'); }catch(e){ tried=true; }
+  if(!tried){ var u=new URL(location.href); u.searchParams.set('v',sv); location.replace(u.toString()); return; }
+  var w=document.getElementById('staleNote');
+  if(w){ w.style.display='block';
+    w.innerHTML='หน้านี้อาจเป็นเวอร์ชันเก่าที่ค้างอยู่ในเครื่อง — ถ้าจองแล้วใบจองไม่ขึ้นข้อมูล '+
+      'กรุณาปิดหน้านี้แล้วเปิดใหม่ หรือแจ้งร้านทาง LINE ได้เลยค่ะ'; } }
 function callApi(action,payload){ var _b=_BUSYBTN; _busyOn(_b);
   return fetch(API_URL+(API_URL.indexOf('?')>=0?'&':'?')+'_='+Date.now(),{
     method:'POST',redirect:'follow',cache:'no-store',
@@ -496,7 +513,7 @@ function showFatal(msg){ var lb=document.getElementById('loadingBox'); lb.style.
   document.getElementById('wizard').style.display='none'; document.getElementById('navBar').style.display='none'; }
 function onCat(res){ try{
     if(!res||!res.ok){ showFatal('โหลดข้อมูลไม่สำเร็จ'+(res&&res.message?(':<br><small style="color:var(--faint)">'+esc(res.message)+'</small>'):'')); return; }
-    CAT=res.data; fillTerms();
+    CAT=res.data; fillTerms(); checkStale_();
     (function(){ var nm=String((CAT.shop&&CAT.shop.name)||'House265'); document.getElementById('shopName').innerHTML=esc(nm).replace(/\d+/g,'<span class="n">$&</span>'); })();
     document.getElementById('shopSub').innerText=(CAT.shop&&CAT.shop.subtitle)||'';
     document.getElementById('tPhone').innerText=(CAT.shop&&CAT.shop.phone)||'';
@@ -1036,13 +1053,27 @@ function doSubmit(){ var btn=document.getElementById('nextBtn'); btn.disabled=tr
 function onBooked(res){ var btn=document.getElementById('nextBtn'); btn.disabled=false; btn.innerText='ยืนยันการจอง';
   if(!res||!res.ok){ var retime=(res&&(res.code==='TAKEN')); var restock=(res&&res.code==='NO_STOCK');
     showMsg((res&&res.message)||'จองไม่สำเร็จ','การจองไม่สำเร็จ',function(){ if(retime){STEP=3;renderStep();} else if(restock){STEP=2;renderStep();} }); return; }
-  var b=res.data;
+  var b=res.data||{};
+  /* ⚠ ใบจองที่ว่างเปล่าแย่กว่าใบจองที่ไม่ขึ้นเลย — ลูกค้าแคปส่งให้ร้าน แล้วร้านอ่านไม่ออกว่าคิวไหน
+   * เคยเกิดจริง 16 พ.ย. 2026: เซิร์ฟเวอร์ตอบ data ว่าง ใบจองเลยโชว์ช่องว่างกับคำว่า undefined
+   * กันสองชั้น: ① ขาดรหัสคิว = ไม่ออกใบจอง บอกให้ติดต่อร้านแทน
+   *            ② ช่องอื่นที่เซิร์ฟเวอร์ไม่ส่งมา ใช้ค่าที่หน้าเว็บกรอกไว้เองแทน ไม่ปล่อยว่าง */
+  if(!String(b.booking_id||'').trim()){
+    showMsg('จองคิวสำเร็จแล้ว แต่ระบบออกใบจองให้ไม่ได้ในตอนนี้\n\n'+
+      'กรุณาส่งข้อความหาร้านทาง LINE หรือโทร 096-056-4585 พร้อมแจ้งชื่อและเบอร์โทร เพื่อให้ร้านยืนยันคิวให้ค่ะ\n\n'+
+      'ชื่อ '+v('cName')+' · โทร '+v('cPhone')+'\n'+
+      toDMY(STATE.date)+' '+String(STATE.startTime||''),'จองแล้ว — รอร้านยืนยัน'); return; }
+  var dep=(b.deposit!=null)?b.deposit:((EST&&EST.deposit)||0);
+  var tot=(b.total!=null)?b.total:((EST&&EST.total)||0);
+  var rem=(b.remain!=null)?b.remain:Math.max(0,Number(tot||0)-Number(dep||0));
+  var tm=String(b.start||STATE.startTime||'')+(b.end?(' - '+b.end):'');
   /* ตั๋วสั้น พอดีหน้าจอเดียว · ไม่มี QR (ลูกค้าชำระมัดจำ+แนบสลิปในขั้นก่อนหน้าแล้ว) */
   document.getElementById('ticketBody').innerHTML=
-    srow('รหัสคิว',b.booking_id)+srow('ชื่อผู้จอง',v('cName'))+srow('วันที่',toDMY(b.date))+srow('เวลา',b.start+(b.end?(' - '+b.end):''))+
-    srow('ช่าง',b.tech_name||(STATE.techId==='any'?'ร้านจัดให้':STATE.techName))+srow('รายการ',b.label)+
-    '<div class="srow"><span>มัดจำ (ชำระแล้ว)</span><b style="color:var(--ok)">'+fmt(b.deposit)+' ฿</b></div>'+
-    '<div class="srow"><span>คงเหลือหน้าร้าน</span><b style="color:var(--gold-soft)">'+fmt(b.remain)+' ฿</b></div>';
+    srow('รหัสคิว',b.booking_id)+srow('ชื่อผู้จอง',b.name||v('cName'))+srow('วันที่',toDMY(b.date||STATE.date))+srow('เวลา',tm)+
+    srow('ช่าง',b.tech_name||(STATE.techId==='any'?'ร้านจัดให้':STATE.techName))+
+    srow('รายการ',b.label||((EST&&EST.label)||''))+
+    '<div class="srow"><span>มัดจำ (ชำระแล้ว)</span><b style="color:var(--ok)">'+fmt(dep)+' ฿</b></div>'+
+    '<div class="srow"><span>คงเหลือหน้าร้าน</span><b style="color:var(--gold-soft)">'+fmt(rem)+' ฿</b></div>';
   document.getElementById('ticketModal').style.display='flex'; }
 function srow(k,val){ return '<div class="srow"><span>'+k+'</span><b>'+esc(val)+'</b></div>'; }
 
