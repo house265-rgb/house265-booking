@@ -399,7 +399,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P94-SPEED'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P95-DAILY'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='', SCHED=null, SETTINGS=null, TAB='dash', FULL=false, ROLE='', MYTECH='';
 var THD=['อา','จ','อ','พ','พฤ','ศ','ส'];
 /* ===== สถานะ "กำลังทำงาน" — ใช้ร่วมกันทุกหน้า (admin / pos / receive / Booking) =====
@@ -480,6 +480,7 @@ function applyBoot(D, fromCache){
     if(!FULL){ applyStaffMode(); return; }
     buildQuick('dQuick',setDashRange); buildQuick('aQuick',setAcctRange);
     setRangeThisMonth('dFrom','dTo'); setRangeThisMonth('aFrom','aTo'); document.getElementById('exDate').value=iso(new Date());
+    markQuick('dQuick','month'); markQuick('aQuick','month');   /* ให้ปุ่ม "เดือนนี้" สว่างตั้งแต่เปิดหน้า ตรงกับช่วงที่ใช้จริง */
     setTab('dash');
 
 }
@@ -606,8 +607,8 @@ function rangeOf(k){ var d=new Date(),y=d.getFullYear(),m=d.getMonth();
   if(k==='month')return [iso(new Date(y,m,1)),iso(d)]; if(k==='prev')return [iso(new Date(y,m-1,1)),iso(new Date(y,m,0))];
   if(k==='year')return [iso(new Date(y,0,1)),iso(d)]; return [iso(new Date(y,m,1)),iso(d)]; }
 function markQuick(box,k){ [].forEach.call(document.getElementById(box).children,function(c){c.classList.toggle('on',c.dataset.k===k);}); }
-function dClearQuick(){markQuick('dQuick','');} function aClearQuick(){markQuick('aQuick','');}
-function setDashRange(k){ var r=rangeOf(k); document.getElementById('dFrom').value=r[0]; document.getElementById('dTo').value=r[1]; markQuick('dQuick',k); loadDash(); }
+function dClearQuick(){markQuick('dQuick',''); TRENDGMANUAL=false;} function aClearQuick(){markQuick('aQuick','');}
+function setDashRange(k){ var r=rangeOf(k); document.getElementById('dFrom').value=r[0]; document.getElementById('dTo').value=r[1]; markQuick('dQuick',k); TRENDGMANUAL=false; loadDash(); }
 function setAcctRange(k){ var r=rangeOf(k); document.getElementById('aFrom').value=r[0]; document.getElementById('aTo').value=r[1]; markQuick('aQuick',k); loadAcct(); loadExpenses(); }
 
 /* =====================================================================
@@ -834,7 +835,14 @@ function kpi(k,v,s,sm){ return '<div class="kpi"><div class="k">'+k+'</div><div 
 function barRows(obj,unit,money){ var keys=Object.keys(obj||{}); if(!keys.length)return '<div class="mini">— ไม่มีข้อมูล —</div>';
   var max=Math.max.apply(null,keys.map(function(k){return Math.abs(obj[k]);}))||1;
   return keys.sort(function(a,b){return obj[b]-obj[a];}).map(function(k){ return '<div class="bar"><span class="nm">'+esc(k)+'</span><span class="tr"><span class="fl" style="width:'+Math.round(Math.abs(obj[k])/max*100)+'%"></span></span><span class="vl">'+(money?'฿':'')+fmt(obj[k])+(unit||'')+'</span></div>'; }).join(''); }
-var DASHDATA=null, TRENDG='month', TRENDDATA=null, CM=[], DCMP='prev';
+/* กราฟเริ่มต้น = รายวัน ของเดือนปัจจุบัน (ช่วงวันที่ตั้งต้นเป็น "เดือนนี้" อยู่แล้ว)
+ * ถ้าผู้ใช้ขยายช่วงเป็นหลายเดือน/ทั้งปี แล้วยังคงรายวัน กราฟจะมี 300 กว่าจุดจนอ่านไม่ออก
+ * จึงปรับความถี่ให้อัตโนมัติ "เฉพาะตอนที่ผู้ใช้ยังไม่ได้เลือกเอง" (เกณฑ์เดียวกับฝั่งเซิร์ฟเวอร์ _autoBucket_)
+ * กดปุ่ม รายวัน/รายสัปดาห์/รายเดือน เมื่อไหร่ = ยึดตามที่กดจนกว่าจะเปลี่ยนช่วงวันที่ */
+var DASHDATA=null, TRENDG='day', TRENDGMANUAL=false, TRENDDATA=null, CM=[], DCMP='prev';
+function autoBucket(from,to){ if(!from||!to) return 'day';
+  var d=Math.round((new Date(to)-new Date(from))/86400000)+1;
+  if(d<=45) return 'day'; if(d<=180) return 'week'; return 'month'; }
 function setDCmp(m){ DCMP=m; document.getElementById('cmpPrev').classList.toggle('on',m==='prev'); document.getElementById('cmpYoy').classList.toggle('on',m==='yoy'); loadDash(); }
 var TRENDFIRED=false;
 function loadDash(){ var box=document.getElementById('dashBody'); box.innerHTML='<div class="empty">กำลังโหลด…</div>';
@@ -846,7 +854,7 @@ function loadDash(){ var box=document.getElementById('dashBody'); box.innerHTML=
     if(!r||!r.ok){ box.innerHTML='<div class="empty">'+esc((r&&r.message)||'โหลดไม่สำเร็จ')+'</div>'; return; }
     DASHDATA=r.data; renderDash(); if(!TRENDFIRED){ loadTrend(); } TRENDFIRED=false;
   }).catch(function(){ box.innerHTML='<div class="empty">เชื่อมต่อไม่สำเร็จ</div>'; }); }
-function setTrendG(g){ TRENDG=g;
+function setTrendG(g){ TRENDG=g; TRENDGMANUAL=true;
   /* ชิปอยู่ในการ์ดที่ renderDash วาด ส่วน renderTrend วาดแค่กราฟ — ต้องสลับไฮไลต์เองไม่งั้นค้างที่อันเดิม */
   try{ document.querySelectorAll('.gbtn[data-g]').forEach(function(b){
     b.classList.toggle('on', b.getAttribute('data-g')===g); }); }catch(e){}
@@ -858,6 +866,7 @@ function loadTrend(rangeFrom,rangeTo){ var el=document.getElementById('trendBox'
   var q={bucket:TRENDG}, d=DASHDATA&&DASHDATA.range;
   var qf=rangeFrom||((d&&d.from)||document.getElementById('dFrom').value);
   var qt=rangeTo  ||((d&&d.to)  ||document.getElementById('dTo').value);
+  if(!TRENDGMANUAL){ TRENDG=autoBucket(qf,qt); q.bucket=TRENDG; }   /* ยังไม่ได้เลือกเอง = เลือกให้พออ่านออก */
   if(qf&&qt){ q.from=qf; q.to=qt; }
   api('reportTrend',q).then(function(r){ TRENDDATA=(r&&r.ok)?r.data:{series:[]}; renderTrend(); }).catch(function(){ TRENDDATA={series:[]}; renderTrend(); }); }
 /* เดลต้าเทียบงวดก่อน */
