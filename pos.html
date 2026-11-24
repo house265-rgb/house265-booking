@@ -312,9 +312,9 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P92-NOTE'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P93-PROMOFIX'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='',DATA=null,FULL=false,CART=[],CAT='ต่อผม',PAY='เงินสด',BUSY=false,USERTECH='';
-window._disc=0; window._recv=0; window._split=false; window._p2m='พร้อมเพย์'; window._p2a=0; window._slips=[];
+window._promoId=''; window._recv=0; window._split=false; window._p2m='พร้อมเพย์'; window._p2a=0; window._slips=[];
 window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName='';
 /* ===== สถานะ "กำลังทำงาน" — ใช้ร่วมกันทุกหน้า (admin / pos / receive / Booking) =====
  * ปัญหาเดิม: กดปุ่มแล้วเงียบ ไม่รู้ว่าระบบรับคำสั่งหรือยัง จึงกดซ้ำ
@@ -736,7 +736,7 @@ function closeLine(){ QNOSHOW=null; RS=null; RSSLIP=null; document.getElementByI
 /* ===================================================================
  * CART / BILL
  * =================================================================== */
-function clearCart(){ CART=[]; QGUIDE=[]; QGTECH=''; window._disc=0; window._recv=0; window._split=false; window._p2a=0; window._slips=[]; window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName=''; PAY='เงินสด';
+function clearCart(){ CART=[]; QGUIDE=[]; QGTECH=''; window._promoId=''; window._recv=0; window._split=false; window._p2a=0; window._slips=[]; window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName=''; PAY='เงินสด';
   var cn=document.getElementById('cName'); if(cn)cn.value=''; var cp=document.getElementById('cPhone'); if(cp)cp.value=''; renderCart(); toast('ล้างบิลแล้ว'); }
 function delLine(i){ var l=CART[i]||{};
   CART.splice(i,1);
@@ -755,7 +755,7 @@ function lineNet(l){ return lineTotal(l)-lineDisc(l); }
 function cartLineDisc(){ return CART.reduce(function(a,l){return a+lineDisc(l);},0); }
 function cartSub(){ return CART.reduce(function(a,l){return a+lineNet(l);},0); } /* รวมหลังหักส่วนลดรายการ */
 function cartDeposit(){ return Math.max(0, Math.round(Number(window._deposit)||0)); }
-function cartDue(){ return Math.max(0, cartSub()-(window._disc||0)-cartDeposit()); } /* _disc = ส่วนลดโปรโมชัน (คงที่) */
+function cartDue(){ return Math.max(0, cartSub()-curDisc()-cartDeposit()); }   /* ส่วนลดโปรคิดสดจากตะกร้าปัจจุบัน */
 
 /* ---- โปรโมชัน: จับคู่เงื่อนไข (ชื่อจริง) + คิดส่วนลด + เด้งโปรที่ดีสุด ---- */
 function pnorm(s){ return String(s==null?'':s).trim(); }
@@ -798,7 +798,10 @@ function promoBadPer(){ return (DATA&&DATA.promos||[]).filter(function(p){
 var PROMOLIST=[];
 function matchingPromos(){ return (DATA&&DATA.promos||[]).map(function(p){ return {p:p,disc:promoDiscount(p)}; }).filter(function(x){ return x.disc>0; }).sort(function(a,b){return b.disc-a.disc;}); }
 function promoBar(){ if(!CART.length)return '';
-  if(window._promoName){ return '<div class="promobar"><div style="min-width:0"><b style="color:var(--gold-soft)">🎁 '+esc(window._promoName)+'</b> <span class="mini">ลด '+fmt(window._disc||0)+' ฿</span></div><button class="chipbtn" style="border-color:var(--crit);color:var(--crit)" onclick="clearPromo()">ยกเลิกโปร</button></div>'; }
+  if(window._promoId){ var pd=curDisc();
+    /* บิลเปลี่ยนจนโปรไม่เข้าเงื่อนไขแล้ว — ต้องบอก ไม่ใช่หักส่วนลดเก่าต่อเงียบ ๆ */
+    if(!(pd>0)) return '<div class="promobar" style="border-color:var(--crit)"><div style="min-width:0"><b style="color:var(--crit)">⚠ '+esc(window._promoName)+' ใช้กับบิลนี้ไม่ได้แล้ว</b> <span class="mini">บิลเปลี่ยนไป · ยังไม่ได้หักส่วนลด</span></div><button class="chipbtn" onclick="clearPromo()">เอาออก</button></div>';
+    return '<div class="promobar"><div style="min-width:0"><b style="color:var(--gold-soft)">🎁 '+esc(window._promoName)+'</b> <span class="mini">ลด '+fmt(pd)+' ฿</span></div><button class="chipbtn" style="border-color:var(--crit);color:var(--crit)" onclick="clearPromo()">ยกเลิกโปร</button></div>'; }
   var n=matchingPromos().length;
   return '<button class="btn sec" style="margin-top:8px" onclick="openPromoPicker()">🔍 ค้นหาโปรโมชั่น'+(n?(' · มี '+n+' โปรที่ใช้ได้'):'')+'</button>'; }
 function openPromoPicker(){ var list=matchingPromos(); PROMOLIST=list;
@@ -811,8 +814,18 @@ function openPromoPicker(){ var list=matchingPromos(); PROMOLIST=list;
   else { h+=list.map(function(x,i){ return '<div class="promopick" onclick="applyPromoPick('+i+')"><div style="flex:1;min-width:0"><b style="font-weight:500">'+esc(x.p.name)+'</b>'+(x.p.show_text?('<div class="mini" style="margin-top:2px">'+esc(x.p.show_text)+'</div>'):'')+'</div><div class="mono" style="color:var(--gold-soft);white-space:nowrap">-'+fmt(x.disc)+' ฿</div></div>'; }).join(''); }
   h+='<button class="btn sec" style="margin-top:14px" onclick="closeLine()">ปิด</button>';
   document.getElementById('lmTitle').innerText='🎁 โปรโมชั่น'; document.getElementById('lmBody').innerHTML=h; document.getElementById('lineModal').classList.add('show'); }
-function applyPromoPick(i){ var x=PROMOLIST[i]; if(!x)return; window._disc=x.disc; window._promoName=x.p.name; closeLine(); renderCart(); toast('ใช้โปร: '+x.p.name); }
-function clearPromo(){ window._disc=0; window._promoName=''; renderCart(); toast('ยกเลิกโปรแล้ว'); }
+/* ===== ส่วนลดโปรต้องคิดใหม่จากตะกร้า "ปัจจุบัน" เสมอ =====
+ * ❗ บั๊ก 21 พ.ย.: เดิมเก็บ "จำนวนเงินส่วนลด" ไว้ตอนกดเลือกโปร (window._disc)
+ *   พอแก้ตะกร้าทีหลัง (ลบบรรทัด · เพิ่ม · เปลี่ยนจำนวน) ตัวเลขส่วนลดค้างของเดิม
+ *   ของจริง: เลือกโปรตอน 3 QR ได้ลด 465 แล้วลบทิ้ง 1 บรรทัด เหลือ 2 QR แต่ยังลด 465 (ควรเป็น 310) — ร้านเสียเงิน
+ *   ทางกลับกัน เลือกโปรตอน 2 QR แล้วเพิ่มเป็น 4 QR ลูกค้าก็เสียเปรียบ
+ * กฎ: จำแค่ "โปรไหน" (promo_id) · จำนวนเงินคิดสดทุกครั้งที่วาดตะกร้า/ปิดบิล */
+function promoById(id){ var a=(DATA&&DATA.promos)||[]; for(var i=0;i<a.length;i++) if(String(a[i].promo_id)===String(id)) return a[i]; return null; }
+function curDisc(){ if(!window._promoId) return 0;
+  var p=promoById(window._promoId); if(!p){ window._promoId=''; window._promoName=''; return 0; }
+  return promoDiscount(p); }
+function applyPromoPick(i){ var x=PROMOLIST[i]; if(!x)return; window._promoId=String(x.p.promo_id||''); window._promoName=x.p.name; closeLine(); renderCart(); toast('ใช้โปร: '+x.p.name); }
+function clearPromo(){ window._promoId=''; window._promoName=''; renderCart(); toast('ยกเลิกโปรแล้ว'); }
 function lineTechNames(l){ var arr=(l.techs||[]); return arr.map(function(t){return t.name;}).filter(Boolean).join('+'); }
 
 function renderCart(){ var box=document.getElementById('cartBody');
@@ -833,7 +846,7 @@ function renderCart(){ var box=document.getElementById('cartBody');
     var ld=lineDisc(l); var priceHtml=ld>0?('<span style="text-decoration:line-through;color:var(--faint);font-size:12px">'+fmt(lineTotal(l))+'</span> <span class="mono" style="color:var(--gold-soft)">'+fmt(lineNet(l))+'</span>'):('<span class="mono" style="color:var(--gold-soft)">'+fmt(lineTotal(l))+'</span>');
     return '<div style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)"><div style="flex:1;min-width:0;cursor:pointer" onclick="editLine('+i+')"><b style="font-weight:500">'+esc(lineTitle(l.kind,(l.kind==='product'?l.name:l.item)))+'</b>'+tag+' <span style="color:var(--gold);font-size:12px">✎</span><div class="mini" style="margin-top:2px">'+esc(det.join(' · '))+(ld>0?(' · <span style="color:var(--gold-soft)">ลดพิเศษ -'+fmt(ld)+'</span>'):'')+'</div></div><div style="text-align:right">'+priceHtml+'</div><button class="x" onclick="delLine('+i+')">✕</button></div>';
   }).join('');
-  var gross=CART.reduce(function(a,l){return a+lineTotal(l);},0), ldTot=cartLineDisc(), sub=cartSub(), disc=window._disc||0, dep=cartDeposit(), due=cartDue();
+  var gross=CART.reduce(function(a,l){return a+lineTotal(l);},0), ldTot=cartLineDisc(), sub=cartSub(), disc=curDisc(), dep=cartDeposit(), due=cartDue();
   var pay=promoBar()+
     '<div class="tot"><span>รวมราคาเต็ม</span><b>'+fmt(gross)+'</b></div>'+
     (ldTot>0?('<div class="tot"><span>ส่วนลดพิเศษรายการ</span><b style="color:var(--ok)">-'+fmt(ldTot)+'</b></div>'):'')+
@@ -899,7 +912,7 @@ function compressImage(file,maxW,q,cb){ try{ var img=new Image(); var url=URL.cr
   img.onerror=function(){ URL.revokeObjectURL(url); cb(null); }; img.src=url; }catch(e){ cb(null); } }
 
 /* อัปเดตเฉพาะตัวเลขที่เปลี่ยน — ไม่ render ใหม่ทั้งบิล (กันเคอร์เซอร์เด้ง/โฟกัสหลุด) */
-function updateMoney(){ var sub=cartSub(), disc=window._disc||0, due=cartDue();
+function updateMoney(){ var sub=cartSub(), disc=curDisc(), due=cartDue();
   if(!window._split && PAY==='เงินสด'){ var recv=window._recv||0; var chg=document.getElementById('chg'); if(chg)chg.innerText=fmt(Math.max(0,recv-due)); }
   if(window._split){ var a2=Math.min(due,window._p2a||0), a1=Math.max(0,due-a2);
     var e1=document.getElementById('p1amt'); if(e1)e1.innerText=fmt(a1); var e1b=document.getElementById('p1amt2'); if(e1b)e1b.innerText=fmt(a1);
@@ -959,7 +972,7 @@ function buildPayments(due){
   var p1=document.getElementById('p1m'); var m1=p1?p1.value:PAY;
   var arr=[]; if(a1>0)arr.push({method:m1,amount:a1}); if(a2>0)arr.push({method:window._p2m,amount:a2}); return arr;
 }
-function saveSale(){ if(BUSY)return; var sub=cartSub(), disc=window._disc||0, due=cartDue();
+function saveSale(){ if(BUSY)return; var sub=cartSub(), disc=curDisc(), due=cartDue();
   var probs=saveProblems(due); if(probs.length){ toast(probs[0],1); return; }
   /* เจ้าของ/ผู้จัดการให้บริการเอง (ไม่ระบุช่าง) → ยืนยัน · ไม่คิดค่ามือ */
   if(FULL){ var noT=CART.filter(function(l){ return (l.kind==='service'||l.kind==='removal'||(l.kind==='product'&&l.mode==='ext')) && !lineTechNames(l); });
@@ -981,7 +994,7 @@ function uploadSlips(saleId, method, amount, slips, i, done){ if(i>=slips.length
     if(!r||!r.ok){ alert('⚠️ อัปโหลดสลิปไม่สำเร็จ: '+((r&&r.message)||'ไม่ทราบสาเหตุ')+'\n\n(มักเกิดจากยังไม่ได้อนุญาตสิทธิ์ Drive — ให้รัน grantDrive ใน Apps Script ก่อน)'); }
     uploadSlips(saleId,method,amount,slips,i+1,done); })
   .catch(function(){ alert('⚠️ เชื่อมต่อไม่ได้ตอนอัปโหลดสลิปรูปที่ '+(i+1)); uploadSlips(saleId,method,amount,slips,i+1,done); }); }
-function finishSale(rc){ showReceipt(rc); CART=[]; QGUIDE=[]; QGTECH=''; window._disc=0; window._recv=0; window._split=false; window._p2a=0; window._slips=[]; window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName=''; PAY='เงินสด';
+function finishSale(rc){ showReceipt(rc); CART=[]; QGUIDE=[]; QGTECH=''; window._promoId=''; window._recv=0; window._split=false; window._p2a=0; window._slips=[]; window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName=''; PAY='เงินสด';
   var cn=document.getElementById('cName'); if(cn)cn.value=''; var cp=document.getElementById('cPhone'); if(cp)cp.value=''; renderCart(); if(FULL)loadToday(); }
 
 function showReceipt(rc){ document.getElementById('rcpt').innerHTML=receiptHtml(rc); document.getElementById('rcptModal').classList.add('show'); }
@@ -1472,7 +1485,7 @@ function checkoutToCart(bk,v){ if(!bk)return;
   if(bk.rm_addon_id){ var rma=bk.rm_addon||{}, rmrow=(DATA.removals||[]).filter(function(x){return String(x.removal_id)===String(bk.rm_addon_id);})[0]||{};
     QGUIDE.push({ type:'ถอดผมเก่า', scan:false, line:{ kind:'removal', item:String(rma.name||rmrow.name||'ถอดผม'), qty:1, price:Math.round(Number(rma.price!=null?rma.price:rmrow.price)||0), techs:defTech.slice(), size:'' } }); }
   CART=[]; window._bookingId=bk.booking_id; window._bookingName=(bk.name||'')+(bk.phone?(' · '+bk.phone):''); window._deposit=Math.round(Number(bk.deposit)||0);
-  window._disc=0; window._recv=0; window._split=false; window._p2a=0; window._slips=[]; PAY='เงินสด';
+  window._promoId=''; window._recv=0; window._split=false; window._p2a=0; window._slips=[]; PAY='เงินสด';
   closeLine(); setPage('Sale'); renderCart();
   var cn=document.getElementById('cName'); if(cn)cn.value=bk.name||''; var cp=document.getElementById('cPhone'); if(cp)cp.value=bk.phone||'';
   toast('ดึงคิวแล้ว · หยิบของจริง/สแกน QR ตามไกด์ไลน์ แล้วเลือกช่าง'); }
