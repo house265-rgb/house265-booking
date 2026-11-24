@@ -338,7 +338,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P98-ONETIME'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P99-NODUP'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='',DATA=null,FULL=false,CART=[],CAT='ต่อผม',PAY='เงินสด',BUSY=false,USERTECH='';
 window._promoId=''; window._recv=0; window._split=false; window._p2m='พร้อมเพย์'; window._p2a=0; window._slips=[];
 window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName='';
@@ -1260,6 +1260,7 @@ function qRow(b){ return '<div class="sliprow" style="cursor:pointer;align-items
   '<div style="text-align:center;min-width:54px"><b style="color:var(--gold-soft);font-size:16px">'+esc(b.start||'--')+'</b><div class="mini">'+esc(b.end||'')+'</div></div>'+
   '<div class="meta"><b style="font-weight:500">'+esc(b.name||'ลูกค้า')+'</b> <span class="faint">'+esc(b.booking_id)+'</span>'+
   '<div class="mini" style="margin-top:2px">'+esc(b.detail||'')+qtyChip(b)+(b.tech_name?(' · '+esc(b.tech_name)):'')+'</div>'+
+  (Number(b.dup_same_day)>1?('<div class="mini" style="margin-top:3px;color:var(--crit)">⚠ เบอร์นี้มี '+Number(b.dup_same_day)+' คิวในวันเดียวกัน — โทรเช็กก่อน แล้วยกเลิกใบที่เกิน</div>'):'')+
   (b.customer_note?('<div class="mini" style="margin-top:3px;color:var(--gold-soft)">📝 '+esc(b.customer_note)+'</div>'):'')+
   '<div style="margin-top:5px">'+qStatusBadge(b.status)+(b.deposit>0?(' <span class="mini">มัดจำ '+fmt(b.deposit)+'฿</span>'):'')+'</div></div>'+
   '<div style="text-align:right;white-space:nowrap"><b style="color:var(--gold-soft);font-size:16px">'+fmt(b.suggest_total)+'</b> <span class="faint">฿</span><div class="mini" style="color:var(--gold)">จัดการ ›</div></div></div>'; }

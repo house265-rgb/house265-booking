@@ -372,8 +372,9 @@ button:disabled{cursor:not-allowed}
         <button type="button" onclick="saveQR()" style="margin-top:14px;padding:11px 16px;background:none;border:1px solid var(--line);color:var(--muted);font-size:12px">บันทึก QR เป็นรูปภาพ</button>
         <div id="qrMissing" class="qr-missing">* ยังไม่ได้ตั้งค่าเบอร์พร้อมเพย์ในระบบ</div>
       </div>
-      <span class="lbl">แนบสลิปโอนมัดจำ <span class="en">(Payment Slip)</span></span>
+      <span class="lbl">แนบสลิปโอนมัดจำ <span class="en">(Payment Slip)</span> <b style="color:var(--crit)">*</b></span>
       <input type="file" id="slip" accept="image/*">
+      <div class="hint">จำเป็นต้องแนบ — คิวจะถูกกันให้เมื่อแนบสลิปแล้วเท่านั้น</div>
       <div class="note" style="text-align:center">กด "ยืนยันการจอง" ระบบจะกันคิว + สต็อกให้ แล้วแสดงบัตรคิว · แคป/บันทึกรูปไว้ส่งร้าน</div>
     </section>
   </div>
@@ -445,7 +446,7 @@ function _busyOff(btn){ _BUSY=Math.max(0,_BUSY-1); if(!_BUSY) _busyBar(false);
  * มือถือลูกค้า (โดยเฉพาะเบราว์เซอร์ใน LINE) แคชหน้าเว็บไว้นานมาก หน้าเก่าคุยกับหลังบ้านใหม่
  * แล้วใบจองโหว่โดยไม่มีใครรู้ (เกิดจริง 16 พ.ย. 2026 — ใบจองขึ้นช่องว่างกับคำว่า undefined)
  * จึงโหลดใหม่ให้เงียบ ๆ ครั้งเดียว ถ้ายังไม่ตรงอีกค่อยบอกลูกค้าให้ติดต่อร้าน */
-var BUILD='P98-ONETIME';
+var BUILD='P99-NODUP';
 /* ❗ 24 พ.ย.: เดิมเทียบแบบต้องเท่ากันเป๊ะ (sv===BUILD) แต่เซิร์ฟเวอร์ส่ง '2026-11-24-P95-DAILY'
  *   ส่วนหน้าเว็บเก็บ 'P95-DAILY' → ไม่มีวันเท่ากัน ลูกค้า "ทุกคน" จึงโดนรีโหลดฟรี 1 รอบ
  *   แล้วเจอคำเตือนค้างหน้าจอตั้งแต่ยังไม่เริ่มจอง ทั้งที่ระบบปกติดี
@@ -1083,10 +1084,20 @@ function addonDetailLabel(){ var v=aMatchedAvail()[0]; if(!v)return '-'; var s=a
 
 /* ================= SUBMIT ================= */
 function fileDataUrl(file){ return new Promise(function(res,rej){ var r=new FileReader(); r.onload=function(){res(r.result);}; r.onerror=rej; r.readAsDataURL(file); }); }
-function doSubmit(){ var btn=document.getElementById('nextBtn'); btn.disabled=true; btn.innerText='กำลังจอง…';
+/* รหัสกันยิงซ้ำ — 1 ค่าต่อ 1 การจอง
+ * เกิดครั้งเดียวตอนกดยืนยันครั้งแรก ถ้าต้องกดใหม่เพราะเน็ตหลุด รหัสยังเป็นตัวเดิม
+ * เซิร์ฟเวอร์เห็นรหัสซ้ำจะคืนคิวใบเดิมกลับมา ไม่เกิดคิวซ้ำอีกใบ (ของจริง 24 พ.ย. 2026 ลูกค้าได้ 2 คิวเวลาเดียวกัน) */
+var REQID='';
+function newReqId(){ return 'R'+Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+function doSubmit(){ var btn=document.getElementById('nextBtn');
   var file=document.getElementById('slip')&&document.getElementById('slip').files[0];
+  /* ③ ไม่แนบสลิป = กันคิวไม่ได้ (เจ้าของร้านเลือกกฎนี้ 24 พ.ย. 2026 เพื่อปิดช่องกดกันคิวฟรี)
+   * เซิร์ฟเวอร์ก็กันซ้ำอีกชั้น เผื่อมีใครยิงตรงข้ามหน้าเว็บ */
+  if(!file){ showMsg('กรุณาแนบสลิปโอนมัดจำก่อนกดยืนยันการจองนะคะ 🙏','ยังไม่ได้แนบสลิป'); return; }
+  if(!REQID) REQID=newReqId();
+  btn.disabled=true; btn.innerText='กำลังจอง…';
   var go=function(slipUrl){ var payload=Object.assign(selForServer(),{ date:STATE.date, start:STATE.startTime, name:v('cName'), phone:v('cPhone'), line_id:v('cLine'),
-      customer_note:v('cNote'),
+      customer_note:v('cNote'), req_id:REQID,
       lineUserId:(LINE_PROFILE&&LINE_PROFILE.userId)||'', slipDataUrl:slipUrl||'' });
     callApi('createBooking',payload).then(onBooked).catch(function(){ showMsg('เกิดข้อผิดพลาด กรุณาลองใหม่'); btn.disabled=false; btn.innerText='ยืนยันการจอง'; }); };
   if(file){ fileDataUrl(file).then(go).catch(function(){ go(''); }); } else go(''); }
