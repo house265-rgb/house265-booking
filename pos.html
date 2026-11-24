@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
-:root{--bg:#111010;--surface:#1a1816;--surface2:#211f1c;--bg2:#161412;--elev:#262320;--line:#322e29;--fg:#efe9df;--muted:#b3aa9c;--faint:#7c7265;--gold:#c8a75a;--gold-soft:#e6cc7e;--gold-dim:#9c7f3f;--gold-ghost:rgba(200,167,90,.12);--ok:#79c08a;--crit:#d98a8a;--r:13px;color-scheme:dark}
+:root{--bg:#111010;--surface:#1a1816;--surface2:#211f1c;--bg2:#161412;--elev:#262320;--line:#322e29;--fg:#efe9df;--muted:#b3aa9c;--faint:#7c7265;--gold:#c8a75a;--gold-soft:#e6cc7e;--gold-dim:#9c7f3f;--gold-ghost:rgba(200,167,90,.12);--ok:#79c08a;--warn:#d9a441;--crit:#d98a8a;--r:13px;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 /* บนมือถือ ปุ่มเล็ก ๆ (ชิปกรอง, ปุ่มล้าง) กดพลาดง่าย — บังคับความสูงขั้นต่ำให้กดด้วยนิ้วได้
  * 34px เป็นค่าต่ำสุดที่ยังไม่ทำให้แถวชิปสูงจนเปลืองจอ */
@@ -143,6 +143,7 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(17,16,16,.92);backdr
 .passcard .ptop .tt{font-size:14px;letter-spacing:.2em;color:var(--gold-soft)}
 .passcard .ptop .ts{font-size:9.5px;letter-spacing:.18em;color:var(--faint);margin-top:3px}
 .passcard .pbadge{display:block;max-width:235px;margin:0 auto 8px;text-align:center;font-size:11.5px;color:#1a1a1a;background:var(--gold-soft);border-radius:999px;padding:5px 12px}
+.passcard .pbadge.bad{background:var(--crit);color:#2b1212}
 .passcard .prep{font-size:11.5px;color:var(--warn);text-align:center;line-height:1.6;margin-bottom:8px}
 .passcard .pwarn{font-size:11.5px;color:var(--gold-soft);line-height:1.7;text-align:center;border:1px solid var(--gold-dim);border-radius:9px;padding:8px 10px;margin-bottom:10px}
 .passcard .timebox{border:1px solid var(--gold-dim);background:rgba(201,169,106,.06);border-radius:10px;padding:12px 13px;margin-bottom:10px}
@@ -348,7 +349,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P102-UI'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P105-LEDGER'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='',DATA=null,FULL=false,CART=[],CAT='ต่อผม',PAY='เงินสด',BUSY=false,USERTECH='';
 window._promoId=''; window._recv=0; window._split=false; window._p2m='พร้อมเพย์'; window._p2a=0; window._slips=[];
 window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName='';
@@ -1304,7 +1305,7 @@ function renderQueueActions(){ var w=document.getElementById('qAct'); if(!w||!QB
     '<div class="row3" style="margin-top:8px"><button class="btn sec" style="color:var(--crit)" onclick="openNoShow()">🚫 ผิดนัด</button>'+
     '<button class="btn sec" style="color:var(--gold-soft)" onclick="openResched()">🔁 เลื่อนคิว</button>'+
     '<button class="btn sec" style="color:var(--crit)" onclick="QCANCEL=true;renderQueueActions()">ยกเลิกคิว</button></div>'+
-    '<div class="row2" style="margin-top:8px"><button class="btn sec" onclick="openPass()">🎫 ใบจอง (ส่งให้ลูกค้า)</button>'+
+    '<div class="row2" style="margin-top:8px"><button class="btn sec" onclick="openPass()">🎫 ใบจอง</button>'+
     '<button class="btn sec" style="color:var(--gold-soft)" onclick="closeLine()">ปิด</button></div>'; }
 
 /* =================== ใบจอง (ส่งเข้า LINE ลูกค้า) ===================
@@ -1315,7 +1316,7 @@ function passMoney(m){ var tone={ok:'var(--ok)',gold:'var(--gold-soft)',warn:'va
   return '<div class="prow"><span>'+esc(m.k)+'</span><b'+(tone?(' style="color:'+tone+'"'):'')+'>'+(neg?'−':'')+fmt(Math.abs(Number(m.v)||0))+' ฿</b></div>'; }
 function passHTML(p){ p=p||{}; var hero=p.hero||{}, h='';
   h+='<div class="ptop"><div class="tt">'+esc(p.title||'VIP BOOKING PASS')+'</div><div class="ts">'+esc(p.subtitle||'')+'</div></div>';
-  if(p.badge) h+='<div class="pbadge">'+esc(p.badge)+'</div>';
+  if(p.badge) h+='<div class="pbadge'+(p.badgeTone==='bad'?' bad':'')+'">'+esc(p.badge)+'</div>';
   if(p.replaces) h+='<div class="prep">'+esc(p.replaces)+'</div>';
   if(p.warn&&p.warn.length) h+='<div class="pwarn">'+p.warn.join('<br>')+'</div>';
   h+='<div class="timebox"><div class="k">มาถึงร้าน</div><div class="t">'+esc(hero.arrive||'')+' น.</div>'+
@@ -1656,8 +1657,6 @@ function guideCardHtml(){ if(!QGUIDE.length)return '';
     rows+
     '<div style="display:flex;gap:8px;align-items:center;padding:9px 0 2px;border-top:2px solid var(--gold-dim);margin-top:2px"><b style="flex:1;color:var(--gold-soft)">รวมประเมิน</b><b class="mono" style="color:var(--gold-soft)">'+fmt(sum)+'</b></div>'+
     '<div class="mini" style="margin-top:6px;color:var(--faint)">ℹ️ ไกด์ไลน์สำหรับตรวจสอบเท่านั้น — สแกน QR หรือเลือกจากเมนูเพื่อลงบิลจริง</div></div>'; }
-function guideAdd(i){ var g=QGUIDE[i]; if(!g)return; CART.push(JSON.parse(JSON.stringify(g.line))); renderCart(); toast('เพิ่มลงบิลแล้ว · แตะเพื่อแก้ไข/เลือกช่าง'); }
-function guideAddAll(){ QGUIDE.forEach(function(g){ CART.push(JSON.parse(JSON.stringify(g.line))); }); renderCart(); toast('เพิ่มทั้งหมดแล้ว · ตรวจของจริง/เลือกช่าง'); }
 function detachBooking(){ window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName=''; QGUIDE=[]; QGTECH=''; renderCart(); toast('ยกเลิกการผูกคิวกับบิลนี้'); }
 </script>
 <div id="printArea" aria-hidden="true"></div>

@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
-:root{--bg:#111010;--surface:#1a1816;--surface2:#211f1c;--bg2:#161412;--elev:#262320;--line:#322e29;--fg:#efe9df;--muted:#b3aa9c;--faint:#7c7265;--gold:#c8a75a;--gold-soft:#e6cc7e;--gold-dim:#9c7f3f;--gold-ghost:rgba(200,167,90,.12);--ok:#79c08a;--crit:#d98a8a;--blue:#7fa8c8;--r:13px;color-scheme:dark}
+:root{--bg:#111010;--surface:#1a1816;--surface2:#211f1c;--bg2:#161412;--elev:#262320;--line:#322e29;--fg:#efe9df;--muted:#b3aa9c;--faint:#7c7265;--gold:#c8a75a;--gold-soft:#e6cc7e;--gold-dim:#9c7f3f;--gold-ghost:rgba(200,167,90,.12);--ok:#79c08a;--warn:#d9a441;--crit:#d98a8a;--blue:#7fa8c8;--r:13px;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 /* หน้าต่างป๊อปอัปต้องไม่สูงเกินจอ — เนื้อหาเลื่อนในตัวมันเอง ไม่ดันหัวเรื่องกับปุ่มยืนยันตกขอบ */
 .mbox{max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);display:flex;flex-direction:column}
@@ -50,7 +50,6 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(17,16,16,.94);backdr
    เคยเอาไปไว้ในแถบแท็บ — บนมือถือต้องเลื่อนหาและเบียดแท็บจนใช้ยาก */
 .paneHead{display:flex;justify-content:space-between;align-items:center;margin:0 0 10px;gap:10px}
 .paneHead h2{margin:0;font-size:16px;font-weight:500}
-.lo.spin{opacity:.5;pointer-events:none}
 .tabbtn{flex:1 0 auto;background:var(--surface2);border:1px solid var(--line);color:var(--muted);border-radius:11px;padding:10px 12px;font-size:13.5px;font-weight:500;cursor:pointer;font-family:inherit;white-space:nowrap}
 .tabbtn.on{border-color:var(--gold);color:#231b08;background:linear-gradient(135deg,var(--gold-dim),var(--gold-soft))}
 .tabpane.hide{display:none}
@@ -78,6 +77,32 @@ textarea.in{min-height:70px;resize:vertical;font-size:12px;font-family:'IBM Plex
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
 .modal.show{display:flex}.mbox{background:var(--surface);border:1px solid var(--line);border-radius:16px;width:100%;max-width:400px;overflow:hidden}
 .mh{background:linear-gradient(100deg,var(--gold-dim),var(--gold-soft));color:#231b08;padding:14px;text-align:center;font-weight:600}.mc{padding:16px}
+/* ===== ใบจอง (ดูอย่างเดียว) — หน้าตาชุดเดียวกับ POS และหน้าจองลูกค้า ===== */
+.passcard{background:#0f0f10;border:1px solid var(--gold-dim);border-radius:12px;padding:14px}
+.passcard .ptop{text-align:center;margin-bottom:10px}
+.passcard .ptop .tt{font-size:14px;letter-spacing:.2em;color:var(--gold-soft)}
+.passcard .ptop .ts{font-size:9.5px;letter-spacing:.18em;color:var(--faint);margin-top:3px}
+.passcard .pbadge{display:block;max-width:235px;margin:0 auto 8px;text-align:center;font-size:11.5px;color:#1a1a1a;background:var(--gold-soft);border-radius:999px;padding:5px 12px}
+.passcard .pbadge.bad{background:var(--crit);color:#2b1212}
+.passcard .prep{font-size:11.5px;color:var(--warn);text-align:center;line-height:1.6;margin-bottom:8px}
+.passcard .pwarn{font-size:11.5px;color:var(--gold-soft);line-height:1.7;text-align:center;border:1px solid var(--gold-dim);border-radius:9px;padding:8px 10px;margin-bottom:10px}
+.passcard .timebox{border:1px solid var(--gold-dim);background:rgba(201,169,106,.06);border-radius:10px;padding:12px 13px;margin-bottom:10px}
+.passcard .timebox .k{font-size:11px;letter-spacing:.08em;color:var(--muted);margin-bottom:3px}
+.passcard .timebox .t{font-size:24px;line-height:1.2;color:var(--gold-soft)}
+.passcard .timebox .d{font-size:13.5px;color:var(--fg)}
+.passcard .timebox .ln{height:1px;background:var(--line);margin:9px 0 7px}
+.passcard .timebox .f{font-size:12px;color:var(--muted);line-height:1.7}
+.passcard .pchg{border:1px dashed var(--line);border-radius:9px;padding:9px 11px;margin-bottom:10px}
+.passcard .pchg .t{font-size:11px;letter-spacing:.06em;color:var(--muted);margin-bottom:4px}
+.passcard .pchg .r{display:flex;justify-content:space-between;gap:10px;font-size:12px;padding:3px 0}
+.passcard .pchg .r span{color:var(--muted)}
+.passcard .pchg .r s{color:var(--faint)}
+.passcard .prow{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
+.passcard .prow span{color:var(--muted);white-space:nowrap}
+.passcard .prow b{text-align:right;font-weight:500}
+.passcard .pfoot{font-size:11px;color:var(--faint);text-align:center;line-height:1.7;margin-top:10px;border-top:1px solid var(--line);padding-top:9px}
+.passcard .pissue{font-size:10.5px;color:var(--faint);text-align:right;margin-top:6px}
+.bkact{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .hide{display:none}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:12px}
 .card h2{font-weight:600;font-size:15px;margin:0 0 12px;color:var(--fg);display:flex;justify-content:space-between;align-items:center;gap:8px}
@@ -262,21 +287,33 @@ textarea.in{min-height:70px;resize:vertical;font-size:12px;font-family:'IBM Plex
 .tsel select{width:auto;flex:1 1 0;min-width:0;margin:0;text-align:center}
 .tcolon{color:var(--muted);font-weight:600}
 .t24{font-size:10px;color:var(--faint);white-space:nowrap;letter-spacing:.04em}
-/* ตารางรายการเดินบัญชี */
-.ledg{border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.lgh,.lgr{display:grid;grid-template-columns:44px 74px 1fr auto;gap:8px;padding:8px 10px;align-items:baseline}
-.lgh{background:var(--surface2);font-size:11px;color:var(--muted);letter-spacing:.04em}
-.lgr{border-top:1px solid var(--line);font-size:12.5px}
-.lgr:nth-child(odd){background:rgba(255,255,255,.015)}
-.lgd{color:var(--muted);font-family:'IBM Plex Mono';font-size:11.5px;white-space:nowrap}
-.lgt{font-size:11px;color:var(--gold-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.lgt.o{color:var(--muted)}
-.lgi{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--fg)}
-.lgi small{color:var(--faint);font-size:10.5px}
-.lgv{font-family:'IBM Plex Mono';white-space:nowrap;font-size:12.5px}
-.lgv.i{color:var(--ok)} .lgv.o{color:var(--crit)}
-@media(max-width:420px){ .lgh,.lgr{grid-template-columns:40px 1fr auto}
-  .lgh span:nth-child(2),.lgr .lgt{display:none} }
+/* ===== รายการเดินบัญชี =====
+ * เดิมเทรายการทั้งเดือนต่อกันเป็นตารางยาว 40–400 บรรทัด หน้าจอยาวจนหาอะไรไม่เจอ
+ * ใหม่: สรุปสัดส่วนก่อน แล้วรายการพับเป็น "วันละ 1 บรรทัด" กางเฉพาะวันที่สนใจ */
+.flowg{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+.flowg:last-child{border-bottom:none}
+.flowg .nm{font-size:12.5px;display:flex;align-items:center;gap:7px}
+.flowg .nm i{width:8px;height:8px;border-radius:3px;flex:none}
+.flowg .bar{height:5px;border-radius:3px;background:var(--surface2);margin-top:6px;overflow:hidden}
+.flowg .bar b{display:block;height:100%;border-radius:3px}
+.flowg .sub{font-size:10.5px;color:var(--faint);margin-top:3px}
+.flowg .amt{text-align:right;font-size:13px;font-family:'IBM Plex Mono';white-space:nowrap}
+.flowh{font-size:11px;color:var(--faint);letter-spacing:.04em;margin:10px 0 2px}
+.lgday{display:grid;grid-template-columns:18px 1fr auto;gap:9px;align-items:center;width:100%;text-align:left;
+  background:none;border:none;border-bottom:1px solid var(--line);padding:11px 2px;cursor:pointer;color:var(--fg);font-family:inherit}
+.lgday:hover{background:rgba(255,255,255,.02)}
+.lgday .cv{color:var(--faint);font-size:11px;transition:transform .15s;display:inline-block}
+.lgday.on .cv{transform:rotate(90deg);color:var(--gold-soft)}
+.lgday .dt{display:block;font-size:13px}
+.lgday .ds{display:block;font-size:10.5px;color:var(--faint);margin-top:3px;line-height:1.5}
+.lgday .dv{text-align:right;font-size:13.5px;font-family:'IBM Plex Mono';color:var(--gold-soft);white-space:nowrap}
+.lgday .dv small{display:block;font-size:10px;color:var(--faint);font-family:inherit;margin-top:2px}
+.lgbox{background:rgba(201,169,106,.05);border:1px solid var(--line);border-radius:10px;padding:2px 10px;margin:5px 0 9px}
+.lgit{display:grid;grid-template-columns:1fr auto;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:12.5px}
+.lgit:last-child{border-bottom:none}
+.lgit .s{font-size:10.5px;color:var(--faint);margin-top:2px}
+.lgit .v{text-align:right;font-family:'IBM Plex Mono';white-space:nowrap}
+.lgit .v.i{color:var(--ok)} .lgit .v.o{color:var(--crit)}
 /* แถบความคืบหน้า + สปินเนอร์ในปุ่ม (สถานะกำลังทำงาน) */
 #busybar{position:fixed;top:0;left:0;height:3px;width:0;z-index:9999;pointer-events:none;
   background:linear-gradient(90deg,var(--gold-dim,#6b5a28),var(--gold-soft,#e0c580),var(--gold,#b09036));
@@ -406,11 +443,21 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
   <div id="loginErr" style="color:var(--crit);font-size:12px;min-height:16px;margin:6px 0"></div>
   <button class="btn" onclick="doLogin()">เข้าสู่ระบบ</button>
 </div></div></div>
+<!-- ใบจอง (ดูอย่างเดียว) — เปิดจากการ์ดคิวในแท็บคิวงาน ไว้ส่งให้ลูกค้าใหม่หรือเช็กย้อนหลัง
+     ❗ กล่องนี้ต้องมีจริงในหน้า ไม่งั้นปุ่มกดแล้วพัง (บทเรียน 24 พ.ย. 2026)
+     การจัดการคิวยังอยู่ที่ POS ที่เดียวเหมือนเดิม หน้านี้ไม่มีปุ่มแก้คิว -->
+<div class="modal" id="passModal"><div class="mbox" style="max-width:400px">
+  <div class="mh">🎫 ใบจอง</div>
+  <div class="mc"><div id="passBody" class="passcard"></div>
+    <div class="row2" style="margin-top:12px">
+      <button class="btn sec" onclick="savePassImage(this,'passBody','booking-pass')">⬇ บันทึกเป็นรูป</button>
+      <button class="btn sec" onclick="closePass()">ปิด</button></div></div>
+</div></div>
 <div class="toast" id="toast"></div>
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P102-UI'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P105-LEDGER'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='', SCHED=null, SETTINGS=null, TAB='dash', FULL=false, ROLE='', MYTECH='';
 var THD=['อา','จ','อ','พ','พฤ','ศ','ส'];
 /* ===== สถานะ "กำลังทำงาน" — ใช้ร่วมกันทุกหน้า (admin / pos / receive / Booking) =====
@@ -616,8 +663,12 @@ function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
 /* ปุ่ม ↻ รีเฟรช — โหลดเฉพาะแท็บที่เปิดอยู่ ไม่ต้องรีโหลดทั้งหน้า (ไม่เสียค่าโหลดใหม่ทั้งระบบ)
  * ใช้ตัวโหลดชุดเดียวกับตอนเปิดแท็บ จะได้ไม่มีทางที่ "กดรีเฟรชแล้วได้ข้อมูลคนละชุดกับตอนเปิด" */
 function refreshTab(btn){
-  var b=btn||null;                       /* ปุ่มมีหลายตัว (แท็บละตัว) ใช้ตัวที่กดมาเท่านั้น */
-  if(b){ b.classList.add('spin'); b.innerHTML='↻ กำลังโหลด…'; }
+  /* สถานะ "กำลังโหลด" ของปุ่มนี้ ใช้กลไกเดียวกับปุ่มอื่นทั้งระบบ (_busyOn/_busyOff ใน api())
+   * ❗ 24 พ.ย. 2026: เคยสั่งเปลี่ยนข้อความ/ใส่คลาสเองตรงนี้ด้วย เกิดปัญหา 2 อย่างพร้อมกัน
+   *   1) คลาส `spin` ถูกใช้เป็น "ไอคอนหมุนขนาด 12px" อยู่แล้ว ปุ่มเลยหดเหลือวงกลมเล็ก ๆ
+   *   2) api() จำข้อความปุ่มไว้ "หลัง" ถูกเปลี่ยนเป็น "กำลังโหลด…" พอโหลดเสร็จจึงคืนค่าผิด
+   *      → ปุ่มค้างคำว่า "↻ กำลังโหลด…" ตลอดไป
+   * กฎ: ปล่อยให้ตัวกลางจัดการสถานะปุ่มที่เดียว ห้ามหน้าไหนมาแต่งปุ่มเองซ้ำ */
   NOCACHE=true;
   try{
     if(TAB==='dash'){ TRENDFIRED=false; loadDash(); }
@@ -630,7 +681,6 @@ function refreshTab(btn){
   } finally {
     /* ปล่อยธงหลังคำขอชุดนี้ถูกยิงออกไปครบแล้ว คำขออื่นหลังจากนี้ใช้แคชตามปกติ */
     setTimeout(function(){ NOCACHE=false; },0);
-    setTimeout(function(){ if(b){ b.classList.remove('spin'); b.innerHTML='↻ รีเฟรช'; } }, 900);
   }
   toast('กำลังโหลดข้อมูลล่าสุด…'); }
 
@@ -811,17 +861,6 @@ function vzStack(rows,opt){ opt=opt||{}; rows=rows||[];
     (PJ?'<span><i style="background:transparent;border:1.5px dashed '+VZ.goldHi+'"></i>คาดการณ์สิ้นงวด</span>':'')+'</div>'; }
 function num0(v){ return Number(v)||0; }
 function numTH(v){ return (Math.round((Number(v)||0)*100)/100).toLocaleString('en-US'); }
-/* ---- sparkline 12 จุด (ในการ์ด KPI) ---- */
-function vzSpark(vals,color,opt){ opt=opt||{}; vals=(vals||[]).map(function(v){return Number(v)||0;}); if(vals.length<2) return '';
-  var big=!!opt.big, W=big?600:120, H=big?64:26, id=vzId();
-  var mx=Math.max.apply(null,vals.concat([1])), mn=Math.min.apply(null,vals.concat([0]));
-  var p=vals.map(function(v,i){ return [W*i/(vals.length-1), H-3-((v-mn)/((mx-mn)||1))*(H-8)]; });
-  var c=color||VZ.goldHi, fill='';
-  if(big){ fill='<defs><linearGradient id="'+id+'s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+c+'" stop-opacity=".32"/><stop offset="1" stop-color="'+c+'" stop-opacity="0"/></linearGradient></defs>'+
-    '<path d="'+(vzSmooth(p)+' L'+W+' '+H+' L0 '+H+' Z')+'" fill="url(#'+id+'s)"/>'; }
-  return '<svg class="vzsvg" viewBox="0 0 '+W+' '+H+'"'+(big?'':' style="max-width:120px"')+' aria-hidden="true">'+fill+
-    '<path d="'+vzSmooth(p)+'" fill="none" stroke="'+c+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>'+
-    '<circle cx="'+p[p.length-1][0].toFixed(1)+'" cy="'+p[p.length-1][1].toFixed(1)+'" r="'+(big?4:3)+'" fill="'+c+'"/></svg>'; }
 /* ---- แท่งเรียงอันดับ (part-to-whole / เปรียบเทียบขนาด · สีเดียว) ---- */
 function vzBars(rows,opt){ opt=opt||{};
   rows=(rows||[]).filter(function(r){ return Math.abs(Number(r.value)||0)>0; })
@@ -868,9 +907,6 @@ function vzDelta(cur,prev,note){ if(prev==null) return ''; var diff=(Number(cur)
 
 /* ===================== DASHBOARD ===================== */
 function kpi(k,v,s,sm){ return '<div class="kpi"><div class="k">'+k+'</div><div class="v'+(sm?' sm':'')+'">'+v+'</div>'+(s?'<div class="s">'+s+'</div>':'')+'</div>'; }
-function barRows(obj,unit,money){ var keys=Object.keys(obj||{}); if(!keys.length)return '<div class="mini">— ไม่มีข้อมูล —</div>';
-  var max=Math.max.apply(null,keys.map(function(k){return Math.abs(obj[k]);}))||1;
-  return keys.sort(function(a,b){return obj[b]-obj[a];}).map(function(k){ return '<div class="bar"><span class="nm">'+esc(k)+'</span><span class="tr"><span class="fl" style="width:'+Math.round(Math.abs(obj[k])/max*100)+'%"></span></span><span class="vl">'+(money?'฿':'')+fmt(obj[k])+(unit||'')+'</span></div>'; }).join(''); }
 /* กราฟเริ่มต้น = รายวัน ของเดือนปัจจุบัน (ช่วงวันที่ตั้งต้นเป็น "เดือนนี้" อยู่แล้ว)
  * ถ้าผู้ใช้ขยายช่วงเป็นหลายเดือน/ทั้งปี แล้วยังคงรายวัน กราฟจะมี 300 กว่าจุดจนอ่านไม่ออก
  * จึงปรับความถี่ให้อัตโนมัติ "เฉพาะตอนที่ผู้ใช้ยังไม่ได้เลือกเอง" (เกณฑ์เดียวกับฝั่งเซิร์ฟเวอร์ _autoBucket_)
@@ -905,10 +941,6 @@ function loadTrend(rangeFrom,rangeTo){ var el=document.getElementById('trendBox'
   if(!TRENDGMANUAL){ TRENDG=autoBucket(qf,qt); q.bucket=TRENDG; }   /* ยังไม่ได้เลือกเอง = เลือกให้พออ่านออก */
   if(qf&&qt){ q.from=qf; q.to=qt; }
   api('reportTrend',q).then(function(r){ TRENDDATA=(r&&r.ok)?r.data:{series:[]}; renderTrend(); }).catch(function(){ TRENDDATA={series:[]}; renderTrend(); }); }
-/* เดลต้าเทียบงวดก่อน */
-function deltaBadge(cur,prev){ if(prev==null)return ''; var diff=cur-prev; if(!prev&&!cur)return '';
-  var pct=prev?Math.round(diff/Math.abs(prev)*100):(cur>0?100:0); var up=diff>=0;
-  return '<span class="delta '+(up?'up':'down')+'">'+(up?'▲':'▼')+' '+Math.abs(pct)+'%</span>'; }
 function tile(l,v,foot){ return '<div class="tile"><div class="tl">'+l+'</div><div class="tv">'+v+'</div>'+(foot?('<div class="tf">'+foot+'</div>'):'')+'</div>'; }
 function renderDash(){ var d=DASHDATA; var p=d.prev||{}; var h='';
   var cmpName=(d.cmp==='yoy'?'ปีก่อน':'งวดก่อน');
@@ -1146,7 +1178,6 @@ function tgCalc(){ var rev=Number((document.getElementById('tgRev')||{}).value)|
       '<div class="planday"><b>แผนต่อวัน</b> · เปิดร้าน '+pd.openDays+' วันในเดือนนี้<br>'+
       'ต้องขายวันละ <b>฿'+fmt(pd.revenue)+'</b> · <b>'+pd.count+'</b> บิล/วัน · <b>'+pd.qr+'</b> QR/วัน</div>'+
       '</div>';
-    var sb=document.getElementById('tgSaveBtn'); if(sb){ sb.disabled=false; sb.style.opacity='1'; }
   }).catch(function(){ box.innerHTML='<div class="mini" style="color:var(--crit)">เชื่อมต่อไม่สำเร็จ</div>'; }); }
 /* บันทึกครั้งเดียว: เป้าร้าน + เป้าค่ามือช่างรายคน */
 function saveTargetAll(){ var g=function(id){ return Number((document.getElementById(id)||{}).value)||0; };
@@ -1167,7 +1198,6 @@ function saveTargetAll(){ var g=function(id){ return Number((document.getElement
       } else toast((x&&x.message)||'บันทึกไม่สำเร็จ',1); })
     .catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
 function closeTarget(){ var m=document.getElementById('tgtModal'); if(m)m.classList.remove('show'); }
-function saveTarget(){ saveTargetAll(); }
 /* ข้อ12: drilldown ผลงานช่าง → แดชบอร์ดรายคน (ใช้ข้อมูลเดียวกับแดชบอร์ดช่าง · เจ้าของ/ผจก.เท่านั้น) */
 function openTechDash(tech){ var m=document.getElementById('techDashModal');
   if(!m){ m=document.createElement('div'); m.id='techDashModal'; m.className='modal'; m.onclick=function(e){ if(e.target===m)closeTechDash(); };
@@ -1227,7 +1257,73 @@ function qBk(b){ var parts=[];
     ((b.status==='ยกเลิก'||b.status==='เช็คเอาต์'||b.status==='ไม่มาตามนัด')
       ?('<div class="bd" style="color:var(--faint);margin-top:6px">🔒 '+(b.status==='เช็คเอาต์'?'เช็คเอาต์แล้ว':'ยกเลิกแล้ว')+'</div>'):
       ('<div class="bd" style="color:var(--faint);margin-top:6px">จัดการคิว (เลื่อน · ผิดนัด · ยกเลิก) ที่หน้า POS แท็บ “คิว”</div>'))+
+    /* ใบจอง — เปิดดู/บันทึกเป็นรูปได้เหมือนที่ POS · ดูอย่างเดียว ไม่ใช่การแก้คิว
+     * ใบของคิวที่ยกเลิก/ผิดนัด/เช็คเอาต์แล้ว เซิร์ฟเวอร์จะติดป้ายแดงบอกบนหัวใบให้เอง */
+    '<div class="bkact"><button type="button" class="btn sec sm" onclick="openPass(\''+esc(b.booking_id)+'\')">🎫 ใบจอง</button></div>'+
     '</div></div>'; }
+
+/* =================== ใบจอง (ดูอย่างเดียว) ===================
+ * เนื้อหาในใบมาจาก `bookingPass_` ที่เซิร์ฟเวอร์ที่เดียว — ใบเดียวกับที่ลูกค้าได้ตอนจอง
+ * และที่ POS เปิดหลังเลื่อนคิว · หน้านี้มีหน้าที่แค่ "วาด" กับ "บันทึกเป็นรูป"
+ * แก้เนื้อหาใบที่ Core.gs จุดเดียว เปลี่ยนครบทั้งสามหน้า */
+function passMoney(m){ var tone={ok:'var(--ok)',gold:'var(--gold-soft)',warn:'var(--warn)',muted:'var(--faint)'}[m.tone||'']||'';
+  var neg=Number(m.v)<0;
+  return '<div class="prow"><span>'+esc(m.k)+'</span><b'+(tone?(' style="color:'+tone+'"'):'')+'>'+(neg?'−':'')+fmt(Math.abs(Number(m.v)||0))+' ฿</b></div>'; }
+function passHTML(p){ p=p||{}; var hero=p.hero||{}, h='';
+  h+='<div class="ptop"><div class="tt">'+esc(p.title||'VIP BOOKING PASS')+'</div><div class="ts">'+esc(p.subtitle||'')+'</div></div>';
+  if(p.badge) h+='<div class="pbadge'+(p.badgeTone==='bad'?' bad':'')+'">'+esc(p.badge)+'</div>';
+  if(p.replaces) h+='<div class="prep">'+esc(p.replaces)+'</div>';
+  if(p.warn&&p.warn.length) h+='<div class="pwarn">'+p.warn.join('<br>')+'</div>';
+  h+='<div class="timebox"><div class="k">มาถึงร้าน</div><div class="t">'+esc(hero.arrive||'')+' น.</div>'+
+     '<div class="d">'+esc(hero.dateText||hero.date||'')+'</div>'+
+     (hero.finish?('<div class="ln"></div><div class="f">คาดว่าเสร็จประมาณ <b style="color:var(--fg)">'+esc(hero.finish)+' น.</b>'+
+       (hero.durText?('<br>ใช้เวลาประมาณ '+esc(hero.durText)):'')+'</div>'):'')+'</div>';
+  if(p.changes&&p.changes.length) h+='<div class="pchg"><div class="t">เปลี่ยนจากใบเดิม</div>'+
+    p.changes.map(function(c){ return '<div class="r"><span>'+esc(c.k)+'</span><b>'+(c.from?('<s>'+esc(c.from)+'</s> → '):'')+esc(c.to)+'</b></div>'; }).join('')+'</div>';
+  h+=(p.rows||[]).map(function(r){ return '<div class="prow"><span>'+esc(r.k)+'</span><b>'+esc(r.v)+'</b></div>'; }).join('');
+  h+=(p.money||[]).map(passMoney).join('');
+  if(p.foot) h+='<div class="pfoot">'+esc(p.foot)+'</div>';
+  if(p.issued) h+='<div class="pissue">'+esc(p.issued)+'</div>';
+  return h; }
+/* บันทึกใบจองเป็นรูป — ใบยาวเกินจอมือถือ แคปเองได้ไม่ครบ ปุ่มนี้วาดทั้งใบเป็นรูปเดียว
+ * เครื่องที่แชร์ไฟล์ได้จะเด้งแผงแชร์ (เลือก "บันทึกรูปภาพ" ลงแกลเลอรีได้เลย) ที่เหลือดาวน์โหลดเป็น .png
+ * ไลบรารีวาดรูปโหลดตอนกดปุ่มครั้งแรกเท่านั้น ไม่ถ่วงตอนเปิดหน้า */
+function savePassImage(btn, elId, fileName){
+  var el=document.getElementById(elId);
+  if(!el){ toast('ไม่พบใบจอง',1); return; }
+  var old=btn?btn.innerHTML:'';
+  if(btn){ btn.disabled=true; btn.innerHTML='กำลังสร้างรูป…'; }
+  function done(){ if(btn){ btn.disabled=false; btn.innerHTML=old; } }
+  loadJS('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js').then(function(){
+    return html2canvas(el,{ backgroundColor:'#0f0f10', scale:Math.min(3,(window.devicePixelRatio||1)*1.6),
+      useCORS:true, windowWidth:el.scrollWidth, height:el.scrollHeight, windowHeight:el.scrollHeight });
+  }).then(function(cv){
+    return new Promise(function(res){ cv.toBlob(function(b){ res(b); },'image/png'); });
+  }).then(function(blob){
+    if(!blob) throw new Error('สร้างรูปไม่สำเร็จ');
+    var f=null;
+    try{ f=new File([blob], fileName+'.png', {type:'image/png'}); }catch(e){}
+    if(f && navigator.canShare && navigator.canShare({files:[f]}) && navigator.share){
+      return navigator.share({files:[f], title:fileName}).then(done, done);   /* ผู้ใช้กดยกเลิกก็ไม่ต้องฟ้อง */
+    }
+    var url=URL.createObjectURL(blob), a=document.createElement('a');
+    a.href=url; a.download=fileName+'.png'; document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); },1500);
+    toast('บันทึกรูปใบจองแล้ว'); done();
+  }).catch(function(e){ toast('บันทึกรูปไม่สำเร็จ'+(e&&e.message?(': '+e.message):'')+' — แคปหน้าจอแทนได้ค่ะ',1); done(); });
+}
+function showPass(pass){ if(!pass){ toast('ยังไม่มีข้อมูลใบจอง',1); return; }
+  var m=document.getElementById('passModal'), body=document.getElementById('passBody');
+  if(!m||!body){ toast('เปิดใบจองไม่ได้ (หน้าเว็บไม่ครบ) — อัปโหลด admin.html ใหม่อีกครั้ง',1); return; }
+  body.innerHTML=passHTML(pass);
+  m.classList.add('show'); }
+function closePass(){ var m=document.getElementById('passModal'); if(m)m.classList.remove('show'); }
+function openPass(id){ id=String(id||'').trim(); if(!id) return;
+  api('bookingPass',{booking_id:id}).then(function(r){
+    if(!r||!r.ok){ toast((r&&r.message)||'เปิดใบจองไม่สำเร็จ',1); return; }
+    /* แยกให้ชัด: ต่อเซิร์ฟเวอร์ไม่ได้ กับ วาดใบไม่สำเร็จ คนละเรื่องกัน */
+    try{ showPass(r.data.pass); }catch(err){ toast('เปิดใบจองไม่สำเร็จ: '+(err&&err.message||''),1); }
+  }).catch(function(){ toast('เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ ลองใหม่อีกครั้ง',1); }); }
 
 /* =================== เลื่อนคิว — ย้ายไปอยู่ที่ POS แท็บ "คิว" แล้ว (15 พ.ย. 2026) ===================
  * การจัดการคิวทั้งหมด (เช็คเอาท์ · ผิดนัด · เลื่อนคิว · ยกเลิกคิว) ต้องอยู่ที่ POS ที่เดียว
@@ -1477,14 +1573,16 @@ function togUser(un,on){ if(!confirm((on?'เปิด':'ปิด')+'การ�
 /* ===== หน้าบัญชี = "รายการเดินบัญชี" =====
  * เดิมเป็นงบกำไรขาดทุนซ้ำกับหน้าภาพรวม จึงเปลี่ยนเป็นรายการจริงที่บันทึกไว้
  * วันที่ · ประเภท · รายการ · มูลค่า + ยอดคงเหลือสะสม พร้อมกราฟเงินเข้า-ออก */
-var ACCT=null, ACCTF='all', ACCTQ='';
+var ACCT=null, ACCTF='all', ACCTQ='', ACCTOPEN={}, ACCTDAYS=10;
 function loadAcct(){ var box=document.getElementById('acctBody'); box.innerHTML='<div class="empty">กำลังโหลด…</div>';
   api('reportLedgerFlow',{from:document.getElementById('aFrom').value,to:document.getElementById('aTo').value})
     .then(function(r){ if(!r||!r.ok){ box.innerHTML='<div class="empty">'+esc((r&&r.message)||'โหลดไม่สำเร็จ')+'</div>'; return; }
-      ACCT=r.data; ACCTF='all'; ACCTQ=''; renderAcct(); })
+      ACCT=r.data; ACCTF='all'; ACCTQ=''; ACCTOPEN={}; ACCTDAYS=10; renderAcct(); })
     .catch(function(){ box.innerHTML='<div class="empty">เชื่อมต่อไม่สำเร็จ</div>'; }); }
-function acctFilter(f){ ACCTF=f; renderAcct(); }
-function acctSearch(v){ ACCTQ=String(v||'').trim().toLowerCase(); renderAcctRows(); }
+function acctFilter(f){ ACCTF=f; ACCTDAYS=10; renderAcct(); }
+function acctSearch(v){ ACCTQ=String(v||'').trim().toLowerCase(); ACCTDAYS=10; renderAcctRows(); }
+function acctDay(d){ ACCTOPEN[d]=!ACCTOPEN[d]; renderAcctRows(); }
+function acctMore(){ ACCTDAYS+=14; renderAcctRows(); }
 function acctRows(){ var d=ACCT; if(!d) return [];
   return (d.rows||[]).filter(function(x){
     if(ACCTF==='in'&&x.kind!=='in') return false;
@@ -1502,12 +1600,13 @@ function renderAcct(){ var d=ACCT; if(!d) return;
       tile('คงเหลือ','฿'+fmt(d.netCash),'<span class="mini" style="margin:0">'+mg+'% ของเงินเข้า · '+fmt(d.count)+' รายการ</span>')+
     '</div>';
   if((d.byDay||[]).length>1) h+='<div style="margin-top:12px">'+vzInOut(d.byDay)+'</div>';
+  h+=flowGroups(d);
   h+='<div class="mini" style="margin-top:8px">นี่คือมุมมอง <b>กระแสเงินสด</b> (เงินเข้าออกจริงตามวันที่) ไม่ใช่กำไรขาดทุน — กำไรดูที่แท็บภาพรวม</div></div>';
 
   if((d.bigOut||[]).length) h+='<div class="card"><h2>🔎 ค่าใช้จ่ายก้อนใหญ่ช่วงนี้</h2>'+
     vzBars(d.bigOut.map(function(x){ return {name:x.item.slice(0,28),value:x.amount,sub:x.date+' · '+x.type}; }))+'</div>';
 
-  h+='<div class="card"><h2>📒 รายการเดินบัญชี</h2>'+
+  h+='<div class="card"><h2>📒 รายการเดินบัญชี <span class="mini" style="margin:0">'+fmt((d.byDay||[]).length)+' วัน · '+fmt(d.count)+' รายการ</span></h2>'+
     '<div class="quick" style="margin-bottom:8px">'+
       '<button class="qbtn'+(ACCTF==='all'?' on':'')+'" onclick="acctFilter(\'all\')">ทั้งหมด</button>'+
       '<button class="qbtn'+(ACCTF==='in'?' on':'')+'" onclick="acctFilter(\'in\')">เงินเข้า</button>'+
@@ -1517,19 +1616,49 @@ function renderAcct(){ var d=ACCT; if(!d) return;
     '<input class="in" id="acctQ" placeholder="ค้นหา วันที่ / ชื่อลูกค้า / รายการ / เลขที่บิล" oninput="acctSearch(this.value)" value="'+esc(ACCTQ)+'">'+
     '<div id="acctRows" style="margin-top:8px"></div></div>';
   document.getElementById('acctBody').innerHTML=h; renderAcctRows(); }
+/* สรุปสัดส่วน — เงินเข้าแยกตามช่องทางรับเงิน · เงินออกแยกตามประเภท (จัดกลุ่มมาจากเซิร์ฟเวอร์) */
+function flowGroups(d){ var gs=(d.groups||[]); if(!gs.length) return '';
+  var IN=['var(--gold-soft)','var(--gold)','var(--gold-dim)'], OUT=['#4f9e86','#79c08a','#5f8f7f'];
+  function block(kind,title,tot){
+    var list=gs.filter(function(x){ return x.kind===kind; }); if(!list.length) return '';
+    var max=Math.max.apply(null,list.map(function(x){ return x.amount; }))||1;
+    return '<div class="flowh">'+title+'</div>'+list.map(function(x,i){
+      var col=(kind==='in'?IN:OUT)[i%3], pct=tot>0?Math.round(x.amount/tot*100):0;
+      return '<div class="flowg"><div><div class="nm"><i style="background:'+col+'"></i>'+esc(x.label)+'</div>'+
+        '<div class="bar"><b style="width:'+Math.max(2,Math.round(x.amount/max*100))+'%;background:'+col+'"></b></div>'+
+        '<div class="sub">'+fmt(x.count)+' รายการ'+(pct?(' · '+pct+'%'):'')+'</div></div>'+
+        '<div class="amt" style="color:'+col+'">'+(kind==='in'?'+':'−')+'฿'+fmt(x.amount)+'</div></div>'; }).join(''); }
+  return '<div style="margin-top:12px">'+block('in','เงินเข้า — แยกตามช่องทางรับเงิน',d.income)+
+         block('out','เงินออก — แยกตามประเภท',d.outcome)+'</div>'; }
+
+/* รายการเดินบัญชี — วันละ 1 บรรทัด กางเฉพาะวันที่กด
+ * (เดิมเทรายการทั้งเดือนต่อกันเป็นตารางเดียว หน้าจอยาวจนหาอะไรไม่เจอ) */
+function acctDayLabel(k){ var dt=kDate(k); return THD[dt.getDay()]+'. '+dt.getDate()+' '+MON[dt.getMonth()]; }
 function renderAcctRows(){ var el=document.getElementById('acctRows'); if(!el) return;
   var rows=acctRows();
   if(!rows.length){ el.innerHTML='<div class="empty">ไม่มีรายการตามเงื่อนไขนี้</div>'; return; }
-  var sin=0,sout=0; rows.forEach(function(x){ if(x.kind==='in')sin+=x.amount; else sout+=x.amount; });
-  var cap=400, shown=rows.slice(0,cap);
-  var h='<div class="mini" style="margin-bottom:6px">แสดง '+fmt(shown.length)+' จาก '+fmt(rows.length)+' รายการ · เข้า ฿'+fmt(sin)+' · ออก ฿'+fmt(sout)+' · สุทธิ ฿'+fmt(sin-sout)+'</div>'+
-    '<div class="ledg"><div class="lgh"><span>วันที่</span><span>ประเภท</span><span>รายการ</span><span class="r">มูลค่า</span></div>'+
-    shown.map(function(x){ var neg=(x.kind==='out');
-      return '<div class="lgr"><span class="lgd">'+esc(x.date.slice(5))+'</span>'+
-        '<span class="lgt'+(neg?' o':'')+'">'+esc(x.type)+'</span>'+
-        '<span class="lgi">'+esc(x.item)+(x.ref?('<small> · '+esc(x.ref)+'</small>'):'')+(x.method?('<small> · '+esc(x.method)+'</small>'):'')+'</span>'+
-        '<span class="lgv '+(neg?'o':'i')+'">'+(neg?'−':'+')+'฿'+fmt(x.amount)+'</span></div>'; }).join('')+'</div>'+
-    (rows.length>cap?('<div class="mini" style="margin-top:6px">เกิน '+cap+' รายการ — ใช้ตัวกรองหรือช่วงวันที่ให้แคบลง หรือกด “ดาวน์โหลด Excel” เพื่อดูทั้งหมด</div>'):'');
+  var sin=0,sout=0, days=[], map={};
+  rows.forEach(function(x){ if(x.kind==='in')sin+=x.amount; else sout+=x.amount;
+    if(!map[x.date]){ map[x.date]={date:x.date,inc:0,out:0,list:[]}; days.push(map[x.date]); }
+    var g=map[x.date]; g.list.push(x); if(x.kind==='in')g.inc+=x.amount; else g.out+=x.amount; });
+  /* ค้นหาอยู่ = กางวันที่มีผลลัพธ์ให้เลย ไม่ต้องไล่กดทีละวัน */
+  var searching=!!ACCTQ, shown=searching?days:days.slice(0,ACCTDAYS);
+  var h='<div class="mini" style="margin-bottom:4px">'+fmt(days.length)+' วัน · '+fmt(rows.length)+' รายการ · '+
+      'เข้า ฿'+fmt(sin)+' · ออก ฿'+fmt(sout)+' · สุทธิ ฿'+fmt(sin-sout)+'</div>';
+  h+=shown.map(function(g){ var open=searching||!!ACCTOPEN[g.date], net=g.inc-g.out;
+    return '<button type="button" class="lgday'+(open?' on':'')+'" onclick="acctDay(\''+g.date+'\')">'+
+      '<span class="cv">›</span>'+
+      '<span><span class="dt">'+esc(acctDayLabel(g.date))+'</span>'+
+        '<span class="ds">'+fmt(g.list.length)+' รายการ'+(g.inc?(' · เข้า ฿'+fmt(g.inc)):'')+(g.out?(' · ออก ฿'+fmt(g.out)):'')+'</span></span>'+
+      '<span class="dv" style="color:'+(net<0?'var(--crit)':'var(--gold-soft)')+'">'+(net<0?'−':'+')+'฿'+fmt(Math.abs(net))+'</span></button>'+
+      (open?('<div class="lgbox">'+g.list.map(function(x){ var neg=(x.kind==='out');
+        return '<div class="lgit"><div><div>'+esc(x.item)+'</div><div class="s">'+esc(x.type)+
+          (x.ref?(' · '+esc(x.ref)):'')+(x.method?(' · '+esc(x.method)):'')+'</div></div>'+
+          '<div class="v '+(neg?'o':'i')+'">'+(neg?'−':'+')+'฿'+fmt(x.amount)+'</div></div>'; }).join('')+'</div>'):''); }).join('');
+  if(!searching && days.length>shown.length)
+    h+='<button class="btn sec sm" style="margin-top:10px" onclick="acctMore()">แสดงอีก '+fmt(Math.min(14,days.length-shown.length))+' วัน (เหลือ '+fmt(days.length-shown.length)+' วัน)</button>';
+  h+='<div class="mini" style="margin-top:8px">แตะวันไหน กางเฉพาะวันนั้น · ค้นหาแล้วระบบกางวันที่มีผลให้เอง · '+
+     'ต้องการรายการทั้งหมดแบบละเอียด กด <b>📥 ดาวน์โหลด Excel</b> ด้านล่าง</div>';
   el.innerHTML=h; }
 /* กราฟแท่งคู่ เงินเข้า (ทอง) vs เงินออก (เขียว) ต่อวัน */
 function vzInOut(days){ var n=days.length; if(!n) return '';

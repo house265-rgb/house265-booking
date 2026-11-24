@@ -176,6 +176,7 @@
   .timebox .f{font-size:12.5px;color:var(--muted);line-height:1.7}
   /* ใบจองใบใหม่หลังเลื่อนคิว */
   .pbadge{text-align:center;font-size:12px;letter-spacing:.06em;color:#1a1a1a;background:var(--gold-soft);border-radius:999px;padding:5px 12px;margin:0 auto 8px;display:block;max-width:230px}
+  .pbadge.bad{background:var(--crit);color:#2b1212}
   .prep{font-size:12px;color:var(--warn);text-align:center;line-height:1.6;margin-bottom:8px}
   .pchg{border:1px dashed var(--line);border-radius:9px;padding:10px 12px;margin:0 0 10px}
   .pchg .t{font-size:11.5px;letter-spacing:.06em;color:var(--muted);margin-bottom:5px}
@@ -447,7 +448,7 @@ function _busyOff(btn){ _BUSY=Math.max(0,_BUSY-1); if(!_BUSY) _busyBar(false);
  * มือถือลูกค้า (โดยเฉพาะเบราว์เซอร์ใน LINE) แคชหน้าเว็บไว้นานมาก หน้าเก่าคุยกับหลังบ้านใหม่
  * แล้วใบจองโหว่โดยไม่มีใครรู้ (เกิดจริง 16 พ.ย. 2026 — ใบจองขึ้นช่องว่างกับคำว่า undefined)
  * จึงโหลดใหม่ให้เงียบ ๆ ครั้งเดียว ถ้ายังไม่ตรงอีกค่อยบอกลูกค้าให้ติดต่อร้าน */
-var BUILD='P102-UI';
+var BUILD='P105-LEDGER';
 /* ❗ 24 พ.ย.: เดิมเทียบแบบต้องเท่ากันเป๊ะ (sv===BUILD) แต่เซิร์ฟเวอร์ส่ง '2026-11-24-P95-DAILY'
  *   ส่วนหน้าเว็บเก็บ 'P95-DAILY' → ไม่มีวันเท่ากัน ลูกค้า "ทุกคน" จึงโดนรีโหลดฟรี 1 รอบ
  *   แล้วเจอคำเตือนค้างหน้าจอตั้งแต่ยังไม่เริ่มจอง ทั้งที่ระบบปกติดี
@@ -818,10 +819,6 @@ function afterDim(){ resolveVariant(); renderDims(); syncBundle(); updatePriceHi
 
 function sizesForTech(){ var svc=CAT.services.filter(function(s){return String(s.service_id)===String(STATE.serviceId);})[0]; if(!svc)return [];
   return (CAT.serviceSizes||[]).filter(function(z){return String(z.service_id)===String(svc.service_id);}).map(function(z){return {size:String(z.size),price:Number(z.price)};}); }
-function buildSizeChips(sizes,byob){ var box=document.getElementById('sizeList'); if(!box)return; box.innerHTML='';
-  sizes.forEach(function(s){ var c=document.createElement('div'); c.className='chip'+(STATE.size===s.size?' sel':'');
-    c.innerHTML=esc(s.size)+'<span class="sm">'+fmt(s.price)+' ฿/QR</span>';
-    c.onclick=function(){ STATE.size=(STATE.size===s.size?'':s.size); buildSizeChips(sizes,byob); syncBundle(); updatePriceHint(); refreshNav(); }; box.appendChild(c); }); }
 
 function bundleBlock(){ return '<span class="lbl" id="bundleLbl">'+lbl('label','bundle','จำนวน','Quantity')+' <span class="en">('+esc(svcSellUnit(svc()))+')</span></span>'+
   '<div class="chips" id="bundleQuick"></div>'+
@@ -1188,7 +1185,7 @@ function savePassImage(btn, elId, fileName){
     setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); },1500); done();
   }).catch(function(e){ showMsg('บันทึกรูปไม่สำเร็จ แคปหน้าจอแทนได้นะคะ 🙏','ไม่สำเร็จ'); done(); }); }
 function passHTML(p){ p=p||{}; var h='';
-  if(p.badge) h+='<div class="pbadge">'+esc(p.badge)+'</div>';
+  if(p.badge) h+='<div class="pbadge'+(p.badgeTone==='bad'?' bad':'')+'">'+esc(p.badge)+'</div>';
   if(p.replaces) h+='<div class="prep">'+esc(p.replaces)+'</div>';
   var hero=p.hero||{};
   h+=timeBlock(hero.date, hero.arrive, hero.finish, hero.dateText, hero.durText);
