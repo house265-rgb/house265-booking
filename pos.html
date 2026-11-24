@@ -3,8 +3,11 @@
 <title>House265 · POS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<!-- บอกเบราว์เซอร์ให้เริ่มจับมือกับเซิร์ฟเวอร์ตั้งแต่ตอนโหลดหน้า ไม่ต้องรอจังหวะยิง API ครั้งแรก -->
+<link rel="preconnect" href="https://script.google.com" crossorigin>
+<link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 :root{--bg:#111010;--surface:#1a1816;--surface2:#211f1c;--bg2:#161412;--elev:#262320;--line:#322e29;--fg:#efe9df;--muted:#b3aa9c;--faint:#7c7265;--gold:#c8a75a;--gold-soft:#e6cc7e;--gold-dim:#9c7f3f;--gold-ghost:rgba(200,167,90,.12);--ok:#79c08a;--crit:#d98a8a;--r:13px;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -312,7 +315,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P93-PROMOFIX'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P94-SPEED'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='',DATA=null,FULL=false,CART=[],CAT='ต่อผม',PAY='เงินสด',BUSY=false,USERTECH='';
 window._promoId=''; window._recv=0; window._split=false; window._p2m='พร้อมเพย์'; window._p2a=0; window._slips=[];
 window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName='';
@@ -358,21 +361,47 @@ function doLogin(){ var u=document.getElementById('luser').value.trim(), p=docum
   api('login',{username:u,password:p}).then(function(r){ if(!r||!r.ok){ document.getElementById('loginErr').innerText=(r&&r.message)||'เข้าสู่ระบบไม่สำเร็จ'; return; }
     TOKEN=r.data.token; setTok(TOKEN); document.getElementById('loginModal').classList.remove('show'); boot();
   }).catch(function(){ document.getElementById('loginErr').innerText='เชื่อมต่อไม่สำเร็จ'; }); }
-function doLogout(){ api('logout',{}); TOKEN=''; setTok(''); location.reload(); }
+function doLogout(){ api('logout',{}); TOKEN=''; setTok(''); try{ bootCacheClear(); }catch(e){} location.reload(); }
 
-function boot(){ api('bootstrap',{}).then(function(r){ if(!r||!r.ok){ if(r&&r.code==='AUTH'){ setTok(''); location.reload(); return; } toast((r&&r.message)||'โหลดไม่สำเร็จ',1); return; }
-    DATA=r.data; FULL=!!DATA.user.full;
-    /* ตัวบอกเวอร์ชัน: หน้าเว็บ vs เซิร์ฟเวอร์ — ไม่ตรง = Deploy ไม่ครบ */
-    (function(){ var srv=String(DATA.version||'-'), okv=(srv.indexOf(BUILD)>=0);
-      var who={owner:'เจ้าของร้าน',manager:'ผู้จัดการ',staff:'ช่าง'}[DATA.user.role]||'ผู้ใช้';
-      var el=document.querySelector('.brand .tag'); if(el){ el.innerHTML='POS · '+esc(who)+' · <span style="color:'+(okv?'var(--ok)':'var(--crit)')+'">'+esc(BUILD)+'</span>'; el.title='หน้าเว็บ '+BUILD+' · เซิร์ฟเวอร์ '+srv; }
-      if(!okv) toast('⚠ เวอร์ชันไม่ตรงกัน — หน้าเว็บ '+BUILD+' · เซิร์ฟเวอร์ '+srv+' (ต้อง Deploy Core.gs เป็น New version)',1); })();
-    document.getElementById('app').classList.remove('hide');
-    document.getElementById('uInfo').innerText=(DATA.user.name||'')+' · '+(DATA.user.role==='owner'?'เจ้าของ':DATA.user.role==='manager'?'ผู้จัดการ':'ช่าง');
-    document.getElementById('navToday').style.display=FULL?'flex':'none';
-    var me=(DATA.technicians||[]).filter(function(t){return String(t.tech_id)===String(DATA.user.tech_id);})[0]; USERTECH=me?me.name:'';
-    buildCats(); renderMenu(); renderCart();
-  }).catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
+/* ===== เปิดหน้าปุ๊บเห็นทันที =====
+ * เก็บข้อมูลตั้งต้นของครั้งก่อนไว้ในเครื่อง วาดจากของเก่าไปก่อน แล้วยิงโหลดใหม่ทับเสมอ
+ * กติกากันข้อมูลเพี้ยน:
+ *   · ผูกกับเวอร์ชันหน้าเว็บ — อัปเวอร์ชันใหม่ ของเก่าถูกทิ้งทันที
+ *   · ผูกกับผู้ใช้ที่ล็อกอิน — เปลี่ยนคนใช้ ไม่หยิบของคนก่อนมาใช้
+ *   · เก่าเกิน 12 ชม. ไม่ใช้
+ *   · ของเก่าใช้แค่ "วาดเมนู" เท่านั้น — ราคาที่คิดเงินจริงยังยิงถามเซิร์ฟเวอร์ทุกครั้งเหมือนเดิม
+ *     (ext_price ตอนสแกน · lineQuote ตอนคิดค่ามือ) จึงไม่มีทางเก็บเงินด้วยราคาเก่า */
+var BOOTKEY='h265_boot_pos';
+function bootCacheGet(){ try{ var o=JSON.parse(localStorage.getItem(BOOTKEY)||'null');
+  if(!o||o.build!==BUILD||!o.data) return null;
+  if(!o.t||(Date.now()-o.t)>43200000) return null;
+  if(o.tok!==(TOKEN||'').slice(0,8)) return null;
+  return o.data; }catch(e){ return null; } }
+function bootCacheSet(d){ try{ localStorage.setItem(BOOTKEY, JSON.stringify({build:BUILD,t:Date.now(),tok:(TOKEN||'').slice(0,8),data:d})); }catch(e){} }
+function bootCacheClear(){ try{ localStorage.removeItem(BOOTKEY); }catch(e){} }
+
+var APPLIED_ROLE=null;
+function applyBoot(d, fromCache){
+  /* สิทธิ์เปลี่ยนจากที่แคชไว้ = โหลดหน้าใหม่ ไม่ปล่อยหน้าจอสิทธิ์เก่าค้าง */
+  if(APPLIED_ROLE!==null && String(d.user.role||'')!==APPLIED_ROLE){ location.reload(); return; }
+  APPLIED_ROLE=String(d.user.role||'');
+  DATA=d; FULL=!!DATA.user.full;
+  /* ตัวบอกเวอร์ชัน: หน้าเว็บ vs เซิร์ฟเวอร์ — ไม่ตรง = Deploy ไม่ครบ (เช็คเฉพาะของสดจากเซิร์ฟเวอร์) */
+  (function(){ var srv=String(DATA.version||'-'), okv=(srv.indexOf(BUILD)>=0);
+    var who={owner:'เจ้าของร้าน',manager:'ผู้จัดการ',staff:'ช่าง'}[DATA.user.role]||'ผู้ใช้';
+    var el=document.querySelector('.brand .tag'); if(el){ el.innerHTML='POS · '+esc(who)+' · <span style="color:'+((okv||fromCache)?'var(--ok)':'var(--crit)')+'">'+esc(BUILD)+'</span>'; el.title='หน้าเว็บ '+BUILD+' · เซิร์ฟเวอร์ '+srv; }
+    if(!okv && !fromCache) toast('⚠ เวอร์ชันไม่ตรงกัน — หน้าเว็บ '+BUILD+' · เซิร์ฟเวอร์ '+srv+' (ต้อง Deploy Core.gs เป็น New version)',1); })();
+  document.getElementById('app').classList.remove('hide');
+  document.getElementById('uInfo').innerText=(DATA.user.name||'')+' · '+(DATA.user.role==='owner'?'เจ้าของ':DATA.user.role==='manager'?'ผู้จัดการ':'ช่าง');
+  document.getElementById('navToday').style.display=FULL?'flex':'none';
+  var me=(DATA.technicians||[]).filter(function(t){return String(t.tech_id)===String(DATA.user.tech_id);})[0]; USERTECH=me?me.name:'';
+  buildCats(); renderMenu(); renderCart();
+}
+function boot(){
+  var c=bootCacheGet(); if(c) applyBoot(c, true);          /* เห็นหน้าจอทันที ไม่ต้องรอเซิร์ฟเวอร์ */
+  api('bootstrap',{}).then(function(r){ if(!r||!r.ok){ if(r&&r.code==='AUTH'){ bootCacheClear(); setTok(''); location.reload(); return; } if(!c) toast((r&&r.message)||'โหลดไม่สำเร็จ',1); return; }
+    applyBoot(r.data, false); bootCacheSet(r.data);        /* ของสดมาถึงแล้ว ทับทันที */
+  }).catch(function(){ if(!c) toast('เชื่อมต่อไม่สำเร็จ',1); else toast('ยังต่อเซิร์ฟเวอร์ไม่ได้ · กำลังแสดงข้อมูลล่าสุดที่โหลดไว้',1); }); }
 
 function setPage(p){ ['Sale','Queue','Today','Slips'].forEach(function(x){ document.getElementById('page'+x).classList.toggle('on',x===p); document.getElementById('nav'+x).classList.toggle('on',x===p); });
   if(p==='Today')loadToday(); if(p==='Slips'){ initHistDates(); loadHistory(); } if(p==='Queue'){ initQueueDate(); loadQueue(); } window.scrollTo(0,0); }
@@ -494,8 +523,21 @@ function renderMenu(){ var box=document.getElementById('menuBody');
 
 /* ---- scanning ---- */
 var SCANNER=null, SCANNING=false;
+/* ไลบรารีอ่าน QR หนัก ~370KB แต่ใช้เฉพาะตอนเปิดกล้อง
+ * เดิมโหลดค้างไว้ตั้งแต่หัวไฟล์ทุกครั้งที่เปิดหน้าขาย = หน้าเปิดช้าโดยเปล่าประโยชน์
+ * ตอนนี้โหลดตอนกดปุ่มครั้งแรกเท่านั้น (ครั้งต่อไปเบราว์เซอร์แคชให้เอง) */
+function loadJS(src){ return new Promise(function(ok,no){
+  if(document.querySelector('script[data-lazy="'+src+'"]')){ var t=setInterval(function(){ if(window.__lazy_&&window.__lazy_[src]){ clearInterval(t); ok(); } },50); setTimeout(function(){clearInterval(t);no();},15000); return; }
+  var el=document.createElement('script'); el.src=src; el.setAttribute('data-lazy',src);
+  el.onload=function(){ window.__lazy_=window.__lazy_||{}; window.__lazy_[src]=1; ok(); };
+  el.onerror=function(){ no(); }; document.head.appendChild(el); }); }
 function toggleScan(){ if(SCANNING){ stopScan(); return; }
-  if(typeof Html5Qrcode==='undefined'){ toast('ไลบรารีสแกนยังไม่พร้อม ลองพิมพ์รหัสแทน',1); return; }
+  if(typeof Html5Qrcode==='undefined'){
+    toast('กำลังเปิดกล้อง…');
+    loadJS('https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js')
+      .then(function(){ toggleScan(); })
+      .catch(function(){ toast('เปิดกล้องไม่ได้ (โหลดตัวอ่าน QR ไม่สำเร็จ) ลองพิมพ์รหัสแทน',1); });
+    return; }
   document.getElementById('reader').style.display='block'; document.getElementById('scanBtn').innerText='ปิดกล้อง';
   SCANNER=new Html5Qrcode('reader'); SCANNING=true;
   SCANNER.start({facingMode:'environment'},{fps:15,qrbox:{width:260,height:260},aspectRatio:1.0},function(txt){ onScan(txt); },function(){}).catch(function(e){ SCANNING=false; document.getElementById('scanBtn').innerText='เปิดกล้องสแกน'; toast('เปิดกล้องไม่ได้ ('+e+') · พิมพ์รหัสแทนได้',1); }); }

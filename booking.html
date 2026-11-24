@@ -6,7 +6,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@200;300;400;500;600&family=Playfair+Display:wght@500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link rel="preconnect" href="https://script.google.com" crossorigin>
+<link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <title>House265 · จองคิว</title>
 <style>
@@ -425,7 +428,7 @@ function _busyOff(btn){ _BUSY=Math.max(0,_BUSY-1); if(!_BUSY) _busyBar(false);
  * มือถือลูกค้า (โดยเฉพาะเบราว์เซอร์ใน LINE) แคชหน้าเว็บไว้นานมาก หน้าเก่าคุยกับหลังบ้านใหม่
  * แล้วใบจองโหว่โดยไม่มีใครรู้ (เกิดจริง 16 พ.ย. 2026 — ใบจองขึ้นช่องว่างกับคำว่า undefined)
  * จึงโหลดใหม่ให้เงียบ ๆ ครั้งเดียว ถ้ายังไม่ตรงอีกค่อยบอกลูกค้าให้ติดต่อร้าน */
-var BUILD='P93-PROMOFIX';
+var BUILD='P94-SPEED';
 function checkStale_(){
   var sv=String((CAT&&CAT.version)||'').trim(); if(!sv||sv===BUILD) return;
   var k='h265_reload_'+sv, tried=false;

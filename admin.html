@@ -3,7 +3,10 @@
 <title>House265 · ผู้จัดการ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link rel="preconnect" href="https://script.google.com" crossorigin>
+<link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 :root{--bg:#111010;--surface:#1a1816;--surface2:#211f1c;--bg2:#161412;--elev:#262320;--line:#322e29;--fg:#efe9df;--muted:#b3aa9c;--faint:#7c7265;--gold:#c8a75a;--gold-soft:#e6cc7e;--gold-dim:#9c7f3f;--gold-ghost:rgba(200,167,90,.12);--ok:#79c08a;--crit:#d98a8a;--blue:#7fa8c8;--r:13px;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -300,7 +303,6 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 }
 @media(max-width:400px){ .row2{grid-template-columns:1fr} }
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 <header class="top"><div class="brand"><b>House<span class="n">265</span></b><span class="tag">ระบบจัดการร้าน</span></div>
@@ -397,7 +399,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P93-PROMOFIX'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P94-SPEED'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='', SCHED=null, SETTINGS=null, TAB='dash', FULL=false, ROLE='', MYTECH='';
 var THD=['อา','จ','อ','พ','พฤ','ศ','ส'];
 /* ===== สถานะ "กำลังทำงาน" — ใช้ร่วมกันทุกหน้า (admin / pos / receive / Booking) =====
@@ -444,23 +446,48 @@ function doLogin(){ var u=document.getElementById('luser').value.trim(), p=docum
     TOKEN=r.data.token; setTok(TOKEN); document.getElementById('loginModal').classList.remove('show'); boot();
   }).catch(function(){ document.getElementById('loginErr').innerText='เชื่อมต่อไม่สำเร็จ'; }); }
 function doLogout(){ api('logout',{}); TOKEN=''; setTok(''); location.reload(); }
-function boot(){ api('bootstrap',{}).then(function(r){ if(!r||!r.ok){ if(r&&r.code==='AUTH'){ setTok(''); location.reload(); return; } toast((r&&r.message)||'โหลดไม่สำเร็จ',1); return; }
-    var u=r.data.user; FULL=!!u.full; ROLE=u.role||''; MYTECH=u.tech_id||'';
+/* ===== เปิดหน้าปุ๊บเห็นทันที (เหมือนหน้า POS) =====
+ * ข้อมูลตั้งต้นของครั้งก่อนถูกเก็บไว้ในเครื่อง วาดจากของเก่าก่อน แล้วยิงของสดมาทับ
+ * ผูกกับเวอร์ชันหน้าเว็บ + ผู้ใช้ที่ล็อกอิน + อายุไม่เกิน 12 ชม.
+ * ตัวเลขเงินทั้งหมด (ภาพรวม · กราฟ · บัญชี) ยังยิงถามเซิร์ฟเวอร์สดทุกครั้งเหมือนเดิม ไม่ได้มาจากแคชนี้ */
+var BOOTKEY='h265_boot_admin', BOOTED=false;
+function bootCacheGet(){ try{ var o=JSON.parse(localStorage.getItem(BOOTKEY)||'null');
+  if(!o||o.build!==BUILD||!o.data) return null;
+  if(!o.t||(Date.now()-o.t)>43200000) return null;
+  if(o.tok!==(TOKEN||'').slice(0,8)) return null;
+  return o.data; }catch(e){ return null; } }
+function bootCacheSet(d){ try{ localStorage.setItem(BOOTKEY, JSON.stringify({build:BUILD,t:Date.now(),tok:(TOKEN||'').slice(0,8),data:d})); }catch(e){} }
+function bootCacheClear(){ try{ localStorage.removeItem(BOOTKEY); }catch(e){} }
+var APPLIED_ROLE=null;
+function applyBoot(D, fromCache){
+    /* ถ้าสิทธิ์ของคนนี้เปลี่ยนไปจากที่แคชไว้ (เช่นถูกเปลี่ยนเป็นช่าง) ให้โหลดหน้าใหม่ทั้งหน้า
+       ไม่เสี่ยงปล่อยหน้าจอโหมดผู้จัดการค้างอยู่ */
+    if(APPLIED_ROLE!==null && String(D.user.role||'')!==APPLIED_ROLE){ location.reload(); return; }
+    APPLIED_ROLE=String(D.user.role||'');
+    var u=D.user; FULL=!!u.full; ROLE=u.role||''; MYTECH=u.tech_id||'';
     /* ตัวบอกเวอร์ชัน: หน้าเว็บ vs เซิร์ฟเวอร์ — ถ้าไม่ตรงแปลว่า Deploy ไม่ครบ (เตือนให้เห็นชัด) */
-    (function(){ var srv=String(r.data.version||'-'), okv=(srv.indexOf(BUILD)>=0);
+    (function(){ var srv=String(D.version||'-'), okv=(srv.indexOf(BUILD)>=0);
       /* ป้ายหัวจอเปลี่ยนตามคนที่ล็อกอิน ไม่ค้างเป็น Manager */
       var who={owner:'เจ้าของร้าน',manager:'ผู้จัดการ',staff:'ช่าง'}[u.role]||'ผู้ใช้';
-      var el=document.querySelector('.brand .tag'); if(el){ el.innerHTML=esc(who)+' · <span style="color:'+(okv?'var(--ok)':'var(--crit)')+'">'+esc(BUILD)+'</span>';
+      var el=document.querySelector('.brand .tag'); if(el){ el.innerHTML=esc(who)+' · <span style="color:'+((okv||fromCache)?'var(--ok)':'var(--crit)')+'">'+esc(BUILD)+'</span>';
         el.title='หน้าเว็บ '+BUILD+' · เซิร์ฟเวอร์ '+srv; }
       try{ document.title='House265 · '+who; }catch(e){}
-      if(!okv) toast('⚠ เวอร์ชันไม่ตรงกัน — หน้าเว็บ '+BUILD+' · เซิร์ฟเวอร์ '+srv+' (ต้อง Deploy Core.gs เป็น New version)',1); })();
+      if(!okv && !fromCache) toast('⚠ เวอร์ชันไม่ตรงกัน — หน้าเว็บ '+BUILD+' · เซิร์ฟเวอร์ '+srv+' (ต้อง Deploy Core.gs เป็น New version)',1); })();
     document.getElementById('uInfo').innerText=String(u.nickname||u.name||'ผู้ใช้');
     document.getElementById('app').classList.remove('hide');
+    if(BOOTED) return;          /* จัดหน้าจอครั้งเดียวพอ — ของสดที่ตามมาทีหลังไม่ต้องสั่งโหลดแท็บซ้ำ */
+    BOOTED=true;
     if(!FULL){ applyStaffMode(); return; }
     buildQuick('dQuick',setDashRange); buildQuick('aQuick',setAcctRange);
     setRangeThisMonth('dFrom','dTo'); setRangeThisMonth('aFrom','aTo'); document.getElementById('exDate').value=iso(new Date());
     setTab('dash');
-  }).catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
+
+}
+function boot(){
+  var c=bootCacheGet(); if(c) applyBoot(c, true);
+  api('bootstrap',{}).then(function(r){ if(!r||!r.ok){ if(r&&r.code==='AUTH'){ bootCacheClear(); setTok(''); location.reload(); return; } if(!c) toast((r&&r.message)||'โหลดไม่สำเร็จ',1); return; }
+    applyBoot(r.data, false); bootCacheSet(r.data);
+  }).catch(function(){ if(!c) toast('เชื่อมต่อไม่สำเร็จ',1); else toast('ยังต่อเซิร์ฟเวอร์ไม่ได้ · กำลังแสดงข้อมูลล่าสุดที่โหลดไว้',1); }); }
 /* โหมดพนักงาน (ช่าง): คิวงาน (ดูอย่างเดียว) + รายได้ของฉัน + ลางานของตัวเอง */
 function applyStaffMode(){
   /* ซ่อนแท็บ + pane ของผู้จัดการทั้งหมด (กันเนื้อหารั่วมาปนหน้าคิว — ข้อ10) */
@@ -809,21 +836,29 @@ function barRows(obj,unit,money){ var keys=Object.keys(obj||{}); if(!keys.length
   return keys.sort(function(a,b){return obj[b]-obj[a];}).map(function(k){ return '<div class="bar"><span class="nm">'+esc(k)+'</span><span class="tr"><span class="fl" style="width:'+Math.round(Math.abs(obj[k])/max*100)+'%"></span></span><span class="vl">'+(money?'฿':'')+fmt(obj[k])+(unit||'')+'</span></div>'; }).join(''); }
 var DASHDATA=null, TRENDG='month', TRENDDATA=null, CM=[], DCMP='prev';
 function setDCmp(m){ DCMP=m; document.getElementById('cmpPrev').classList.toggle('on',m==='prev'); document.getElementById('cmpYoy').classList.toggle('on',m==='yoy'); loadDash(); }
+var TRENDFIRED=false;
 function loadDash(){ var box=document.getElementById('dashBody'); box.innerHTML='<div class="empty">กำลังโหลด…</div>';
   var from=document.getElementById('dFrom').value, to=document.getElementById('dTo').value;
+  /* ยิงกราฟไปพร้อมกันเลย ไม่ต้องรอตัวเลขหัวข้อเสร็จก่อน — เดิมเรียงกันสองรอบ รอนานเป็นสองเท่า
+   * (ทั้งสองตัวอ่านตาราง Sales/SaleItems ชุดเดียวกัน ฝั่งเซิร์ฟเวอร์แคชไว้ให้แล้ว) */
+  TRENDFIRED=true; loadTrend(from,to);
   api('reportDashboard',{from:from,to:to,cmp:DCMP}).then(function(r){
     if(!r||!r.ok){ box.innerHTML='<div class="empty">'+esc((r&&r.message)||'โหลดไม่สำเร็จ')+'</div>'; return; }
-    DASHDATA=r.data; renderDash(); loadTrend();
+    DASHDATA=r.data; renderDash(); if(!TRENDFIRED){ loadTrend(); } TRENDFIRED=false;
   }).catch(function(){ box.innerHTML='<div class="empty">เชื่อมต่อไม่สำเร็จ</div>'; }); }
 function setTrendG(g){ TRENDG=g;
   /* ชิปอยู่ในการ์ดที่ renderDash วาด ส่วน renderTrend วาดแค่กราฟ — ต้องสลับไฮไลต์เองไม่งั้นค้างที่อันเดิม */
   try{ document.querySelectorAll('.gbtn[data-g]').forEach(function(b){
     b.classList.toggle('on', b.getAttribute('data-g')===g); }); }catch(e){}
   loadTrend(); }
-function loadTrend(){ var el=document.getElementById('trendBox'); if(el)el.innerHTML='<div class="mini" style="padding:20px;text-align:center">กำลังโหลดกราฟ…</div>';
+function loadTrend(rangeFrom,rangeTo){ var el=document.getElementById('trendBox'); if(el)el.innerHTML='<div class="mini" style="padding:20px;text-align:center">กำลังโหลดกราฟ…</div>';
   /* ส่งช่วงวันที่ที่เลือกไปด้วย กราฟจะได้ครอบคลุมช่วงเดียวกับหัวข้อ (ยอดสะสม = ยอดขายรวม) */
+  /* ช่วงวันที่: ถ้าเรียกพร้อมหัวข้อ (ยังไม่มี DASHDATA ของรอบนี้) ให้ใช้ช่วงที่เลือกบนหน้าจอตรง ๆ
+     กราฟจะได้ครอบคลุมช่วงเดียวกับตัวเลขหัวข้อเสมอ */
   var q={bucket:TRENDG}, d=DASHDATA&&DASHDATA.range;
-  if(d&&d.from&&d.to){ q.from=d.from; q.to=d.to; }
+  var qf=rangeFrom||((d&&d.from)||document.getElementById('dFrom').value);
+  var qt=rangeTo  ||((d&&d.to)  ||document.getElementById('dTo').value);
+  if(qf&&qt){ q.from=qf; q.to=qt; }
   api('reportTrend',q).then(function(r){ TRENDDATA=(r&&r.ok)?r.data:{series:[]}; renderTrend(); }).catch(function(){ TRENDDATA={series:[]}; renderTrend(); }); }
 /* เดลต้าเทียบงวดก่อน */
 function deltaBadge(cur,prev){ if(prev==null)return ''; var diff=cur-prev; if(!prev&&!cur)return '';
@@ -1490,7 +1525,19 @@ function snapStock(){ var ym=document.getElementById('stYm').value; if(!ym){ toa
   api('snapshotStockTake',{ym:ym}).then(function(r){ if(r&&r.ok){ toast('ดึงสต๊อก '+r.data.count+' รุ่น · ฿'+fmt(r.data.total)); loadStockTake(); loadMonthly(); } else toast('ไม่สำเร็จ',1); }); }
 function rmStock(row){ api('removeStockTake',{row:row}).then(function(r){ if(r&&r.ok){ loadStockTake(); } }); }
 /* ---- Export Excel บัญชี (ช่วงวันที่) ---- */
-function exportAcctExcel(){ if(typeof XLSX==='undefined'){ toast('ยังโหลดตัวช่วย Excel ไม่เสร็จ ลองใหม่',1); return; }
+/* ตัวช่วยสร้างไฟล์ Excel หนักเกือบ 1MB แต่ใช้เฉพาะตอนกดปุ่มส่งออก
+ * เดิมโหลดทุกครั้งที่เปิดหน้า admin = ทุกคนจ่ายค่าโหลดให้ฟีเจอร์ที่นาน ๆ ใช้ที */
+function loadJS(src){ return new Promise(function(ok,no){
+  if(document.querySelector('script[data-lazy="'+src+'"]')){ var t=setInterval(function(){ if(window.__lazy_&&window.__lazy_[src]){ clearInterval(t); ok(); } },50); setTimeout(function(){clearInterval(t);no();},20000); return; }
+  var el=document.createElement('script'); el.src=src; el.setAttribute('data-lazy',src);
+  el.onload=function(){ window.__lazy_=window.__lazy_||{}; window.__lazy_[src]=1; ok(); };
+  el.onerror=function(){ no(); }; document.head.appendChild(el); }); }
+function exportAcctExcel(){
+  if(typeof XLSX==='undefined'){ toast('กำลังเตรียมไฟล์ Excel…');
+    loadJS('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js')
+      .then(function(){ exportAcctExcel(); })
+      .catch(function(){ toast('โหลดตัวช่วย Excel ไม่สำเร็จ ลองใหม่อีกครั้ง',1); });
+    return; }
   var from=document.getElementById('aFrom').value, to=document.getElementById('aTo').value; if(!from||!to){ toast('เลือกช่วงวันที่',1); return; }
   toast('กำลังดึงข้อมูล…');
   Promise.all([ api('reportAccounting',{from:from,to:to}), api('exportLedger',{from:from,to:to}), api('listExpenses',{from:from,to:to}) ]).then(function(res){

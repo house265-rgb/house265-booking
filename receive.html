@@ -3,7 +3,10 @@
 <title>House265 · รับผมเข้า</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link rel="preconnect" href="https://script.google.com" crossorigin>
+<link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 :root{--bg:#111010;--surface:#1a1816;--surface2:#211f1c;--bg2:#161412;--elev:#262320;--line:#322e29;--fg:#efe9df;--muted:#b3aa9c;--faint:#7c7265;--gold:#c8a75a;--gold-soft:#e6cc7e;--gold-dim:#9c7f3f;--gold-ghost:rgba(200,167,90,.12);--ok:#79c08a;--crit:#d98a8a;--r:13px;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -393,7 +396,7 @@ button.is-busy,.is-busy{cursor:progress!important;opacity:.78}
 /* ===== ตั้งค่า: ใส่ลิงก์ /exec ของโปรเจกต์ระบบใหม่ ===== */
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
 
-var BUILD='P93-PROMOFIX'; /* เวอร์ชันหน้าเว็บ — เทียบกับ APP.VERSION ของหลังบ้าน แสดงที่มุมบนขวา */
+var BUILD='P94-SPEED'; /* เวอร์ชันหน้าเว็บ — เทียบกับ APP.VERSION ของหลังบ้าน แสดงที่มุมบนขวา */
 var TOKEN='', DATA=null, BUSY=false, LAST=null;
 
 /* ---- สถานะ "กำลังทำงาน" ----
@@ -465,27 +468,51 @@ function doLogin(){ var u=document.getElementById('luser').value.trim(), p=docum
   }).catch(function(){ document.getElementById('loginErr').innerText='เชื่อมต่อไม่สำเร็จ'; }); }
 function doLogout(){ api('logout',{}); TOKEN=''; setTok(''); location.reload(); }
 
-function boot(){ api('bootstrap',{}).then(function(r){
-    if(!r||!r.ok){ if(r&&r.code==='AUTH'){ setTok(''); location.reload(); return; } toast((r&&r.message)||'โหลดไม่สำเร็จ',1); return; }
-    DATA=r.data; if(!DATA.user.full){ document.body.innerHTML='<div style="padding:40px;text-align:center;color:#b3aa9c">หน้านี้สำหรับผู้จัดการ/เจ้าของเท่านั้น</div>'; return; }
+/* ===== เปิดหน้าปุ๊บเห็นทันที ===== (กติกาเดียวกับหน้า POS/admin)
+ * ของเก่าใช้วาดหน้าจอเท่านั้น · รายการล็อต/สต็อก/ราคา ยังยิงถามเซิร์ฟเวอร์สดทุกครั้ง */
+var BOOTKEY='h265_boot_recv', BOOTED=false;
+function bootCacheGet(){ try{ var o=JSON.parse(localStorage.getItem(BOOTKEY)||'null');
+  if(!o||o.build!==BUILD||!o.data) return null;
+  if(!o.t||(Date.now()-o.t)>43200000) return null;
+  if(o.tok!==(TOKEN||'').slice(0,8)) return null;
+  return o.data; }catch(e){ return null; } }
+function bootCacheSet(d){ try{ localStorage.setItem(BOOTKEY, JSON.stringify({build:BUILD,t:Date.now(),tok:(TOKEN||'').slice(0,8),data:d})); }catch(e){} }
+function bootCacheClear(){ try{ localStorage.removeItem(BOOTKEY); }catch(e){} }
+function applyBoot(D, fromCache){
+    DATA=D; if(!DATA.user.full){ document.body.innerHTML='<div style="padding:40px;text-align:center;color:#b3aa9c">หน้านี้สำหรับผู้จัดการ/เจ้าของเท่านั้น</div>'; return; }
     document.getElementById('app').classList.remove('hide');
     document.getElementById('uInfo').innerText=(DATA.user.name||'')+' · '+(DATA.user.role==='owner'?'เจ้าของ':'ผู้จัดการ');
     (function(){ var srv=String(DATA.version||'-'), okv=(srv.indexOf(BUILD)>=0);
       var vb=document.getElementById('verBadge');
-      if(vb){ vb.innerHTML='<span style="color:'+(okv?'var(--ok)':'var(--crit)')+'">'+esc(BUILD)+'</span>';
+      if(vb){ vb.innerHTML='<span style="color:'+((okv||fromCache)?'var(--ok)':'var(--crit)')+'">'+esc(BUILD)+'</span>';
         vb.title='หน้าเว็บ '+BUILD+' · เซิร์ฟเวอร์ '+srv; vb.style.opacity='.85'; }
-      if(!okv) toast('⚠ เวอร์ชันไม่ตรงกัน — หน้าเว็บ '+BUILD+' · เซิร์ฟเวอร์ '+srv+' (deploy ใหม่ให้ครบทั้งคู่)',1);
+      if(!okv && !fromCache) toast('⚠ เวอร์ชันไม่ตรงกัน — หน้าเว็บ '+BUILD+' · เซิร์ฟเวอร์ '+srv+' (deploy ใหม่ให้ครบทั้งคู่)',1);
     })();
     document.getElementById('rDate').value=(DATA.settings && DATA.settings.today)|| localToday();
     SHOP_LABEL_NAME=(DATA.settings&&DATA.settings.label_shop)||SHOP_LABEL_NAME;
     SHOP_LABEL_SHORT=(DATA.settings&&DATA.settings.label_shop_short)||SHOP_LABEL_SHORT;
+    if(BOOTED) return;        /* เตรียมหน้าจอครั้งเดียวพอ ของสดที่ตามมาไม่ต้องโหลดซ้ำ */
+    BOOTED=true;
     fillTypes(); fillColors(); fillTextures(); loadVariants(); loadSuppliers();  // สต็อก/batch โหลดตอนเปิดแท็บ (เพจเบา)
-  }).catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
+
+}
+function boot(){
+  var c=bootCacheGet(); if(c) applyBoot(c, true);
+  api('bootstrap',{}).then(function(r){
+    if(!r||!r.ok){ if(r&&r.code==='AUTH'){ bootCacheClear(); setTok(''); location.reload(); return; } if(!c) toast((r&&r.message)||'โหลดไม่สำเร็จ',1); return; }
+    applyBoot(r.data, false); bootCacheSet(r.data);
+  }).catch(function(){ if(!c) toast('เชื่อมต่อไม่สำเร็จ',1); else toast('ยังต่อเซิร์ฟเวอร์ไม่ได้ · กำลังแสดงข้อมูลล่าสุดที่โหลดไว้',1); }); }
 
 /* หน่วยขาย: 1 QR = 50g = หน่วยเล็กสุด · แสดง ช่อ/มัด ตามเทค (เหมือนหน้าจอง) */
 function svcByType(ht){ ht=String(ht||'').trim(); var ss=DATA.services||[]; return ss.filter(function(s){return String(s.acct_name).trim()===ht;})[0]||ss.filter(function(s){var a=String(s.acct_name).trim();return a&&(a.indexOf(ht)>=0||ht.indexOf(a)>=0);})[0]; }
-function sellUnitOf(ht){ var s=svcByType(ht); var su=String((s&&s.sell_unit)||'').trim(); if(su==='ช่อ'||su==='มัด')return su; return (Number(s&&s.strands_per_mad)>0)?'ช่อ':'มัด'; }
-function amtPerQrOf(ht){ var s=svcByType(ht); return (sellUnitOf(ht)==='ช่อ')?(Number(s&&s.strands_per_mad)||100):0.5; }
+/* ต้องตรงกับ svcSellUnit_/svcAmtPerQr_ ฝั่งเซิร์ฟเวอร์ และ pos.html เป๊ะ ๆ (รองรับ กรัม ตั้งแต่ P89) */
+function sellUnitOf(ht){ var s=svcByType(ht); var su=String((s&&s.sell_unit)||'').trim().toLowerCase();
+  if(su==='ช่อ')return 'ช่อ'; if(su==='มัด')return 'มัด'; if(su==='กรัม'||su==='g')return 'กรัม';
+  return (Number(s&&s.strands_per_mad)>0)?'ช่อ':'มัด'; }
+function amtPerQrOf(ht){ var s=svcByType(ht), u=sellUnitOf(ht);
+  if(u==='ช่อ') return Number(s&&s.strands_per_mad)||100;
+  if(u==='กรัม') return Number(s&&s.grams_per_mad)||50;
+  return 0.5; }
 function qtyTag(ht,qr){ var n=Math.round(amtPerQrOf(ht)*(Number(qr)||0)*100)/100; return n+' '+sellUnitOf(ht); }
 function fillTypes(){ var sel=document.getElementById('nvType'); var svc=DATA.services||[];
   sel.innerHTML=svc.map(function(s){return '<option value="'+esc(s.acct_name)+'">'+esc(s.acct_name)+'</option>';}).join(''); onTypeSel(); }
