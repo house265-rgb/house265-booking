@@ -138,6 +138,29 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(17,16,16,.92);backdr
 .tabbar button{flex:1;background:none;border:none;color:var(--faint);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px}
 .tabbar button.on{color:var(--gold-soft)}.tabbar .ic{font-size:19px}
 .page{display:none}.page.on{display:block}
+.passcard{background:#0f0f10;border:1px solid var(--gold-dim);border-radius:12px;padding:14px}
+.passcard .ptop{text-align:center;margin-bottom:10px}
+.passcard .ptop .tt{font-size:14px;letter-spacing:.2em;color:var(--gold-soft)}
+.passcard .ptop .ts{font-size:9.5px;letter-spacing:.18em;color:var(--faint);margin-top:3px}
+.passcard .pbadge{display:block;max-width:235px;margin:0 auto 8px;text-align:center;font-size:11.5px;color:#1a1a1a;background:var(--gold-soft);border-radius:999px;padding:5px 12px}
+.passcard .prep{font-size:11.5px;color:var(--warn);text-align:center;line-height:1.6;margin-bottom:8px}
+.passcard .pwarn{font-size:11.5px;color:var(--gold-soft);line-height:1.7;text-align:center;border:1px solid var(--gold-dim);border-radius:9px;padding:8px 10px;margin-bottom:10px}
+.passcard .timebox{border:1px solid var(--gold-dim);background:rgba(201,169,106,.06);border-radius:10px;padding:12px 13px;margin-bottom:10px}
+.passcard .timebox .k{font-size:11px;letter-spacing:.08em;color:var(--muted);margin-bottom:3px}
+.passcard .timebox .t{font-size:24px;line-height:1.2;color:var(--gold-soft)}
+.passcard .timebox .d{font-size:13.5px;color:var(--fg)}
+.passcard .timebox .ln{height:1px;background:var(--line);margin:9px 0 7px}
+.passcard .timebox .f{font-size:12px;color:var(--muted);line-height:1.7}
+.passcard .pchg{border:1px dashed var(--line);border-radius:9px;padding:9px 11px;margin-bottom:10px}
+.passcard .pchg .t{font-size:11px;letter-spacing:.06em;color:var(--muted);margin-bottom:4px}
+.passcard .pchg .r{display:flex;justify-content:space-between;gap:10px;font-size:12px;padding:3px 0}
+.passcard .pchg .r span{color:var(--muted)}
+.passcard .pchg .r s{color:var(--faint)}
+.passcard .prow{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
+.passcard .prow span{color:var(--muted);white-space:nowrap}
+.passcard .prow b{text-align:right;font-weight:500}
+.passcard .pfoot{font-size:11px;color:var(--faint);text-align:center;line-height:1.7;margin-top:10px;border-top:1px solid var(--line);padding-top:9px}
+.passcard .pissue{font-size:10.5px;color:var(--faint);text-align:right;margin-top:6px}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
 .modal.show{display:flex}.mbox{background:var(--surface);border:1px solid var(--line);border-radius:16px;width:100%;max-width:420px;max-height:92vh;overflow:auto}
 .mh{background:linear-gradient(100deg,var(--gold-dim),var(--gold-soft));color:#231b08;padding:14px;text-align:center;font-weight:600}.mc{padding:16px}
@@ -315,7 +338,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P96-PASS'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P97-PASS2'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='',DATA=null,FULL=false,CART=[],CAT='ต่อผม',PAY='เงินสด',BUSY=false,USERTECH='';
 window._promoId=''; window._recv=0; window._split=false; window._p2m='พร้อมเพย์'; window._p2a=0; window._slips=[];
 window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName='';
@@ -1270,7 +1293,40 @@ function renderQueueActions(){ var w=document.getElementById('qAct'); if(!w||!QB
     '<div class="row3" style="margin-top:8px"><button class="btn sec" style="color:var(--crit)" onclick="openNoShow()">🚫 ผิดนัด</button>'+
     '<button class="btn sec" style="color:var(--gold-soft)" onclick="openResched()">🔁 เลื่อนคิว</button>'+
     '<button class="btn sec" style="color:var(--crit)" onclick="QCANCEL=true;renderQueueActions()">ยกเลิกคิว</button></div>'+
-    '<button class="btn sec" style="margin-top:8px;color:var(--gold-soft)" onclick="closeLine()">ปิด</button>'; }
+    '<div class="row2" style="margin-top:8px"><button class="btn sec" onclick="openPass()">🎫 ใบจอง (ส่งให้ลูกค้า)</button>'+
+    '<button class="btn sec" style="color:var(--gold-soft)" onclick="closeLine()">ปิด</button></div>'; }
+
+/* =================== ใบจอง (ส่งเข้า LINE ลูกค้า) ===================
+ * เนื้อหาในใบมาจากเซิร์ฟเวอร์ (bookingPass_) ที่เดียว เหมือนกับใบที่ลูกค้าได้ตอนจอง
+ * หน้านี้มีหน้าที่แค่วาด — แก้เนื้อหาใบที่ Core.gs จุดเดียว เปลี่ยนครบทั้งสองใบ */
+function passMoney(m){ var tone={ok:'var(--ok)',gold:'var(--gold-soft)',warn:'var(--warn)',muted:'var(--faint)'}[m.tone||'']||'';
+  var neg=Number(m.v)<0;
+  return '<div class="prow"><span>'+esc(m.k)+'</span><b'+(tone?(' style="color:'+tone+'"'):'')+'>'+(neg?'−':'')+fmt(Math.abs(Number(m.v)||0))+' ฿</b></div>'; }
+function passHTML(p){ p=p||{}; var hero=p.hero||{}, h='';
+  h+='<div class="ptop"><div class="tt">'+esc(p.title||'VIP BOOKING PASS')+'</div><div class="ts">'+esc(p.subtitle||'')+'</div></div>';
+  if(p.badge) h+='<div class="pbadge">'+esc(p.badge)+'</div>';
+  if(p.replaces) h+='<div class="prep">'+esc(p.replaces)+'</div>';
+  if(p.warn&&p.warn.length) h+='<div class="pwarn">'+p.warn.join('<br>')+'</div>';
+  h+='<div class="timebox"><div class="k">มาถึงร้าน</div><div class="t">'+esc(hero.arrive||'')+' น.</div>'+
+     '<div class="d">'+esc(hero.dateText||hero.date||'')+'</div>'+
+     (hero.finish?('<div class="ln"></div><div class="f">คาดว่าเสร็จประมาณ <b style="color:var(--fg)">'+esc(hero.finish)+' น.</b>'+
+       (hero.durText?('<br>ใช้เวลาประมาณ '+esc(hero.durText)):'')+'</div>'):'')+'</div>';
+  if(p.changes&&p.changes.length) h+='<div class="pchg"><div class="t">เปลี่ยนจากใบเดิม</div>'+
+    p.changes.map(function(c){ return '<div class="r"><span>'+esc(c.k)+'</span><b>'+(c.from?('<s>'+esc(c.from)+'</s> → '):'')+esc(c.to)+'</b></div>'; }).join('')+'</div>';
+  h+=(p.rows||[]).map(function(r){ return '<div class="prow"><span>'+esc(r.k)+'</span><b>'+esc(r.v)+'</b></div>'; }).join('');
+  h+=(p.money||[]).map(passMoney).join('');
+  if(p.foot) h+='<div class="pfoot">'+esc(p.foot)+'</div>';
+  if(p.issued) h+='<div class="pissue">'+esc(p.issued)+'</div>';
+  return h; }
+function showPass(pass){ if(!pass){ toast('ยังไม่มีข้อมูลใบจอง',1); return; }
+  var m=document.getElementById('passModal');
+  document.getElementById('passBody').innerHTML=passHTML(pass);
+  m.classList.add('show'); }
+function closePass(){ var m=document.getElementById('passModal'); if(m)m.classList.remove('show'); }
+function openPass(){ if(!QBK) return;
+  api('bookingPass',{booking_id:QBK.booking_id}).then(function(r){
+    if(!r||!r.ok){ toast((r&&r.message)||'เปิดใบจองไม่สำเร็จ',1); return; }
+    showPass(r.data.pass); }).catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
 
 /* =================== เลื่อนคิว (ย้ายมาจากหน้า Admin 15 พ.ย. 2026) ===================
  * การจัดการคิวทั้งหมดอยู่ที่ POS ที่เดียว · หน้า Admin เหลือไว้ดูอย่างเดียว
@@ -1445,7 +1501,9 @@ function doResched(){ if(!RS||!RS.start) return;
     new_deposit:topup, new_slip_data_url:(topup>0?(RSSLIP||''):'')})
     .then(function(r){ if(!r||!r.ok){ toast((r&&r.message)||'เลื่อนไม่สำเร็จ',1); return; }
       var d=r.data; toast('เลื่อนคิวแล้ว · '+d.to.date+' '+d.to.start+(d.forfeit>0?(' · หักมัดจำ ฿'+fmt(d.forfeit)):' · ไม่หักมัดจำ'));
-      RS=null; RSSLIP=null; closeLine(); loadQueue(); })
+      RS=null; RSSLIP=null; closeLine(); loadQueue();
+      showPass(d.pass);          /* เปิดใบจองใบใหม่ให้พนักงานแคปส่งลูกค้าทันที */
+    })
     .catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
 
 /* ---- ลูกค้าผิดนัด ----

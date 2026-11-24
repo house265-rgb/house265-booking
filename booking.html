@@ -165,6 +165,8 @@
 
   .sumcard{background:var(--panel);border:1px solid var(--line-soft);border-radius:var(--radius);padding:18px;margin-bottom:14px;font-variant-numeric:tabular-nums}
   .srow{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line-soft);font-size:14px}
+  .srow>span{white-space:nowrap}   /* ป้ายช่องต้องไม่ถูกตัดคำเวลาค่ายาว (เคยได้ "รายกา/ร") */
+  .srow>b{text-align:right}
   /* กล่องเวลา — เวลามาถึงต้องเด่นที่สุดในใบ ส่วนเวลาเสร็จเป็นข้อมูลรองและเป็นค่าประมาณ */
   .timebox{border:1px solid var(--gold-dim);background:rgba(201,169,106,.06);border-radius:10px;padding:13px 14px;margin:4px 0 10px}
   .timebox .k{font-size:11.5px;letter-spacing:.08em;color:var(--muted);margin-bottom:3px}
@@ -172,6 +174,14 @@
   .timebox .d{font-size:14px;color:var(--fg);margin-top:1px}
   .timebox .ln{height:1px;background:var(--line-soft);margin:10px 0 8px}
   .timebox .f{font-size:12.5px;color:var(--muted);line-height:1.7}
+  /* ใบจองใบใหม่หลังเลื่อนคิว */
+  .pbadge{text-align:center;font-size:12px;letter-spacing:.06em;color:#1a1a1a;background:var(--gold-soft);border-radius:999px;padding:5px 12px;margin:0 auto 8px;display:block;max-width:230px}
+  .prep{font-size:12px;color:var(--warn);text-align:center;line-height:1.6;margin-bottom:8px}
+  .pchg{border:1px dashed var(--line);border-radius:9px;padding:10px 12px;margin:0 0 10px}
+  .pchg .t{font-size:11.5px;letter-spacing:.06em;color:var(--muted);margin-bottom:5px}
+  .pchg .r{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:3px 0}
+  .pchg .r span{color:var(--muted)} .pchg .r s{color:var(--faint)}
+  .pissue{font-size:11px;color:var(--faint);text-align:right;margin-top:9px}
   .srow:last-child{border-bottom:none}
   .srow span{color:var(--faint)} .srow b{color:var(--fg);font-weight:400;text-align:right}
   .pricebox{background:linear-gradient(180deg,rgba(200,167,90,.07),transparent);border:1px solid var(--gold-dim);
@@ -435,7 +445,7 @@ function _busyOff(btn){ _BUSY=Math.max(0,_BUSY-1); if(!_BUSY) _busyBar(false);
  * มือถือลูกค้า (โดยเฉพาะเบราว์เซอร์ใน LINE) แคชหน้าเว็บไว้นานมาก หน้าเก่าคุยกับหลังบ้านใหม่
  * แล้วใบจองโหว่โดยไม่มีใครรู้ (เกิดจริง 16 พ.ย. 2026 — ใบจองขึ้นช่องว่างกับคำว่า undefined)
  * จึงโหลดใหม่ให้เงียบ ๆ ครั้งเดียว ถ้ายังไม่ตรงอีกค่อยบอกลูกค้าให้ติดต่อร้าน */
-var BUILD='P96-PASS';
+var BUILD='P97-PASS2';
 /* ❗ 24 พ.ย.: เดิมเทียบแบบต้องเท่ากันเป๊ะ (sv===BUILD) แต่เซิร์ฟเวอร์ส่ง '2026-11-24-P95-DAILY'
  *   ส่วนหน้าเว็บเก็บ 'P95-DAILY' → ไม่มีวันเท่ากัน ลูกค้า "ทุกคน" จึงโดนรีโหลดฟรี 1 รอบ
  *   แล้วเจอคำเตือนค้างหน้าจอตั้งแต่ยังไม่เริ่มจอง ทั้งที่ระบบปกติดี
@@ -1096,19 +1106,19 @@ function onBooked(res){ var btn=document.getElementById('nextBtn'); btn.disabled
   var dep=(b.deposit!=null)?b.deposit:((EST&&EST.deposit)||0);
   var tot=(b.total!=null)?b.total:((EST&&EST.total)||0);
   var rem=(b.remain!=null)?b.remain:Math.max(0,Number(tot||0)-Number(dep||0));
-  /* ตั๋วสั้น พอดีหน้าจอเดียว · ไม่มี QR (ลูกค้าชำระมัดจำ+แนบสลิปในขั้นก่อนหน้าแล้ว)
-   * เวลาอยู่ในกล่องบนสุด ไม่ใช่แถว "เวลา 16:00 – 20:30" ที่ลูกค้าอ่านเป็นช่วงเวลา
-   * รายละเอียดอื่นครบเหมือนเดิมทุกช่อง และเพิ่ม "มูลค่างานรวม" ที่เดิมไม่มีในใบ */
-  document.getElementById('ticketBody').innerHTML=
-    timeBlock(b.date||STATE.date, b.start||STATE.startTime, b.end||STATE.endTime)+
-    srow('รหัสคิว',b.booking_id)+srow('ชื่อผู้จอง',b.name||v('cName'))+
-    srow('ช่าง',b.tech_name||(STATE.techId==='any'?'ร้านจัดให้':STATE.techName))+
-    srow('รายการ',b.label||((EST&&EST.label)||''))+
-    /* โชว์หมายเหตุกลับให้ลูกค้าเห็นด้วย = หลักฐานว่าข้อความถึงร้านแล้ว */
-    ((b.customer_note||v('cNote'))?srow('หมายเหตุถึงร้าน',b.customer_note||v('cNote')):'')+
-    '<div class="srow"><span>มูลค่างานรวม</span><b>'+fmt(tot)+' ฿</b></div>'+
-    '<div class="srow"><span>มัดจำ (ชำระแล้ว)</span><b style="color:var(--ok)">'+fmt(dep)+' ฿</b></div>'+
-    '<div class="srow"><span>คงเหลือหน้าร้าน</span><b style="color:var(--gold-soft)">'+fmt(rem)+' ฿</b></div>';
+  /* เนื้อหาในใบจองมาจากเซิร์ฟเวอร์ (bookingPass_) ที่เดียว — ใบที่ลูกค้าได้ตอนจอง
+   * กับใบใหม่ที่พนักงานส่งให้หลังเลื่อนคิว จึงเหมือนกันเป๊ะและแก้ที่เดียวได้ทั้งคู่
+   * ถ้าเซิร์ฟเวอร์ยังเป็นเวอร์ชันเก่า (ไม่ส่ง pass มา) ประกอบจากข้อมูลที่หน้าเว็บมีแทน ไม่ปล่อยใบโหวง */
+  var pass=b.pass||{
+    hero:{ arrive:String(b.start||STATE.startTime||''), date:(b.date||STATE.date),
+           dateText:dateLongTH(b.date||STATE.date), finish:String(b.end||STATE.endTime||''), durText:'' },
+    rows:[{k:'รหัสคิว',v:b.booking_id},{k:'ชื่อผู้จอง',v:b.name||v('cName')},
+          {k:'ช่าง',v:b.tech_name||(STATE.techId==='any'?'ร้านจัดช่างให้':STATE.techName)},
+          {k:'รายการ',v:b.label||((EST&&EST.label)||'')}]
+         .concat((b.customer_note||v('cNote'))?[{k:'หมายเหตุถึงร้าน',v:b.customer_note||v('cNote')}]:[]),
+    money:[{k:'มูลค่างานรวม',v:tot},{k:'มัดจำที่ใช้ได้',v:dep,tone:'ok'},{k:'คงเหลือหน้าร้าน',v:rem,tone:'gold'}]
+  };
+  document.getElementById('ticketBody').innerHTML=passHTML(pass);
   document.getElementById('ticketModal').style.display='flex'; }
 /* ===== เวลาในใบจอง: ลูกค้าเคยอ่าน "16:00 – 20:30" เป็นช่วงเวลาที่เข้ามาตอนไหนก็ได้ (เคสจริง 24 พ.ย. 2026)
  * จึงเลิกใช้ขีดคั่น แยกเป็น "มาถึงร้าน" ตัวใหญ่ กับ "คาดว่าเสร็จ" ตัวเล็กคนละบรรทัด
@@ -1122,15 +1132,34 @@ function hhmm2min(t){ var m=String(t||'').match(/^(\d{1,2}):(\d{2})/); return m?
 function durTextMin(n){ n=Math.max(0,Math.round(n)); var h=Math.floor(n/60), mm=n%60;
   return (h?(h+' ชม.'):'')+(h&&mm?' ':'')+(mm?(mm+' นาที'):(h?'':'0 นาที')); }
 /* กล่องเวลาแบบใหม่ — ใช้ทั้งหน้าสรุปก่อนยืนยัน และใบจอง จะได้ไม่เพี้ยนกันคนละแบบ */
-function timeBlock(dateStr,start,end){
+function timeBlock(dateStr,start,end,dateText,durText){
   var s=hhmm2min(start), e=hhmm2min(end), fin='';
-  if(s>=0&&e>s) fin='คาดว่าเสร็จประมาณ <b style="color:var(--fg)">'+esc(end)+' น.</b><br>ใช้เวลาประมาณ '+durTextMin(e-s);
+  var dt=durText||((s>=0&&e>s)?durTextMin(e-s):'');
+  if(end&&dt) fin='คาดว่าเสร็จประมาณ <b style="color:var(--fg)">'+esc(end)+' น.</b><br>ใช้เวลาประมาณ '+esc(dt);
   return '<div class="timebox">'+
     '<div class="k">มาถึงร้าน</div>'+
     '<div class="t">'+esc(String(start||'')) +' น.</div>'+
-    '<div class="d">'+esc(dateLongTH(dateStr))+'</div>'+
+    '<div class="d">'+esc(dateText||dateLongTH(dateStr))+'</div>'+
     (fin?('<div class="ln"></div><div class="f">'+fin+'</div>'):'')+
   '</div>'; }
+/* ===== ตัววาดใบจอง — รับโครงจาก bookingPass_ (เซิร์ฟเวอร์) แล้ววาดตามนั้น
+ * หน้า POS มีตัววาดหน้าตาเดียวกัน ใช้โครงก้อนเดียวกัน จะได้ไม่เพี้ยนกันคนละใบ */
+function passMoney(m){ var tone={ok:'var(--ok)',gold:'var(--gold-soft)',warn:'var(--warn)',muted:'var(--muted)'}[m.tone||'']||'';
+  var neg=Number(m.v)<0;
+  return '<div class="srow"><span>'+esc(m.k)+'</span><b'+(tone?(' style="color:'+tone+'"'):'')+'>'+
+    (neg?'−':'')+fmt(Math.abs(Number(m.v)||0))+' ฿</b></div>'; }
+function passHTML(p){ p=p||{}; var h='';
+  if(p.badge) h+='<div class="pbadge">'+esc(p.badge)+'</div>';
+  if(p.replaces) h+='<div class="prep">'+esc(p.replaces)+'</div>';
+  var hero=p.hero||{};
+  h+=timeBlock(hero.date, hero.arrive, hero.finish, hero.dateText, hero.durText);
+  if(p.changes&&p.changes.length){
+    h+='<div class="pchg"><div class="t">เปลี่ยนจากใบเดิม</div>'+p.changes.map(function(c){
+      return '<div class="r"><span>'+esc(c.k)+'</span><b>'+(c.from?('<s>'+esc(c.from)+'</s> → '):'')+esc(c.to)+'</b></div>'; }).join('')+'</div>'; }
+  h+=(p.rows||[]).map(function(r){ return srow(r.k, r.v); }).join('');
+  h+=(p.money||[]).map(passMoney).join('');
+  if(p.issued) h+='<div class="pissue">'+esc(p.issued)+'</div>';
+  return h; }
 function srow(k,val){ return '<div class="srow"><span>'+k+'</span><b>'+esc(val)+'</b></div>'; }
 
 /* ================= CALENDAR ================= */
