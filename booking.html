@@ -165,6 +165,13 @@
 
   .sumcard{background:var(--panel);border:1px solid var(--line-soft);border-radius:var(--radius);padding:18px;margin-bottom:14px;font-variant-numeric:tabular-nums}
   .srow{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line-soft);font-size:14px}
+  /* กล่องเวลา — เวลามาถึงต้องเด่นที่สุดในใบ ส่วนเวลาเสร็จเป็นข้อมูลรองและเป็นค่าประมาณ */
+  .timebox{border:1px solid var(--gold-dim);background:rgba(201,169,106,.06);border-radius:10px;padding:13px 14px;margin:4px 0 10px}
+  .timebox .k{font-size:11.5px;letter-spacing:.08em;color:var(--muted);margin-bottom:3px}
+  .timebox .t{font-size:25px;line-height:1.2;color:var(--gold-soft)}
+  .timebox .d{font-size:14px;color:var(--fg);margin-top:1px}
+  .timebox .ln{height:1px;background:var(--line-soft);margin:10px 0 8px}
+  .timebox .f{font-size:12.5px;color:var(--muted);line-height:1.7}
   .srow:last-child{border-bottom:none}
   .srow span{color:var(--faint)} .srow b{color:var(--fg);font-weight:400;text-align:right}
   .pricebox{background:linear-gradient(180deg,rgba(200,167,90,.07),transparent);border:1px solid var(--gold-dim);
@@ -428,16 +435,27 @@ function _busyOff(btn){ _BUSY=Math.max(0,_BUSY-1); if(!_BUSY) _busyBar(false);
  * มือถือลูกค้า (โดยเฉพาะเบราว์เซอร์ใน LINE) แคชหน้าเว็บไว้นานมาก หน้าเก่าคุยกับหลังบ้านใหม่
  * แล้วใบจองโหว่โดยไม่มีใครรู้ (เกิดจริง 16 พ.ย. 2026 — ใบจองขึ้นช่องว่างกับคำว่า undefined)
  * จึงโหลดใหม่ให้เงียบ ๆ ครั้งเดียว ถ้ายังไม่ตรงอีกค่อยบอกลูกค้าให้ติดต่อร้าน */
-var BUILD='P95-DAILY';
+var BUILD='P96-PASS';
+/* ❗ 24 พ.ย.: เดิมเทียบแบบต้องเท่ากันเป๊ะ (sv===BUILD) แต่เซิร์ฟเวอร์ส่ง '2026-11-24-P95-DAILY'
+ *   ส่วนหน้าเว็บเก็บ 'P95-DAILY' → ไม่มีวันเท่ากัน ลูกค้า "ทุกคน" จึงโดนรีโหลดฟรี 1 รอบ
+ *   แล้วเจอคำเตือนค้างหน้าจอตั้งแต่ยังไม่เริ่มจอง ทั้งที่ระบบปกติดี
+ *   (หน้า POS/admin/receive เทียบแบบ indexOf มาตลอด จึงเขียวถูกต้อง — มีแต่หน้าลูกค้าที่พลาด)
+ * ทิศทางก็สำคัญ: เทียบเลขรุ่น P<n> ด้วย
+ *   หน้าเว็บใหม่กว่าหรือเท่าเซิร์ฟเวอร์ = ร้านยังไม่ได้ Deploy Core → เรื่องของร้าน ลูกค้าทำอะไรไม่ได้ ห้ามไปกวน
+ *   หน้าเว็บเก่ากว่าเซิร์ฟเวอร์จริง ๆ เท่านั้น = เคสที่คำเตือนนี้ถูกสร้างมาเพื่อกัน */
+function verNum_(s){ var m=String(s||'').match(/P(\d+)/i); return m?Number(m[1]):0; }
 function checkStale_(){
-  var sv=String((CAT&&CAT.version)||'').trim(); if(!sv||sv===BUILD) return;
+  var sv=String((CAT&&CAT.version)||'').trim(); if(!sv) return;
+  if(sv.indexOf(BUILD)>=0) return;                 /* ตรงกันแล้ว (ฝั่งเซิร์ฟเวอร์มีวันที่นำหน้า) */
+  var mine=verNum_(BUILD), srv=verNum_(sv);
+  if(!srv || mine>=srv) return;                    /* หน้าเว็บไม่ได้เก่ากว่า = ไม่ใช่เรื่องของลูกค้า */
   var k='h265_reload_'+sv, tried=false;
   try{ tried=(sessionStorage.getItem(k)==='1'); sessionStorage.setItem(k,'1'); }catch(e){ tried=true; }
   if(!tried){ var u=new URL(location.href); u.searchParams.set('v',sv); location.replace(u.toString()); return; }
   var w=document.getElementById('staleNote');
   if(w){ w.style.display='block';
-    w.innerHTML='หน้านี้อาจเป็นเวอร์ชันเก่าที่ค้างอยู่ในเครื่อง — ถ้าจองแล้วใบจองไม่ขึ้นข้อมูล '+
-      'กรุณาปิดหน้านี้แล้วเปิดใหม่ หรือแจ้งร้านทาง LINE ได้เลยค่ะ'; } }
+    /* ข้อความสั้น ไม่ปลุกความกังวล และบอกสิ่งที่ลูกค้าทำได้จริง */
+    w.innerHTML='ระบบเพิ่งอัปเดต · กรุณาปิดหน้านี้แล้วเปิดลิงก์จองใหม่อีกครั้งนะคะ 🙏'; } }
 function callApi(action,payload){ var _b=_BUSYBTN; _busyOn(_b);
   return fetch(API_URL+(API_URL.indexOf('?')>=0?'&':'?')+'_='+Date.now(),{
     method:'POST',redirect:'follow',cache:'no-store',
@@ -1024,10 +1042,11 @@ function buildSummary(){ computeEst();
   if(EST&&EST.addon){ lines.push(['ซื้อผมเพิ่ม', addonDetailLabel()]); }
   if(EST&&EST.rmAddon){ lines.push(['ถอดผมเก่า', EST.rmAddon.name]); }
   lines=lines.concat([
-    ['ช่าง', STATE.techId==='any'?'ร้านจัดช่างให้':STATE.techName],
-    ['วันที่', toDMY(STATE.date)], ['เวลา', STATE.startTime+(STATE.endTime?(' - '+STATE.endTime):'')],
-    ['ระยะเวลา', durText(estDuration())] ]);
-  document.getElementById('sumCard').innerHTML=lines.map(function(l){ return '<div class="srow"><span>'+l[0]+'</span><b>'+esc(l[1])+'</b></div>'; }).join('');
+    ['ช่าง', STATE.techId==='any'?'ร้านจัดช่างให้':STATE.techName] ]);
+  /* หน้าสรุปใช้กล่องเวลาแบบเดียวกับใบจอง ลูกค้าจะได้เห็นรูปแบบเดิมสองครั้ง ไม่ต้องตีความใหม่ */
+  document.getElementById('sumCard').innerHTML=
+    lines.map(function(l){ return '<div class="srow"><span>'+l[0]+'</span><b>'+esc(l[1])+'</b></div>'; }).join('')+
+    timeBlock(STATE.date, STATE.startTime, STATE.endTime);
   var ph='';
   if(EST&&EST.base!=null) ph+='<div class="pr"><span>ค่าบริการ</span><b>'+fmt(EST.base)+' ฿</b></div>';
   if(EST&&EST.colorSur>0) ph+='<div class="pr"><span>ค่าสีเพิ่ม'+(EST.colorName?(' ('+esc(EST.colorName)+')'):'')+'</span><b>+'+fmt(EST.colorSur)+' ฿</b></div>';
@@ -1077,17 +1096,41 @@ function onBooked(res){ var btn=document.getElementById('nextBtn'); btn.disabled
   var dep=(b.deposit!=null)?b.deposit:((EST&&EST.deposit)||0);
   var tot=(b.total!=null)?b.total:((EST&&EST.total)||0);
   var rem=(b.remain!=null)?b.remain:Math.max(0,Number(tot||0)-Number(dep||0));
-  var tm=String(b.start||STATE.startTime||'')+(b.end?(' - '+b.end):'');
-  /* ตั๋วสั้น พอดีหน้าจอเดียว · ไม่มี QR (ลูกค้าชำระมัดจำ+แนบสลิปในขั้นก่อนหน้าแล้ว) */
+  /* ตั๋วสั้น พอดีหน้าจอเดียว · ไม่มี QR (ลูกค้าชำระมัดจำ+แนบสลิปในขั้นก่อนหน้าแล้ว)
+   * เวลาอยู่ในกล่องบนสุด ไม่ใช่แถว "เวลา 16:00 – 20:30" ที่ลูกค้าอ่านเป็นช่วงเวลา
+   * รายละเอียดอื่นครบเหมือนเดิมทุกช่อง และเพิ่ม "มูลค่างานรวม" ที่เดิมไม่มีในใบ */
   document.getElementById('ticketBody').innerHTML=
-    srow('รหัสคิว',b.booking_id)+srow('ชื่อผู้จอง',b.name||v('cName'))+srow('วันที่',toDMY(b.date||STATE.date))+srow('เวลา',tm)+
+    timeBlock(b.date||STATE.date, b.start||STATE.startTime, b.end||STATE.endTime)+
+    srow('รหัสคิว',b.booking_id)+srow('ชื่อผู้จอง',b.name||v('cName'))+
     srow('ช่าง',b.tech_name||(STATE.techId==='any'?'ร้านจัดให้':STATE.techName))+
     srow('รายการ',b.label||((EST&&EST.label)||''))+
     /* โชว์หมายเหตุกลับให้ลูกค้าเห็นด้วย = หลักฐานว่าข้อความถึงร้านแล้ว */
     ((b.customer_note||v('cNote'))?srow('หมายเหตุถึงร้าน',b.customer_note||v('cNote')):'')+
+    '<div class="srow"><span>มูลค่างานรวม</span><b>'+fmt(tot)+' ฿</b></div>'+
     '<div class="srow"><span>มัดจำ (ชำระแล้ว)</span><b style="color:var(--ok)">'+fmt(dep)+' ฿</b></div>'+
     '<div class="srow"><span>คงเหลือหน้าร้าน</span><b style="color:var(--gold-soft)">'+fmt(rem)+' ฿</b></div>';
   document.getElementById('ticketModal').style.display='flex'; }
+/* ===== เวลาในใบจอง: ลูกค้าเคยอ่าน "16:00 – 20:30" เป็นช่วงเวลาที่เข้ามาตอนไหนก็ได้ (เคสจริง 24 พ.ย. 2026)
+ * จึงเลิกใช้ขีดคั่น แยกเป็น "มาถึงร้าน" ตัวใหญ่ กับ "คาดว่าเสร็จ" ตัวเล็กคนละบรรทัด
+ * คำว่า "ประมาณ" สำคัญ เพราะงานถอด/สภาพผมทำให้เวลาจบขยับได้ */
+var DOW_TH=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+var MON_TH=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+function dateLongTH(ymd){ var p=String(ymd||'').slice(0,10).split('-'); if(p.length!==3) return String(ymd||'');
+  var d=new Date(+p[0],+p[1]-1,+p[2]); if(isNaN(d)) return String(ymd||'');
+  return DOW_TH[d.getDay()]+' '+(+p[2])+' '+MON_TH[+p[1]-1]+' '+p[0]; }
+function hhmm2min(t){ var m=String(t||'').match(/^(\d{1,2}):(\d{2})/); return m?(+m[1]*60 + +m[2]):-1; }
+function durTextMin(n){ n=Math.max(0,Math.round(n)); var h=Math.floor(n/60), mm=n%60;
+  return (h?(h+' ชม.'):'')+(h&&mm?' ':'')+(mm?(mm+' นาที'):(h?'':'0 นาที')); }
+/* กล่องเวลาแบบใหม่ — ใช้ทั้งหน้าสรุปก่อนยืนยัน และใบจอง จะได้ไม่เพี้ยนกันคนละแบบ */
+function timeBlock(dateStr,start,end){
+  var s=hhmm2min(start), e=hhmm2min(end), fin='';
+  if(s>=0&&e>s) fin='คาดว่าเสร็จประมาณ <b style="color:var(--fg)">'+esc(end)+' น.</b><br>ใช้เวลาประมาณ '+durTextMin(e-s);
+  return '<div class="timebox">'+
+    '<div class="k">มาถึงร้าน</div>'+
+    '<div class="t">'+esc(String(start||'')) +' น.</div>'+
+    '<div class="d">'+esc(dateLongTH(dateStr))+'</div>'+
+    (fin?('<div class="ln"></div><div class="f">'+fin+'</div>'):'')+
+  '</div>'; }
 function srow(k,val){ return '<div class="srow"><span>'+k+'</span><b>'+esc(val)+'</b></div>'; }
 
 /* ================= CALENDAR ================= */
