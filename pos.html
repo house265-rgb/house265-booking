@@ -334,7 +334,9 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 <div class="modal" id="passModal"><div class="mbox" style="max-width:400px">
   <div class="mh">🎫 ใบจอง — แคปหน้าจอส่งให้ลูกค้า</div>
   <div class="mc"><div id="passBody" class="passcard"></div>
-    <button class="btn sec" style="margin-top:12px" onclick="closePass()">ปิด</button></div>
+    <div class="row2" style="margin-top:12px">
+      <button class="btn sec" onclick="savePassImage(this,'passBody','booking-pass')">⬇ บันทึกเป็นรูป</button>
+      <button class="btn sec" onclick="closePass()">ปิด</button></div></div>
 </div></div>
 <div class="modal" id="rcptModal"><div class="mbox"><div class="mh">บันทึกการขายแล้ว ✓</div><div class="mc">
   <div id="rcpt"></div>
@@ -346,7 +348,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P100-FIXPASS'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P102-UI'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='',DATA=null,FULL=false,CART=[],CAT='ต่อผม',PAY='เงินสด',BUSY=false,USERTECH='';
 window._promoId=''; window._recv=0; window._split=false; window._p2m='พร้อมเพย์'; window._p2a=0; window._slips=[];
 window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName='';
@@ -1327,6 +1329,35 @@ function passHTML(p){ p=p||{}; var hero=p.hero||{}, h='';
   if(p.foot) h+='<div class="pfoot">'+esc(p.foot)+'</div>';
   if(p.issued) h+='<div class="pissue">'+esc(p.issued)+'</div>';
   return h; }
+/* ===== บันทึกใบจองเป็นรูปภาพ =====
+ * ใบจองยาวเกินหน้าจอมือถือ แคปเองได้ไม่ครบ ปุ่มนี้จึงวาดทั้งใบเป็นรูปเดียวให้
+ * iOS/Android: ถ้าเครื่องแชร์ไฟล์ได้ จะเด้งแผงแชร์ (เลือก "บันทึกรูปภาพ" ลงแกลเลอรีได้เลย)
+ *              ถ้าไม่ได้ ก็ดาวน์โหลดเป็นไฟล์ .png ตามปกติ
+ * ไลบรารีวาดรูปโหลดตอนกดปุ่มครั้งแรกเท่านั้น (ไม่ถ่วงตอนเปิดหน้า) */
+function savePassImage(btn, elId, fileName){
+  var el=document.getElementById(elId);
+  if(!el){ toast('ไม่พบใบจอง',1); return; }
+  var old=btn?btn.innerHTML:'';
+  if(btn){ btn.disabled=true; btn.innerHTML='กำลังสร้างรูป…'; }
+  function done(){ if(btn){ btn.disabled=false; btn.innerHTML=old; } }
+  loadJS('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js').then(function(){
+    return html2canvas(el,{ backgroundColor:'#0f0f10', scale:Math.min(3,(window.devicePixelRatio||1)*1.6),
+      useCORS:true, windowWidth:el.scrollWidth, height:el.scrollHeight, windowHeight:el.scrollHeight });
+  }).then(function(cv){
+    return new Promise(function(res){ cv.toBlob(function(b){ res(b); },'image/png'); });
+  }).then(function(blob){
+    if(!blob) throw new Error('สร้างรูปไม่สำเร็จ');
+    var f=null;
+    try{ f=new File([blob], fileName+'.png', {type:'image/png'}); }catch(e){}
+    if(f && navigator.canShare && navigator.canShare({files:[f]}) && navigator.share){
+      return navigator.share({files:[f], title:fileName}).then(done, done);   /* ผู้ใช้กดยกเลิกก็ไม่ต้องฟ้อง */
+    }
+    var url=URL.createObjectURL(blob), a=document.createElement('a');
+    a.href=url; a.download=fileName+'.png'; document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); },1500);
+    toast('บันทึกรูปใบจองแล้ว'); done();
+  }).catch(function(e){ toast('บันทึกรูปไม่สำเร็จ'+(e&&e.message?(': '+e.message):'')+' — แคปหน้าจอแทนได้ค่ะ',1); done(); });
+}
 function showPass(pass){ if(!pass){ toast('ยังไม่มีข้อมูลใบจอง',1); return; }
   var m=document.getElementById('passModal'), body=document.getElementById('passBody');
   if(!m||!body){ toast('เปิดใบจองไม่ได้ (หน้าเว็บไม่ครบ) — อัปโหลด pos.html ใหม่อีกครั้ง',1); return; }

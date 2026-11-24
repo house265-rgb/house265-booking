@@ -390,7 +390,7 @@ button:disabled{cursor:not-allowed}
 
 <!-- TICKET -->
 <div class="modal" id="ticketModal">
-  <div class="ticket">
+  <div class="ticket" id="ticketCard">
     <div class="scralert">📸 แคปหน้าจอนี้ ส่งให้ร้านทันที</div>
     <div class="ttop"><h3>VIP BOOKING PASS</h3><div class="ex">HOUSE265 EXCLUSIVE</div></div>
     <div class="twarn">
@@ -400,6 +400,7 @@ button:disabled{cursor:not-allowed}
     <div class="tbody" id="ticketBody"></div>
     <div class="tfoot">
       ส่งรูปนี้ + สลิปมัดจำ ยืนยันคิวที่ LINE ร้าน หรือโทร <b id="tPhone"></b><br><br>
+      <button onclick="savePassImage(this,'ticketCard','ใบจอง-House265')" style="padding:12px 18px;background:none;border:1px solid var(--gold-dim);color:var(--gold-soft);font-size:13px;border-radius:10px;font-family:inherit;margin:0 6px 8px 0">⬇ บันทึกใบจองเป็นรูป</button>
       <button onclick="location.reload()" style="padding:12px 18px;background:none;border:1px solid var(--line);color:var(--muted);font-size:13px">รับทราบ ปิดหน้าต่าง</button>
     </div>
   </div>
@@ -446,7 +447,7 @@ function _busyOff(btn){ _BUSY=Math.max(0,_BUSY-1); if(!_BUSY) _busyBar(false);
  * มือถือลูกค้า (โดยเฉพาะเบราว์เซอร์ใน LINE) แคชหน้าเว็บไว้นานมาก หน้าเก่าคุยกับหลังบ้านใหม่
  * แล้วใบจองโหว่โดยไม่มีใครรู้ (เกิดจริง 16 พ.ย. 2026 — ใบจองขึ้นช่องว่างกับคำว่า undefined)
  * จึงโหลดใหม่ให้เงียบ ๆ ครั้งเดียว ถ้ายังไม่ตรงอีกค่อยบอกลูกค้าให้ติดต่อร้าน */
-var BUILD='P100-FIXPASS';
+var BUILD='P102-UI';
 /* ❗ 24 พ.ย.: เดิมเทียบแบบต้องเท่ากันเป๊ะ (sv===BUILD) แต่เซิร์ฟเวอร์ส่ง '2026-11-24-P95-DAILY'
  *   ส่วนหน้าเว็บเก็บ 'P95-DAILY' → ไม่มีวันเท่ากัน ลูกค้า "ทุกคน" จึงโดนรีโหลดฟรี 1 รอบ
  *   แล้วเจอคำเตือนค้างหน้าจอตั้งแต่ยังไม่เริ่มจอง ทั้งที่ระบบปกติดี
@@ -1159,6 +1160,33 @@ function passMoney(m){ var tone={ok:'var(--ok)',gold:'var(--gold-soft)',warn:'va
   var neg=Number(m.v)<0;
   return '<div class="srow"><span>'+esc(m.k)+'</span><b'+(tone?(' style="color:'+tone+'"'):'')+'>'+
     (neg?'−':'')+fmt(Math.abs(Number(m.v)||0))+' ฿</b></div>'; }
+/* ===== บันทึกใบจองเป็นรูปภาพ =====
+ * ใบจองยาวเกินหน้าจอมือถือ ลูกค้าแคปเองได้ไม่ครบ ปุ่มนี้วาดทั้งใบเป็นรูปเดียวให้
+ * ถ้าเครื่องแชร์ไฟล์ได้ จะเด้งแผงแชร์ (เลือก "บันทึกรูปภาพ" ลงแกลเลอรีได้เลย) ไม่ได้ก็ดาวน์โหลดไฟล์ .png
+ * ไลบรารีวาดรูปโหลดตอนกดปุ่มครั้งแรกเท่านั้น ไม่ถ่วงตอนเปิดหน้าจอง */
+function loadJS(src){ return new Promise(function(ok,no){
+  if(window.__lazy_&&window.__lazy_[src]) return ok();
+  var el=document.createElement('script'); el.src=src;
+  el.onload=function(){ window.__lazy_=window.__lazy_||{}; window.__lazy_[src]=1; ok(); };
+  el.onerror=function(){ no(new Error('โหลดตัวช่วยไม่สำเร็จ')); }; document.head.appendChild(el); }); }
+function savePassImage(btn, elId, fileName){
+  var el=document.getElementById(elId); if(!el) return;
+  var old=btn?btn.innerHTML:'';
+  if(btn){ btn.disabled=true; btn.innerHTML='กำลังสร้างรูป…'; }
+  function done(){ if(btn){ btn.disabled=false; btn.innerHTML=old; } }
+  loadJS('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js').then(function(){
+    return html2canvas(el,{ backgroundColor:'#0f0f10', scale:Math.min(3,(window.devicePixelRatio||1)*1.6),
+      useCORS:true, windowWidth:el.scrollWidth, height:el.scrollHeight, windowHeight:el.scrollHeight });
+  }).then(function(cv){ return new Promise(function(res){ cv.toBlob(function(b){ res(b); },'image/png'); }); })
+  .then(function(blob){
+    if(!blob) throw new Error('สร้างรูปไม่สำเร็จ');
+    var f=null; try{ f=new File([blob], fileName+'.png', {type:'image/png'}); }catch(e){}
+    if(f && navigator.canShare && navigator.canShare({files:[f]}) && navigator.share){
+      return navigator.share({files:[f], title:fileName}).then(done, done); }
+    var url=URL.createObjectURL(blob), a=document.createElement('a');
+    a.href=url; a.download=fileName+'.png'; document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); },1500); done();
+  }).catch(function(e){ showMsg('บันทึกรูปไม่สำเร็จ แคปหน้าจอแทนได้นะคะ 🙏','ไม่สำเร็จ'); done(); }); }
 function passHTML(p){ p=p||{}; var h='';
   if(p.badge) h+='<div class="pbadge">'+esc(p.badge)+'</div>';
   if(p.replaces) h+='<div class="prep">'+esc(p.replaces)+'</div>';

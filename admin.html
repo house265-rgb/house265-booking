@@ -46,8 +46,11 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(17,16,16,.94);backdr
 .lo{background:none;border:1px solid var(--line);color:var(--muted);border-radius:10px;padding:7px 11px;font-size:12px;cursor:pointer;font-family:inherit}
 .wrap{max-width:920px;margin:0 auto;padding:14px}
 .tabbar{display:flex;gap:5px;margin:0 0 12px;position:sticky;top:57px;z-index:15;background:var(--bg);padding:8px 0;overflow-x:auto}
-.tabbtn.rfs{margin-left:auto;color:var(--gold-soft);flex:0 0 auto}
-.tabbtn.rfs.spin{opacity:.55;pointer-events:none}
+/* หัวแท็บ: ชื่อหน้าซ้าย · ปุ่มรีเฟรชมุมบนขวา (รูปแบบเดียวกับหน้ารับสินค้า/POS)
+   เคยเอาไปไว้ในแถบแท็บ — บนมือถือต้องเลื่อนหาและเบียดแท็บจนใช้ยาก */
+.paneHead{display:flex;justify-content:space-between;align-items:center;margin:0 0 10px;gap:10px}
+.paneHead h2{margin:0;font-size:16px;font-weight:500}
+.lo.spin{opacity:.5;pointer-events:none}
 .tabbtn{flex:1 0 auto;background:var(--surface2);border:1px solid var(--line);color:var(--muted);border-radius:11px;padding:10px 12px;font-size:13.5px;font-weight:500;cursor:pointer;font-family:inherit;white-space:nowrap}
 .tabbtn.on{border-color:var(--gold);color:#231b08;background:linear-gradient(135deg,var(--gold-dim),var(--gold-soft))}
 .tabpane.hide{display:none}
@@ -317,12 +320,11 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
     <button class="tabbtn" data-t="tech" onclick="setTab('tech')">👩‍🔧 ช่าง</button>
     <button class="tabbtn" data-t="acct" onclick="setTab('acct')">💰 บัญชี</button>
     <button class="tabbtn" data-t="settings" onclick="setTab('settings')">⚙️ ตั้งค่า</button>
-    <!-- รีเฟรชแท็บที่เปิดอยู่ · ดึงของสดจากเซิร์ฟเวอร์ ไม่เอาที่แคชไว้ -->
-    <button class="tabbtn rfs" id="btnRefresh" onclick="refreshTab(this)" title="โหลดข้อมูลใหม่">↻ รีเฟรช</button>
   </div>
 
   <!-- ===== DASHBOARD ===== -->
   <div id="paneDash" class="tabpane">
+    <div class="paneHead"><h2>📊 ภาพรวม</h2><button class="lo" onclick="refreshTab(this)">↻ รีเฟรช</button></div>
     <div class="card"><div class="rng">
       <div class="f"><label class="lbl">ตั้งแต่</label><input type="date" id="dFrom" class="in" onchange="dClearQuick();loadDash()"></div>
       <div class="f"><label class="lbl">ถึง</label><input type="date" id="dTo" class="in" onchange="dClearQuick();loadDash()"></div>
@@ -334,10 +336,10 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
   </div>
 
   <!-- ===== QUEUE ===== -->
-  <div id="paneQueue" class="tabpane hide"><div id="queueBody"><div class="empty">กำลังโหลด…</div></div></div>
+  <div id="paneQueue" class="tabpane hide"><div class="paneHead"><h2>📅 คิวงาน</h2><button class="lo" onclick="refreshTab(this)">↻ รีเฟรช</button></div><div id="queueBody"><div class="empty">กำลังโหลด…</div></div></div>
 
   <!-- ===== TECH ===== -->
-  <div id="paneTech" class="tabpane hide"><div id="techBody"><div class="empty">กำลังโหลด…</div></div>
+  <div id="paneTech" class="tabpane hide"><div class="paneHead"><h2>👩‍🔧 ช่าง</h2><button class="lo" onclick="refreshTab(this)">↻ รีเฟรช</button></div><div id="techBody"><div class="empty">กำลังโหลด…</div></div>
     <div class="card" style="margin-top:14px">
       <h2>✅ อนุมัติค่ามือช่าง</h2>
       <div class="mini" style="margin-top:2px">ยืนยันค่ามือก่อนจ่ายเงินช่าง · สถานะนี้ใช้สำหรับการจ่ายเงินเท่านั้น ไม่กระทบงบกำไรขาดทุน</div>
@@ -352,6 +354,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
   <!-- ===== ACCOUNTING ===== -->
   <div id="paneAcct" class="tabpane hide">
+    <div class="paneHead"><h2>💰 บัญชี</h2><button class="lo" onclick="refreshTab(this)">↻ รีเฟรช</button></div>
     <div class="card"><div class="rng">
       <div class="f"><label class="lbl">ตั้งแต่</label><input type="date" id="aFrom" class="in" onchange="aClearQuick();loadAcct()"></div>
       <div class="f"><label class="lbl">ถึง</label><input type="date" id="aTo" class="in" onchange="aClearQuick();loadAcct()"></div>
@@ -387,7 +390,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
   </div>
 
   <!-- ===== SETTINGS ===== -->
-  <div id="paneSettings" class="tabpane hide"><div id="setBody"><div class="empty">กำลังโหลด…</div></div>
+  <div id="paneSettings" class="tabpane hide"><div class="paneHead"><h2>⚙️ ตั้งค่า</h2><button class="lo" onclick="refreshTab(this)">↻ รีเฟรช</button></div><div id="setBody"><div class="empty">กำลังโหลด…</div></div>
     <div class="card" style="margin-top:14px">
       <h2>👤 จัดการผู้ใช้</h2>
       <div class="mini" style="margin-top:2px">เปลี่ยนรหัสผ่าน / เพิ่มผู้ใช้ / เปิด-ปิดการใช้งาน · <b>เพิ่มผู้ใช้ + เปิด-ปิด = เฉพาะเจ้าของ</b></div>
@@ -407,7 +410,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P100-FIXPASS'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P102-UI'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='', SCHED=null, SETTINGS=null, TAB='dash', FULL=false, ROLE='', MYTECH='';
 var THD=['อา','จ','อ','พ','พฤ','ศ','ส'];
 /* ===== สถานะ "กำลังทำงาน" — ใช้ร่วมกันทุกหน้า (admin / pos / receive / Booking) =====
@@ -510,7 +513,7 @@ function applyStaffMode(){
   if(!document.getElementById('tabMine')){ var mb=document.createElement('button'); mb.className='tabbtn'; mb.id='tabMine'; mb.innerHTML='📈 รายได้ของฉัน'; mb.onclick=function(){ staffTab('mine'); }; bar.appendChild(mb); }
   if(!document.getElementById('tabLeave')){ var lb=document.createElement('button'); lb.className='tabbtn'; lb.id='tabLeave'; lb.innerHTML='🌴 ลางาน'; lb.onclick=function(){ staffTab('leave'); }; bar.appendChild(lb); }
   /* pane รายได้ของฉัน */
-  if(!document.getElementById('paneMine')){ var mp=document.createElement('div'); mp.id='paneMine'; mp.className='tabpane hide'; mp.innerHTML='<div id="mineBody"><div class="empty">กำลังโหลด…</div></div>'; document.getElementById('app').appendChild(mp); }
+  if(!document.getElementById('paneMine')){ var mp=document.createElement('div'); mp.id='paneMine'; mp.className='tabpane hide'; mp.innerHTML='<div class="paneHead"><h2>📈 รายได้ของฉัน</h2><button class="lo" onclick="refreshTab(this)">↻ รีเฟรช</button></div><div id="mineBody"><div class="empty">กำลังโหลด…</div></div>'; document.getElementById('app').appendChild(mp); }
   /* pane ลางาน (ที่เดียว — ไม่ซ้ำกับหน้าคิว) */
   if(!document.getElementById('paneLeave')){ var pane=document.createElement('div'); pane.id='paneLeave'; pane.className='tabpane hide';
     pane.innerHTML='<div class="card"><h2>🌴 แจ้งลางาน / วันหยุดของฉัน</h2><div class="mini" style="margin-top:2px">แจ้งวันที่หยุด ระบบจะไม่จัดคิวให้วันนั้น · ลบได้ถ้าเปลี่ยนใจ</div>'+
@@ -613,7 +616,7 @@ function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
 /* ปุ่ม ↻ รีเฟรช — โหลดเฉพาะแท็บที่เปิดอยู่ ไม่ต้องรีโหลดทั้งหน้า (ไม่เสียค่าโหลดใหม่ทั้งระบบ)
  * ใช้ตัวโหลดชุดเดียวกับตอนเปิดแท็บ จะได้ไม่มีทางที่ "กดรีเฟรชแล้วได้ข้อมูลคนละชุดกับตอนเปิด" */
 function refreshTab(btn){
-  var b=btn||document.getElementById('btnRefresh');
+  var b=btn||null;                       /* ปุ่มมีหลายตัว (แท็บละตัว) ใช้ตัวที่กดมาเท่านั้น */
   if(b){ b.classList.add('spin'); b.innerHTML='↻ กำลังโหลด…'; }
   NOCACHE=true;
   try{
@@ -1547,20 +1550,6 @@ function vzInOut(days){ var n=days.length; if(!n) return '';
   return '<svg class="vzsvg" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="เงินเข้าและเงินออกรายวัน">'+body+'</svg>'+
     '<div class="vzleg"><span><i style="background:'+VZ.gold+'"></i>เงินเข้า</span><span><i style="background:'+VZ.teal+'"></i>เงินออก</span></div>'; }
 /* ---- ค่าจ้าง ---- */
-function loadWages(){ api('listWages',{from:document.getElementById('aFrom').value,to:document.getElementById('aTo').value}).then(function(r){ if(!r||!r.ok)return; var box=document.getElementById('wgList'); var d=r.data;
-  var emp=Object.keys(d.byEmp||{}).map(function(k){return esc(k)+' ฿'+fmt(d.byEmp[k]);}).join(' · ');
-  box.innerHTML='<div class="lbl" style="margin:0 0 6px">รวมค่าจ้างช่วงนี้ ฿'+fmt(d.total)+(emp?(' · '+emp):'')+'</div>'+((d.wages&&d.wages.length)?d.wages.map(function(w){ return '<div class="offrow"><div><b>฿'+fmt(w.amount)+'</b> · '+esc(w.employee)+(w.work?(' · '+esc(w.work)):'')+' <span class="mini" style="margin:0">'+esc(w.date)+'</span></div><button class="x" onclick="rmWage('+w.row+')">✕</button></div>'; }).join(''):'<div class="empty">ยังไม่มีรายการ</div>'); }); }
-function addWage(){ var amt=document.getElementById('wgAmt').value; if(!amt||Number(amt)===0){ toast('ใส่ค่าแรง',1); return; }
-  api('addWage',{date:document.getElementById('wgDate').value,employee:document.getElementById('wgEmp').value.trim(),work:document.getElementById('wgWork').value.trim(),amount:Number(amt)}).then(function(r){ if(!r||!r.ok){ toast((r&&r.message)||'ไม่สำเร็จ',1); return; } document.getElementById('wgAmt').value=''; toast('บันทึกค่าจ้างแล้ว'); loadWages(); }); }
-function rmWage(row){ api('removeWage',{row:row}).then(function(r){ if(r&&r.ok){ toast('ลบแล้ว'); loadWages(); } }); }
-/* ---- ปิดเดือนธนาคาร ---- */
-function loadBank(){ var ym=document.getElementById('bkYm').value; if(!ym)return; api('getBankClose',{ym:ym}).then(function(r){ if(!r||!r.ok)return; var c=r.data.current, s=r.data.suggest;
-  document.getElementById('bkHair').value=c.cash_buy_hair||s.cash_buy_hair||''; document.getElementById('bkEquip').value=c.cash_equip||s.cash_equip||'';
-  document.getElementById('bkWage').value=c.wage_paid||s.wage_paid||''; document.getElementById('bkBal').value=c.bank_balance||''; document.getElementById('bkDep').value=c.customer_deposit||''; document.getElementById('bkNote').value=c.note||''; bankCalc(); }); }
-function bankCalc(){ var bh=+document.getElementById('bkHair').value||0,ce=+document.getElementById('bkEquip').value||0,wp=+document.getElementById('bkWage').value||0,bb=+document.getElementById('bkBal').value||0,cd=+document.getElementById('bkDep').value||0;
-  document.getElementById('bkCalc').innerHTML='<div class="pnl"><span>รวมเงินสดจ่าย</span><b>฿'+fmt(bh+ce+wp)+'</b></div><div class="pnl tot pos"><span>เงินร้านสุทธิในบัญชี</span><b>฿'+fmt(bb-cd)+'</b></div>'; }
-function saveBank(){ var ym=document.getElementById('bkYm').value; if(!ym){ toast('เลือกเดือน',1); return; }
-  api('setBankClose',{ym:ym,cash_buy_hair:+document.getElementById('bkHair').value||0,cash_equip:+document.getElementById('bkEquip').value||0,wage_paid:+document.getElementById('bkWage').value||0,bank_balance:+document.getElementById('bkBal').value||0,customer_deposit:+document.getElementById('bkDep').value||0,note:document.getElementById('bkNote').value.trim()}).then(function(r){ if(r&&r.ok){ toast('บันทึกปิดเดือนแล้ว'); bankCalc(); loadMonthly(); } else toast('ไม่สำเร็จ',1); }); }
 /* ---- stock take ---- */
 function loadStockTake(){ var ym=document.getElementById('stYm').value; if(!ym)return; api('listStockTake',{ym:ym}).then(function(r){ if(!r||!r.ok)return; var box=document.getElementById('stList'); var d=r.data;
   box.innerHTML='<div class="lbl" style="margin:0 0 6px">มูลค่าสต๊อกรวม ฿'+fmt(d.total)+'</div>'+((d.rows&&d.rows.length)?d.rows.map(function(s){ return '<div class="offrow"><div><b>'+esc(s.item)+' '+esc(s.size)+'นิ้ว</b> · '+fmt(s.qty)+' × ฿'+fmt(s.unit_cost)+' = ฿'+fmt(s.total)+'</div><button class="x" onclick="rmStock('+s.row+')">✕</button></div>'; }).join(''):'<div class="empty">ยังไม่มีข้อมูล — กด "ดึงจากระบบ"</div>'); }); }
@@ -1626,7 +1615,7 @@ function loadMonthly(){ api('reportMonthly',{months:6}).then(function(r){ if(!r|
   box.innerHTML=ms.map(function(m){ return '<div style="border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin-bottom:9px;background:var(--bg2)">'+
     '<div style="display:flex;justify-content:space-between;align-items:center"><b style="color:var(--gold-soft)">'+esc(m.ym)+'</b><span class="'+(m.net>=0?'delta up':'delta down')+'">สุทธิ ฿'+fmt(m.net)+'</span></div>'+
     '<div class="mini" style="margin-top:4px">ต่อผม ฿'+fmt(m.serviceRev)+' (กำไร '+fmt(m.serviceProfit)+') · ขายผม ฿'+fmt(m.hairRev)+' (กำไร '+fmt(m.hairProfit)+')</div>'+
-    '<div class="mini" style="margin:2px 0 0">กำไรขั้นต้น ฿'+fmt(m.grossProfit)+' · ค่าใช้จ่าย ฿'+fmt(m.expenses)+' · margin '+m.margin+'% · สต๊อก ฿'+fmt(m.stockValue)+(m.bankNet?(' · เงินบัญชีสุทธิ ฿'+fmt(m.bankNet)):'')+'</div></div>'; }).join(''); }); }
+    '<div class="mini" style="margin:2px 0 0">กำไรขั้นต้น ฿'+fmt(m.grossProfit)+' · ค่าใช้จ่าย ฿'+fmt(m.expenses)+' · margin '+m.margin+'% · สต๊อก ฿'+fmt(m.stockValue)+'</div></div>'; }).join(''); }); }
 function loadExpenses(){ api('listExpenses',{from:document.getElementById('aFrom').value,to:document.getElementById('aTo').value}).then(function(r){ if(!r||!r.ok)return; var box=document.getElementById('expList');
   box.innerHTML='<div class="lbl" style="margin:0 0 6px">ค่าใช้จ่ายในช่วงนี้</div>'+((r.data.expenses&&r.data.expenses.length)?r.data.expenses.map(function(e){ return '<div class="offrow"><div><b>฿'+fmt(e.total)+'</b> · '+esc(e.type)+(e.item?(' · '+esc(e.item)):'')+' <span class="mini" style="margin:0">'+esc(e.date)+'</span></div><button class="x" onclick="rmExp('+e.row+')">✕</button></div>'; }).join(''):'<div class="empty">ยังไม่มีรายการ</div>'); }); }
 function addExp(){ var total=document.getElementById('exTotal').value; if(!total||Number(total)===0){ toast('ใส่จำนวนเงิน',1); return; }
