@@ -445,7 +445,7 @@ function _busyOff(btn){ _BUSY=Math.max(0,_BUSY-1); if(!_BUSY) _busyBar(false);
  * มือถือลูกค้า (โดยเฉพาะเบราว์เซอร์ใน LINE) แคชหน้าเว็บไว้นานมาก หน้าเก่าคุยกับหลังบ้านใหม่
  * แล้วใบจองโหว่โดยไม่มีใครรู้ (เกิดจริง 16 พ.ย. 2026 — ใบจองขึ้นช่องว่างกับคำว่า undefined)
  * จึงโหลดใหม่ให้เงียบ ๆ ครั้งเดียว ถ้ายังไม่ตรงอีกค่อยบอกลูกค้าให้ติดต่อร้าน */
-var BUILD='P97-PASS2';
+var BUILD='P98-ONETIME';
 /* ❗ 24 พ.ย.: เดิมเทียบแบบต้องเท่ากันเป๊ะ (sv===BUILD) แต่เซิร์ฟเวอร์ส่ง '2026-11-24-P95-DAILY'
  *   ส่วนหน้าเว็บเก็บ 'P95-DAILY' → ไม่มีวันเท่ากัน ลูกค้า "ทุกคน" จึงโดนรีโหลดฟรี 1 รอบ
  *   แล้วเจอคำเตือนค้างหน้าจอตั้งแต่ยังไม่เริ่มจอง ทั้งที่ระบบปกติดี
@@ -853,10 +853,12 @@ function depositOf(total){ var S=CAT.settings||{}; var isFixed=(String(S.deposit
  * แต่ "ตัวเลขจริง" ต้องมาจากเซิร์ฟเวอร์เสมอ ไม่งั้นวันหนึ่งสูตรสองฝั่งหลุดจากกันแล้วลูกค้าเห็นราคาผิด
  * (เคยเกิดมาแล้ว: หน้าจอ 12,000 แต่ระบบคิดจริง 8,600) */
 var QSEQ=0, QT=null;
-function quoteSel(){ var s=svc(); if(!s&&!isRemoval()) return null;
-  return { mode:(isRemoval()?'removal':(isMove()?'move':(isByob()?'byob':'new'))),
-    service_id:(s?s.service_id:''), variant_id:(STATE.variantId||''), removal_id:(STATE.removalId||''),
-    qty_mad:Math.max(1,STATE.bundle||1), length_in:(STATE.length||'') }; }
+/* ❗ บทเรียน 24 พ.ย. 2026 — "เวลาที่ใช้" โชว์ไม่ตรงกันคนละหน้า (6 ชม. vs 7 ชม.)
+ * ต้นเหตุไม่ใช่สูตรผิด แต่เป็น "ถามเซิร์ฟเวอร์คนละคำถาม":
+ *   quoteSel()      ที่ส่งให้ bookQuote        → ไม่ได้ส่งงานถอด/ผมที่ซื้อเพิ่มไปด้วย → ตอบ 6 ชม.
+ *   selForServer()  ที่ส่งให้ bookAvailability → ส่งครบ → ตอบ 7 ชม.
+ * เลยเหลือตัวประกอบคำถามตัวเดียวคือ selForServer() ใช้ทั้ง bookQuote · bookAvailability · bookMonth
+ * (สูตรอยู่ที่เซิร์ฟเวอร์ที่เดียวอยู่แล้ว แต่ถ้าถามคนละคำถามก็ได้คำตอบคนละแบบอยู่ดี) */
 /* ❗ บทเรียน 15 พ.ย. 2026 — ปฏิทินโหลดวนไม่หยุดจนลูกค้าจองไม่ได้
  * วงจรเดิม: computeEst → applyAddons → confirmEstWithServer → (เจอว่าไม่ตรง) → renderStep
  *           → prepStep3 → computeEst → ... วนไม่รู้จบ แต่ละรอบโหลดปฏิทินใหม่หนึ่งครั้ง
@@ -877,26 +879,24 @@ function repaintEst(){
 }
 function confirmEstWithServer(){
   if(_estFixing) return;                           /* กำลังวาดผลที่เพิ่งแก้ไป อย่าถามซ้ำ */
-  var sel=quoteSel(); if(!sel) return;
+  var sel=selForServer(); if(!sel||!(sel.service_id||sel.removal_id)) return;
   var seq=++QSEQ; clearTimeout(QT);
   QT=setTimeout(function(){
     callApi('bookQuote',sel).then(function(r){
       if(seq!==QSEQ) return;                       /* ลูกค้าเปลี่ยนตัวเลือกไปแล้ว ทิ้งคำตอบเก่า */
       if(!r||!r.ok||!EST) return;
       var d=r.data, sTotal=Math.round(Number(d.total)||0), sDur=Math.round(Number(d.durationMin)||0);
-      /* เซิร์ฟเวอร์ตอบ "ยอดบริการรวมค่าสีแล้ว" (ยังไม่รวมของแถมที่เว็บบวกเอง)
-       * ฝั่งเว็บจึงต้องเทียบด้วย ฐาน + ค่าสี ให้เป็นหน่วยเดียวกัน */
-      var cTotal=Math.round((Number(EST.base)||0)+(Number(EST.colorSur)||0));
+      /* คำตอบของเซิร์ฟเวอร์คือ "ยอดรวมทุกอย่าง + เวลารวมทุกอย่าง" (รวมงานถอด/ผมที่ซื้อเพิ่มแล้ว)
+       * ฝั่งเว็บจึงยึดตามนั้นตรง ๆ ไม่บวกลบเพิ่มเอง — ตัวเลขที่ลูกค้าเห็นต้องเป็นของเซิร์ฟเวอร์เสมอ */
       var changed=false;
-      if(sTotal>0 && sTotal!==cTotal){             /* สูตรสองฝั่งไม่ตรง → ยึดของเซิร์ฟเวอร์ */
-        var diff=sTotal-cTotal;
-        EST.base=sTotal-(Number(EST.colorSur)||0);
-        EST.total=Math.round(Number(EST.total)||0)+diff;
-        EST.deposit=depositOf(EST.total);
+      if(sTotal>0 && sTotal!==Math.round(Number(EST.total)||0)){
+        /* ขยับ "ค่าบริการ" ตามส่วนต่างด้วย ไม่งั้นรายการย่อยในหน้าสรุปบวกกันแล้วไม่เท่ายอดรวม */
+        EST.base=Math.round(Number(EST.base)||0)+(sTotal-Math.round(Number(EST.total)||0));
+        EST.total=sTotal; EST.deposit=Math.round(Number(d.deposit)||depositOf(sTotal));
         EST.serverFixed=true; changed=true;
       }
-      if(sDur>0){ var cd=Math.round(Number(EST.durationMin)||0), ad=Math.round(Number(EST.addonDur)||0);
-        if(sDur!==cd-ad){ EST.durationMin=sDur+ad; EST.serverFixed=true; changed=true;
+      if(sDur>0){
+        if(sDur!==Math.round(Number(EST.durationMin)||0)){ EST.durationMin=sDur; EST.serverFixed=true; changed=true;
           /* เวลาที่ใช้เปลี่ยน → ช่วงเวลาว่างที่คำนวณไว้ใช้ไม่ได้แล้ว ต้องโหลดใหม่ "ครั้งเดียว" */
           if(STEP===3 && !_durReloaded){ _durReloaded=true;
             if(typeof loadMonthAvail==='function') loadMonthAvail();
