@@ -46,6 +46,8 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(17,16,16,.94);backdr
 .lo{background:none;border:1px solid var(--line);color:var(--muted);border-radius:10px;padding:7px 11px;font-size:12px;cursor:pointer;font-family:inherit}
 .wrap{max-width:920px;margin:0 auto;padding:14px}
 .tabbar{display:flex;gap:5px;margin:0 0 12px;position:sticky;top:57px;z-index:15;background:var(--bg);padding:8px 0;overflow-x:auto}
+.tabbtn.rfs{margin-left:auto;color:var(--gold-soft);flex:0 0 auto}
+.tabbtn.rfs.spin{opacity:.55;pointer-events:none}
 .tabbtn{flex:1 0 auto;background:var(--surface2);border:1px solid var(--line);color:var(--muted);border-radius:11px;padding:10px 12px;font-size:13.5px;font-weight:500;cursor:pointer;font-family:inherit;white-space:nowrap}
 .tabbtn.on{border-color:var(--gold);color:#231b08;background:linear-gradient(135deg,var(--gold-dim),var(--gold-soft))}
 .tabpane.hide{display:none}
@@ -315,6 +317,8 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
     <button class="tabbtn" data-t="tech" onclick="setTab('tech')">👩‍🔧 ช่าง</button>
     <button class="tabbtn" data-t="acct" onclick="setTab('acct')">💰 บัญชี</button>
     <button class="tabbtn" data-t="settings" onclick="setTab('settings')">⚙️ ตั้งค่า</button>
+    <!-- รีเฟรชแท็บที่เปิดอยู่ · ดึงของสดจากเซิร์ฟเวอร์ ไม่เอาที่แคชไว้ -->
+    <button class="tabbtn rfs" id="btnRefresh" onclick="refreshTab(this)" title="โหลดข้อมูลใหม่">↻ รีเฟรช</button>
   </div>
 
   <!-- ===== DASHBOARD ===== -->
@@ -353,6 +357,10 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
       <div class="f"><label class="lbl">ถึง</label><input type="date" id="aTo" class="in" onchange="aClearQuick();loadAcct()"></div>
     </div><div class="quick" id="aQuick"></div></div>
     <div id="acctBody"><div class="empty">กำลังโหลด…</div></div>
+    <!-- สรุปรายเดือนย้อนหลัง 6 เดือน — ❗ 24 พ.ย. 2026 พบว่ามีแต่โค้ดวาด (loadMonthly) แต่ไม่มีกล่องนี้
+         ทุกครั้งที่เปิดแท็บบัญชี โค้ดจึงโยน error เงียบ ๆ และฟีเจอร์นี้ไม่เคยแสดงผลเลย -->
+    <div class="sect" data-open="0"><div class="sect-h" onclick="toggleSect(this)"><span class="sect-t"><span class="ic">📅</span>สรุปรายเดือน (6 เดือนล่าสุด)</span><span class="sect-x">▾</span></div>
+      <div class="sect-b"><div id="monthlyBox"><div class="empty">กำลังโหลด…</div></div></div></div>
     <div class="sect" data-open="0"><div class="sect-h" onclick="toggleSect(this)"><span class="sect-t"><span class="ic">➕</span>บันทึกค่าใช้จ่าย</span><span class="chev">▾</span></div>
       <div class="sect-b">
         <div class="row2"><div><label class="lbl">วันที่</label><input type="date" class="in" id="exDate"></div>
@@ -399,7 +407,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P99-NODUP'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P100-FIXPASS'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='', SCHED=null, SETTINGS=null, TAB='dash', FULL=false, ROLE='', MYTECH='';
 var THD=['อา','จ','อ','พ','พฤ','ศ','ส'];
 /* ===== สถานะ "กำลังทำงาน" — ใช้ร่วมกันทุกหน้า (admin / pos / receive / Booking) =====
@@ -426,7 +434,11 @@ function _busyOff(btn){ _BUSY=Math.max(0,_BUSY-1); if(!_BUSY) _busyBar(false);
   btn.__bn=Math.max(0,(btn.__bn||1)-1);
   if(btn.__bn===0 && btn.__bhtml!=null){ btn.innerHTML=btn.__bhtml; btn.__bhtml=null;
     btn.disabled=false; btn.classList.remove('is-busy'); } }
+/* กดรีเฟรช = ขอของสด ไม่เอาที่เซิร์ฟเวอร์แคชไว้
+ * (แคชฝั่งเซิร์ฟเวอร์ถูกทิ้งเองทุกครั้งที่มีการเขียนข้อมูลอยู่แล้ว แต่ปุ่มนี้คือ "ขอใหม่เดี๋ยวนี้" ของคน) */
+var NOCACHE=false;
 function api(a,p){ var _b=_BUSYBTN; _busyOn(_b);
+  if(NOCACHE) p=Object.assign({},p||{},{nocache:1});
   return fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:a,token:TOKEN||'',payload:p||{}})})
     .then(function(r){return r.json();})
     .then(function(j){ _busyOff(_b); return j; }, function(e){ _busyOff(_b); throw e; }); }
@@ -512,7 +524,8 @@ function applyStaffMode(){
   if(qb) qb.onclick=function(){ staffTab('queue'); };
   staffTab('queue');
 }
-function staffTab(t){ ['queue','mine','leave'].forEach(function(x){ var p=document.getElementById('pane'+cap(x)); if(p)p.classList.toggle('hide',x!==t); });
+function staffTab(t){ TAB=t;   /* ปุ่มรีเฟรชต้องรู้ว่าตอนนี้อยู่แท็บไหน แม้ในโหมดช่าง */
+  ['queue','mine','leave'].forEach(function(x){ var p=document.getElementById('pane'+cap(x)); if(p)p.classList.toggle('hide',x!==t); });
   [].forEach.call(document.querySelectorAll('.tabbtn'),function(b){ b.classList.toggle('on', (b.dataset.t===t)||(t==='leave'&&b.id==='tabLeave')||(t==='mine'&&b.id==='tabMine')); });
   if(t==='queue')loadQueue(); if(t==='mine')loadMyStats(); if(t==='leave'){ var d=document.getElementById('lvDate'); if(d&&!d.value)d.value=iso(new Date()); loadMyLeave(); } window.scrollTo(0,0); }
 function loadMyLeave(){ var box=document.getElementById('lvList'); api('techSchedule',{}).then(function(r){ if(!r||!r.ok){ box.innerHTML=''; return; }
@@ -597,6 +610,26 @@ function setTab(t){ TAB=t; ['dash','queue','tech','acct','settings'].forEach(fun
     loadAcct();loadExpenses();loadStockTake(); }
   if(t==='settings'){ loadSettings(); loadUsers(); } window.scrollTo(0,0); }
 function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+/* ปุ่ม ↻ รีเฟรช — โหลดเฉพาะแท็บที่เปิดอยู่ ไม่ต้องรีโหลดทั้งหน้า (ไม่เสียค่าโหลดใหม่ทั้งระบบ)
+ * ใช้ตัวโหลดชุดเดียวกับตอนเปิดแท็บ จะได้ไม่มีทางที่ "กดรีเฟรชแล้วได้ข้อมูลคนละชุดกับตอนเปิด" */
+function refreshTab(btn){
+  var b=btn||document.getElementById('btnRefresh');
+  if(b){ b.classList.add('spin'); b.innerHTML='↻ กำลังโหลด…'; }
+  NOCACHE=true;
+  try{
+    if(TAB==='dash'){ TRENDFIRED=false; loadDash(); }
+    else if(TAB==='queue') loadQueue();
+    else if(TAB==='tech'){ loadTech(); loadCommissions(); }
+    else if(TAB==='acct'){ loadAcct(); loadExpenses(); loadStockTake(); loadMonthly(); }
+    else if(TAB==='settings'){ loadSettings(); loadUsers(); }
+    else if(TAB==='mine'){ if(typeof loadMyStats==='function') loadMyStats(); }
+    else if(TAB==='leave'){ if(typeof loadMyLeave==='function') loadMyLeave(); }
+  } finally {
+    /* ปล่อยธงหลังคำขอชุดนี้ถูกยิงออกไปครบแล้ว คำขออื่นหลังจากนี้ใช้แคชตามปกติ */
+    setTimeout(function(){ NOCACHE=false; },0);
+    setTimeout(function(){ if(b){ b.classList.remove('spin'); b.innerHTML='↻ รีเฟรช'; } }, 900);
+  }
+  toast('กำลังโหลดข้อมูลล่าสุด…'); }
 
 /* ---- date range ---- */
 function setRangeThisMonth(f,t){ var d=new Date(); document.getElementById(f).value=iso(new Date(d.getFullYear(),d.getMonth(),1)); document.getElementById(t).value=iso(d); }

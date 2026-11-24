@@ -328,6 +328,14 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 </div>
 
 <div class="modal" id="lineModal"><div class="mbox" style="max-width:440px"><div class="mh" id="lmTitle">รายการ</div><div class="mc" id="lmBody"></div></div></div>
+<!-- ใบจอง: พนักงานแคปหน้าจอส่งเข้า LINE ลูกค้า (หลังเลื่อนคิว หรือเปิดซ้ำตอนลูกค้าทำหาย)
+     ❗ 24 พ.ย. 2026: เคยมีแต่โค้ด JS แต่ลืมใส่กล่องนี้ กดปุ่มแล้วขึ้น "เชื่อมต่อไม่สำเร็จ"
+        ทั้งที่เซิร์ฟเวอร์ตอบปกติ — เพราะหาช่องใส่เนื้อหาไม่เจอแล้วโยน error เข้า catch ของการเชื่อมต่อ -->
+<div class="modal" id="passModal"><div class="mbox" style="max-width:400px">
+  <div class="mh">🎫 ใบจอง — แคปหน้าจอส่งให้ลูกค้า</div>
+  <div class="mc"><div id="passBody" class="passcard"></div>
+    <button class="btn sec" style="margin-top:12px" onclick="closePass()">ปิด</button></div>
+</div></div>
 <div class="modal" id="rcptModal"><div class="mbox"><div class="mh">บันทึกการขายแล้ว ✓</div><div class="mc">
   <div id="rcpt"></div>
   <div class="row2" style="margin-top:14px"><button class="btn sec" onclick="closeRcpt()">ปิด</button><button class="btn" onclick="printRcpt()">🖨️ ใบเสร็จ</button></div>
@@ -338,7 +346,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P99-NODUP'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P100-FIXPASS'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='',DATA=null,FULL=false,CART=[],CAT='ต่อผม',PAY='เงินสด',BUSY=false,USERTECH='';
 window._promoId=''; window._recv=0; window._split=false; window._p2m='พร้อมเพย์'; window._p2a=0; window._slips=[];
 window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName='';
@@ -1320,14 +1328,18 @@ function passHTML(p){ p=p||{}; var hero=p.hero||{}, h='';
   if(p.issued) h+='<div class="pissue">'+esc(p.issued)+'</div>';
   return h; }
 function showPass(pass){ if(!pass){ toast('ยังไม่มีข้อมูลใบจอง',1); return; }
-  var m=document.getElementById('passModal');
-  document.getElementById('passBody').innerHTML=passHTML(pass);
+  var m=document.getElementById('passModal'), body=document.getElementById('passBody');
+  if(!m||!body){ toast('เปิดใบจองไม่ได้ (หน้าเว็บไม่ครบ) — อัปโหลด pos.html ใหม่อีกครั้ง',1); return; }
+  body.innerHTML=passHTML(pass);
   m.classList.add('show'); }
 function closePass(){ var m=document.getElementById('passModal'); if(m)m.classList.remove('show'); }
 function openPass(){ if(!QBK) return;
   api('bookingPass',{booking_id:QBK.booking_id}).then(function(r){
     if(!r||!r.ok){ toast((r&&r.message)||'เปิดใบจองไม่สำเร็จ',1); return; }
-    showPass(r.data.pass); }).catch(function(){ toast('เชื่อมต่อไม่สำเร็จ',1); }); }
+    /* แยกให้ชัด: ต่อเซิร์ฟเวอร์ไม่ได้ กับ วาดใบไม่สำเร็จ คนละเรื่องกัน
+     * ถ้าเหมารวมเป็น "เชื่อมต่อไม่สำเร็จ" หน้าร้านจะไล่หาปัญหาผิดทางทั้งวัน */
+    try{ showPass(r.data.pass); }catch(err){ toast('เปิดใบจองไม่สำเร็จ: '+(err&&err.message||''),1); }
+  }).catch(function(){ toast('เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ ลองใหม่อีกครั้ง',1); }); }
 
 /* =================== เลื่อนคิว (ย้ายมาจากหน้า Admin 15 พ.ย. 2026) ===================
  * การจัดการคิวทั้งหมดอยู่ที่ POS ที่เดียว · หน้า Admin เหลือไว้ดูอย่างเดียว
