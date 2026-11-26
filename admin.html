@@ -477,11 +477,14 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
       <button class="btn sec" onclick="savePassImage(this,'passBody','booking-pass')">⬇ บันทึกเป็นรูป</button>
       <button class="btn sec" onclick="closePass()">ปิด</button></div></div>
 </div></div>
+<!-- ดูสลิปมัดจำที่ลูกค้าแนบมาตอนจอง — รูปส่งผ่านเซิร์ฟเวอร์ ไม่ต้องให้พนักงานมีสิทธิ์ในไดรฟ์ -->
+<div class="modal" id="imgModal"><div class="mbox" style="max-width:480px">
+  <div class="mh" id="imTitle">สลิป</div><div class="mc" id="imBody" style="text-align:center">กำลังโหลด…</div></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P115-SLIM'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P116-LINESLIP'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='', SCHED=null, SETTINGS=null, TAB='dash', FULL=false, ROLE='', MYTECH='';
 var THD=['อา','จ','อ','พ','พฤ','ศ','ส'];
 /* ===== สถานะ "กำลังทำงาน" — ใช้ร่วมกันทุกหน้า (admin / pos / receive / Booking) =====
@@ -1268,7 +1271,7 @@ function qBk(b){ var parts=[];
   return '<div class="bk"><div class="tm"><b>'+esc(b.start||'--')+'</b><small>'+esc(b.end||'')+'</small></div>'+
     '<div class="info"><b>'+esc(b.name||'ลูกค้า')+'</b>'+statusBadge(b.status)+'<span class="badge tech">✂ '+esc(b.tech_name||'—')+'</span>'+
     '<div class="bd">'+spec+'</div>'+
-    '<div class="bd">📞 '+esc(b.phone||'-')+' · มัดจำ '+fmt(b.deposit)+' ฿ · ยอด '+fmt(b.suggest_total)+' ฿</div>'+
+    '<div class="bd">📞 '+esc(b.phone||'-')+(b.line_id?(' · 💬 LINE '+esc(b.line_id)):'')+' · มัดจำ '+fmt(b.deposit)+' ฿ · ยอด '+fmt(b.suggest_total)+' ฿</div>'+
     (Number(b.dup_same_day)>1?('<div class="bd" style="color:var(--crit)">⚠ เบอร์นี้มี '+Number(b.dup_same_day)+' คิวในวันเดียวกัน</div>'):'')+
     (b.customer_note?('<div class="bd" style="color:var(--gold-soft)">📝 '+esc(b.customer_note)+'</div>'):'')+
     (Number(b.reschedule_count)>0?('<div class="bd" style="color:var(--warn)">🔁 เลื่อนมาแล้ว '+Number(b.reschedule_count)+' ครั้ง</div>'):'')+
@@ -1284,7 +1287,8 @@ function qBk(b){ var parts=[];
       ('<div class="bd" style="color:var(--faint);margin-top:6px">จัดการคิว (เลื่อน · ผิดนัด · ยกเลิก) ที่หน้า POS แท็บ “คิว”</div>'))+
     /* ใบจอง — เปิดดู/บันทึกเป็นรูปได้เหมือนที่ POS · ดูอย่างเดียว ไม่ใช่การแก้คิว
      * ใบของคิวที่ยกเลิก/ผิดนัด/เช็คเอาต์แล้ว เซิร์ฟเวอร์จะติดป้ายแดงบอกบนหัวใบให้เอง */
-    '<div class="bkact"><button type="button" class="btn sec sm" onclick="openPass(\''+esc(b.booking_id)+'\')">🎫 ใบจอง</button></div>'+
+    '<div class="bkact"><button type="button" class="btn sec sm" onclick="openPass(\''+esc(b.booking_id)+'\')">🎫 ใบจอง</button>'+
+      (b.slip_id?('<button type="button" class="btn sec sm" onclick="viewSlip(\''+esc(b.slip_id)+'\',\'มัดจำ '+esc(b.booking_id)+'\')">🧾 สลิปมัดจำ</button>'):'')+'</div>'+
     '</div></div>'; }
 
 /* =================== ใบจอง (ดูอย่างเดียว) ===================
@@ -1342,6 +1346,18 @@ function showPass(pass){ if(!pass){ toast('ยังไม่มีข้อม�
   if(!m||!body){ toast('เปิดใบจองไม่ได้ (หน้าเว็บไม่ครบ) — อัปโหลด admin.html ใหม่อีกครั้ง',1); return; }
   body.innerHTML=passHTML(pass);
   m.classList.add('show'); }
+/* สลิปมัดจำ — ใช้ action getSlip เดียวกับที่ POS ใช้ดูสลิปบิล */
+function viewSlip(fid,label){
+  var t=document.getElementById('imTitle'), b=document.getElementById('imBody'), m=document.getElementById('imgModal');
+  if(!t||!b||!m){ toast('เปิดรูปไม่ได้ (หน้าเว็บไม่ครบ) — อัปโหลด admin.html ใหม่',1); return; }
+  t.innerText='สลิป '+(label||''); b.innerHTML='<div class="mini">กำลังโหลด…</div>'; m.classList.add('show');
+  api('getSlip',{file_id:fid}).then(function(r){
+    if(!r||!r.ok){ b.innerHTML='<div class="empty">'+esc((r&&r.message)||'เปิดรูปไม่ได้')+'</div>'; return; }
+    b.innerHTML='<img src="'+r.data.dataUrl+'" style="max-width:100%;border-radius:10px">'+
+      '<div class="row2" style="margin-top:12px"><button class="btn sec" onclick="closeImg()">ปิด</button>'+
+      '<a class="btn" style="text-align:center;text-decoration:none;color:#231b08" href="'+r.data.dataUrl+'" download="'+esc(label||'slip')+'.jpg">บันทึกรูป</a></div>';
+  }).catch(function(){ b.innerHTML='<div class="empty">เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ</div>'; }); }
+function closeImg(){ var m=document.getElementById('imgModal'); if(m)m.classList.remove('show'); }
 function closePass(){ var m=document.getElementById('passModal'); if(m)m.classList.remove('show'); }
 function openPass(id){ id=String(id||'').trim(); if(!id) return;
   api('bookingPass',{booking_id:id}).then(function(r){

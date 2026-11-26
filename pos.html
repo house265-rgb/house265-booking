@@ -131,6 +131,7 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(17,16,16,.92);backdr
 .chkline input{width:17px;height:17px;accent-color:var(--gold)}
 .btn{background:linear-gradient(100deg,var(--gold-dim),var(--gold-soft));color:#231b08;padding:14px;font-weight:600;width:100%;border:none;border-radius:12px;font-size:15px}
 .btn:disabled{opacity:.5}.btn.sec{background:none;border:1px solid var(--line);color:var(--muted);font-weight:500}
+.btn.sm{width:auto;padding:8px 14px;font-size:13px;border-radius:10px}
 .x{background:none;border:1px solid var(--line);color:var(--crit);border-radius:8px;padding:4px 9px;font-size:12px}
 .warn{background:rgba(217,138,138,.12);border:1px solid var(--crit);color:var(--crit);border-radius:9px;padding:8px 11px;font-size:12px;margin-top:8px}
 .empty{text-align:center;color:var(--faint);padding:34px 12px;line-height:1.7}
@@ -349,7 +350,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P115-SLIM'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P116-LINESLIP'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='',DATA=null,FULL=false,CART=[],CAT='ต่อผม',PAY='เงินสด',BUSY=false,USERTECH='';
 window._promoId=''; window._recv=0; window._split=false; window._p2m='พร้อมเพย์'; window._p2a=0; window._slips=[];
 window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName='';
@@ -1271,6 +1272,7 @@ function qRow(b){ return '<div class="sliprow" style="cursor:pointer;align-items
   '<div style="text-align:center;min-width:54px"><b style="color:var(--gold-soft);font-size:16px">'+esc(b.start||'--')+'</b><div class="mini">'+esc(b.end||'')+'</div></div>'+
   '<div class="meta"><b style="font-weight:500">'+esc(b.name||'ลูกค้า')+'</b> <span class="faint">'+esc(b.booking_id)+'</span>'+
   '<div class="mini" style="margin-top:2px">'+esc(b.detail||'')+qtyChip(b)+(b.tech_name?(' · '+esc(b.tech_name)):'')+'</div>'+
+  (b.line_id?('<div class="mini" style="margin-top:2px">💬 LINE '+esc(b.line_id)+'</div>'):'')+
   (Number(b.dup_same_day)>1?('<div class="mini" style="margin-top:3px;color:var(--crit)">⚠ เบอร์นี้มี '+Number(b.dup_same_day)+' คิวในวันเดียวกัน — โทรเช็กก่อน แล้วยกเลิกใบที่เกิน</div>'):'')+
   (b.customer_note?('<div class="mini" style="margin-top:3px;color:var(--gold-soft)">📝 '+esc(b.customer_note)+'</div>'):'')+
   '<div style="margin-top:5px">'+qStatusBadge(b.status)+(b.deposit>0?(' <span class="mini">มัดจำ '+fmt(b.deposit)+'฿</span>'):'')+'</div></div>'+
@@ -1280,7 +1282,11 @@ function openQueueBooking(id){ QCANCEL=false; RS=null; RSSLIP=null; var body=doc
   api('bookingDetail',{booking_id:id}).then(function(r){ if(!r||!r.ok){ body.innerHTML='<div class="empty">'+esc((r&&r.message)||'โหลดไม่สำเร็จ')+'</div>'; return; }
     var bk=r.data.booking, v=bk.variant; QBK=bk; QBV=v;
     var h='<div class="mini">'+esc(bk.date)+' · '+esc(bk.start)+'–'+esc(bk.end)+' น. &nbsp;'+qStatusBadge(bk.status)+'</div>';
-    h+='<div style="margin:8px 0 2px"><b style="font-weight:500">'+esc(bk.name)+'</b>'+(bk.phone?(' · '+esc(bk.phone)):'')+'</div>';
+    h+='<div style="margin:8px 0 2px"><b style="font-weight:500">'+esc(bk.name)+'</b>'+(bk.phone?(' · 📞 '+esc(bk.phone)):'')+
+       (bk.line_id?(' · 💬 LINE '+esc(bk.line_id)):'')+'</div>';
+    /* สลิปมัดจำ — เปิดดูได้เลย ไม่ต้องไปตามหาในชีต/ไดรฟ์ */
+    if(bk.slip_id) h+='<div style="margin:6px 0 2px"><button class="btn sec sm" onclick="viewSlip(\''+esc(bk.slip_id)+'\',\'มัดจำ '+esc(bk.booking_id)+'\')">🧾 ดูสลิปมัดจำ</button></div>';
+    else h+='<div class="mini" style="margin:6px 0 2px;color:var(--faint)">ไม่มีสลิปมัดจำแนบมากับคิวนี้</div>';
     h+='<div class="hr2"></div><div class="idrow">'+
        '<span class="pill">บริการ <b>'+esc(bk.detail||(svcById(bk.service_id)||{}).acct_name||'-')+'</b></span>'+
        (v?('<span class="pill">ผม <b>'+esc(v.hair_type)+' '+esc(v.length_in)+'นิ้ว</b></span>'+(v.grade?('<span class="pill">เกรด <b>'+esc(v.grade)+'</b></span>'):'')+(v.texture?('<span class="pill">'+esc(v.texture)+'</span>'):'')+(v.color?('<span class="pill">สี <b>'+esc(v.color)+'</b></span>'):'')):'')+
