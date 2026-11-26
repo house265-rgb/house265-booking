@@ -76,7 +76,12 @@
   .swatches{display:flex;flex-wrap:wrap;gap:14px;margin-top:4px}
   .sw{display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;width:64px}
   .sw .dot{width:46px;height:46px;border-radius:50%;border:2px solid var(--line);transition:all .18s;
-    box-shadow:inset 0 2px 6px rgba(0,0,0,.4)}
+    box-shadow:inset 0 2px 6px rgba(0,0,0,.4);position:relative;overflow:hidden}
+  /* ประกายแสงบนจุดสี — ทำให้ดูเหมือนเส้นผมจริง และทำให้โทนดำ (ดำธรรมชาติ/ดำเข้ม) แยกออกจากพื้นจอดำได้ */
+  .sw .dot::after{content:'';position:absolute;inset:0;border-radius:50%;pointer-events:none;
+    background:radial-gradient(circle at 33% 27%, rgba(255,255,255,.26), rgba(255,255,255,.07) 36%, rgba(255,255,255,0) 62%)}
+  /* สีเข้มมากต้องมีขอบสว่างขึ้นอีกนิด ไม่งั้นวงกลมหายไปกับพื้นหลัง */
+  .sw .dot.dark{border-color:#4a443d}
   .sw:hover .dot{border-color:var(--gold-dim)}
   .sw.sel .dot{border-color:var(--gold);box-shadow:0 0 0 3px rgba(200,167,90,.25),inset 0 2px 6px rgba(0,0,0,.4)}
   .sw .nm{font-size:11px;color:var(--muted);text-align:center;line-height:1.3}
@@ -448,7 +453,7 @@ function _busyOff(btn){ _BUSY=Math.max(0,_BUSY-1); if(!_BUSY) _busyBar(false);
  * มือถือลูกค้า (โดยเฉพาะเบราว์เซอร์ใน LINE) แคชหน้าเว็บไว้นานมาก หน้าเก่าคุยกับหลังบ้านใหม่
  * แล้วใบจองโหว่โดยไม่มีใครรู้ (เกิดจริง 16 พ.ย. 2026 — ใบจองขึ้นช่องว่างกับคำว่า undefined)
  * จึงโหลดใหม่ให้เงียบ ๆ ครั้งเดียว ถ้ายังไม่ตรงอีกค่อยบอกลูกค้าให้ติดต่อร้าน */
-var BUILD='P110-STOCK';
+var BUILD='P111-COLORORDER';
 /* ❗ 24 พ.ย.: เดิมเทียบแบบต้องเท่ากันเป๊ะ (sv===BUILD) แต่เซิร์ฟเวอร์ส่ง '2026-11-24-P95-DAILY'
  *   ส่วนหน้าเว็บเก็บ 'P95-DAILY' → ไม่มีวันเท่ากัน ลูกค้า "ทุกคน" จึงโดนรีโหลดฟรี 1 รอบ
  *   แล้วเจอคำเตือนค้างหน้าจอตั้งแต่ยังไม่เริ่มจอง ทั้งที่ระบบปกติดี
@@ -627,7 +632,17 @@ function variantsAvail(){ return variantsForTech().filter(function(v){ return bk
 var DIMS=[ {k:'grade',f:'grade',label:'เกรดผม',en:'Hair grade'}, {k:'texture',f:'texture',label:'ลักษณะผม',en:'Texture'},
            {k:'color',f:'color',label:'สีผม',en:'Color'}, {k:'size',f:'length_in',label:'ขนาดผม',en:'Length'} ];
 function fieldEq(d,vVal,sVal){ if(d.k==='size')return digits(vVal)===digits(sVal); return String(vVal||'').trim()===String(sVal||'').trim(); }
-function distinctVals(dimField){ var seen={}, out=[]; variantsForTech().forEach(function(v){ var x=String(v[dimField]||'').trim(); if(x&&!seen[x]){seen[x]=1;out.push(x);} }); return out; }
+function distinctVals(dimField){ var seen={}, out=[]; variantsForTech().forEach(function(v){ var x=String(v[dimField]||'').trim(); if(x&&!seen[x]){seen[x]=1;out.push(x);} });
+  /* สีเรียงตามคอลัมน์ order ในชีต Colors (ร้านจัดลำดับเอง: ดำ → น้ำตาล → บลอนด์ → …)
+   * เดิมเรียงตามลำดับที่ผมถูกรับเข้าร้าน ซึ่งไม่มีความหมายกับลูกค้า */
+  if(dimField==='color') out.sort(function(a,b){ return colorRank(a)-colorRank(b); });
+  return out; }
+function colorRank(name){ var c=(CAT.colors||[]).filter(function(x){return String(x.name).trim()===String(name).trim();})[0];
+  var n=c?Number(c.order):NaN; return isFinite(n)&&n>0?n:9999; }
+/* สีเข้มมาก = ต้องใช้ขอบสว่างขึ้น ไม่งั้นจุดกลืนกับพื้นจอ (คิดจากความสว่างของสีแรก) */
+function isDarkHex(css){ var m=String(css).match(/#([0-9a-fA-F]{6})/); if(!m) return false;
+  var v=parseInt(m[1],16), r=(v>>16)&255, g=(v>>8)&255, b=v&255;
+  return (0.2126*r+0.7152*g+0.0722*b) < 42; }
 /* ค่าของแต่ละมิติ · ขนาด = รวมทุกขนาดที่ร้านมี (ServiceSizes) + ที่มีในรุ่นจริง → โชว์ครบ ของหมดทำจาง */
 function dimVals(d){ if(d.k!=='size') return distinctVals(d.f);
   var seen={}, out=[];
@@ -656,7 +671,9 @@ function aVariantsAvail(){ return aVariants().filter(function(v){ return bkStock
 function aSizesOf(){ var s=aSvcOf(); if(!s)return []; return (CAT.serviceSizes||[]).filter(function(z){return String(z.service_id)===String(s.service_id);}); }
 function aSizePrice(len){ var s=aSvcOf(); if(!s)return 0; var d=digits(len); var hit=(CAT.serviceSizes||[]).filter(function(z){return String(z.service_id)===String(s.service_id)&&digits(z.size)===d;})[0]; return hit?Number(hit.price):0; }
 function aDimVals(d){ var seen={},out=[];
-  if(d.k!=='size'){ aVariants().forEach(function(v){ var x=String(v[d.f]||'').trim(); if(x&&!seen[x]){seen[x]=1;out.push(x);} }); return out; }
+  if(d.k!=='size'){ aVariants().forEach(function(v){ var x=String(v[d.f]||'').trim(); if(x&&!seen[x]){seen[x]=1;out.push(x);} });
+    if(d.k==='color') out.sort(function(a,b){ return colorRank(a)-colorRank(b); });   /* เรียงตาม order เหมือนหน้าหลัก */
+    return out; }
   aVariants().forEach(function(v){ var x=digits(v.length_in); if(x&&!seen[x]){seen[x]=1;out.push(x);} });
   aSizesOf().forEach(function(z){ var x=digits(z.size); if(x&&!seen[x]){seen[x]=1;out.push(x);} });
   out.sort(function(a,b){ return (parseInt(a,10)||0)-(parseInt(b,10)||0); }); return out; }
@@ -716,7 +733,8 @@ function renderAddonDims(){ aActiveDims().forEach(function(d){ var box=document.
         var sur=Number(meta.surcharge)||0, surtxt=sur>0?('<br><span style="color:var(--gold-soft);font-size:10px">+'+fmt(sur)+'/'+aUnitLabel()+'</span>'):'';
         var cen=meta.name_en?('<br><span style="font-size:9.5px;color:var(--faint)">'+esc(meta.name_en)+'</span>'):'';
         var out=av?'':'<br><span style="font-size:9px;color:var(--crit)">หมด</span>';
-        w.innerHTML='<div class="dot" style="background:'+esc(colorHex(meta,val))+'"></div><div class="nm">'+esc(val)+cen+surtxt+out+'</div>';
+        var cbg=colorHex(meta,val);
+        w.innerHTML='<div class="dot'+(isDarkHex(cbg)?' dark':'')+'" style="background:'+esc(cbg)+'"></div><div class="nm">'+esc(val)+cen+surtxt+out+'</div>';
         if(av) w.onclick=function(){ STATE.addon.color=(STATE.addon.color===val?'':val); afterAddonDim(); }; box.appendChild(w); });
     } else { vals.forEach(function(val){ var av=aOptAvail(d,val), sel=(aStKey(d.k)===val);
         var c=document.createElement('div'); c.className='chip'+(sel?' sel':'')+(av?'':' dis');
@@ -816,7 +834,8 @@ function renderDims(){ activeDims().forEach(function(d){ var box=document.getEle
         var sur=Number(meta.surcharge)||0, surtxt=sur>0?('<br><span style="color:var(--gold-soft);font-size:10px">+'+fmt(sur)+'/'+unitLabel()+'</span>'):'';
         var cen=meta.name_en?('<br><span style="font-size:9.5px;color:var(--faint)">'+esc(meta.name_en)+'</span>'):'';
         var out=av?'':'<br><span style="font-size:9px;color:var(--crit)">หมด</span>';
-        w.innerHTML='<div class="dot" style="background:'+esc(colorHex(meta,val))+'"></div><div class="nm">'+esc(val)+cen+surtxt+out+'</div>';
+        var cbg=colorHex(meta,val);
+        w.innerHTML='<div class="dot'+(isDarkHex(cbg)?' dark':'')+'" style="background:'+esc(cbg)+'"></div><div class="nm">'+esc(val)+cen+surtxt+out+'</div>';
         if(av) w.onclick=function(){ STATE.color=(STATE.color===val?'':val); afterDim(); }; box.appendChild(w); });
     } else { vals.forEach(function(val){ var av=optAvail(d,val), sel=(stKey(d.k)===val);
         var c=document.createElement('div'); c.className='chip'+(sel?' sel':'')+(av?'':' dis');
