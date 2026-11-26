@@ -10,7 +10,9 @@
 <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<!-- ❗ ต้องมี defer: ถ้าโหลดแบบขวาง เบราว์เซอร์จะหยุดอ่านหน้าเว็บรอไฟล์นี้ก่อน
+     ลูกค้าเน็ตช้าจะเห็นจอว่างนานขึ้นฟรี ๆ ทั้งที่ยังไม่ได้ใช้ไลบรารีนี้เลยจนกว่าหน้าจะโหลดเสร็จ -->
+<script defer src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <title>House265 · จองคิว</title>
 <style>
   :root{
@@ -453,7 +455,7 @@ function _busyOff(btn){ _BUSY=Math.max(0,_BUSY-1); if(!_BUSY) _busyBar(false);
  * มือถือลูกค้า (โดยเฉพาะเบราว์เซอร์ใน LINE) แคชหน้าเว็บไว้นานมาก หน้าเก่าคุยกับหลังบ้านใหม่
  * แล้วใบจองโหว่โดยไม่มีใครรู้ (เกิดจริง 16 พ.ย. 2026 — ใบจองขึ้นช่องว่างกับคำว่า undefined)
  * จึงโหลดใหม่ให้เงียบ ๆ ครั้งเดียว ถ้ายังไม่ตรงอีกค่อยบอกลูกค้าให้ติดต่อร้าน */
-var BUILD='P114-RCCHECK';
+var BUILD='P115-SLIM';
 /* ❗ 24 พ.ย.: เดิมเทียบแบบต้องเท่ากันเป๊ะ (sv===BUILD) แต่เซิร์ฟเวอร์ส่ง '2026-11-24-P95-DAILY'
  *   ส่วนหน้าเว็บเก็บ 'P95-DAILY' → ไม่มีวันเท่ากัน ลูกค้า "ทุกคน" จึงโดนรีโหลดฟรี 1 รอบ
  *   แล้วเจอคำเตือนค้างหน้าจอตั้งแต่ยังไม่เริ่มจอง ทั้งที่ระบบปกติดี
@@ -561,8 +563,13 @@ function colorHex(meta,name){
   return NAME_HEX[String(name).trim()]||'#333'; }
 
 /* ================= LOAD ================= */
+/* ❗ ลำดับสำคัญมาก: คำขอข้อมูลใช้เวลานานสุดในหน้านี้ (Apps Script ~1-3 วิ)
+ * จึง "ยิงทันทีที่อ่านสคริปต์ถึงบรรทัดนี้" ไม่รอให้รูป/ไลบรารีโหลดเสร็จก่อน (window.onload)
+ * ของเดิมรอ onload = เสียเวลาฟรีทุกครั้งเท่ากับเวลาโหลดไฟล์ภายนอกทั้งหมด */
+var CATREQ=callApi('bookCatalog');     /* เริ่มนับหนึ่งตั้งแต่ตรงนี้ */
+CATREQ.catch(function(){});            /* กันคำเตือน unhandled ช่วงที่ยังไม่ได้ผูกตัวจัดการจริง */
 window.onload=function(){ initLiff();
-  callApi('bookCatalog').then(onCat).catch(function(err){ showFatal('โหลดข้อมูลไม่สำเร็จ'+(err&&err.message?('<br><small style="color:var(--faint)">'+err.message+'</small>'):'')); });
+  CATREQ.then(onCat).catch(function(err){ showFatal('โหลดข้อมูลไม่สำเร็จ'+(err&&err.message?('<br><small style="color:var(--faint)">'+err.message+'</small>'):'')); });
 };
 function showFatal(msg){ var lb=document.getElementById('loadingBox'); lb.style.display='block'; lb.style.color='var(--crit)'; lb.style.lineHeight='1.8'; lb.innerHTML=msg;
   document.getElementById('wizard').style.display='none'; document.getElementById('navBar').style.display='none'; }
