@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
-:root{--bg:#111010;--surface:#1a1816;--surface2:#211f1c;--bg2:#161412;--elev:#262320;--line:#322e29;--fg:#efe9df;--muted:#b3aa9c;--faint:#7c7265;--gold:#c8a75a;--gold-soft:#e6cc7e;--gold-dim:#9c7f3f;--gold-ghost:rgba(200,167,90,.12);--ok:#79c08a;--warn:#d9a441;--crit:#d98a8a;--blue:#7fa8c8;--r:13px;color-scheme:dark}
+:root{--bg:#111010;--surface:#1a1816;--surface2:#211f1c;--bg2:#161412;--elev:#262320;--line:#322e29;--fg:#efe9df;--muted:#b3aa9c;--faint:#7c7265;--gold:#c8a75a;--gold-soft:#e6cc7e;--gold-dim:#9c7f3f;--gold-ghost:rgba(200,167,90,.12);--ok:#79c08a;--warn:#d9a441;--teal:#4f9e86;--crit:#d98a8a;--blue:#7fa8c8;--r:13px;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 /* หน้าต่างป๊อปอัปต้องไม่สูงเกินจอ — เนื้อหาเลื่อนในตัวมันเอง ไม่ดันหัวเรื่องกับปุ่มยืนยันตกขอบ */
 .mbox{max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);display:flex;flex-direction:column}
@@ -103,6 +103,30 @@ textarea.in{min-height:70px;resize:vertical;font-size:12px;font-family:'IBM Plex
 .passcard .pfoot{font-size:11px;color:var(--faint);text-align:center;line-height:1.7;margin-top:10px;border-top:1px solid var(--line);padding-top:9px}
 .passcard .pissue{font-size:10.5px;color:var(--faint);text-align:right;margin-top:6px}
 .bkact{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+/* ===== การ์ดสต็อก ===== */
+.skt{background:var(--surface2);border:1px solid var(--line);border-radius:11px;padding:11px}
+.skt .t{font-size:10.5px;color:var(--faint);line-height:1.5}
+.skt .v{font-size:18px;margin-top:4px;font-family:'IBM Plex Mono'}
+.skal{display:flex;gap:8px;align-items:flex-start;font-size:12px;padding:9px 11px;border-radius:10px;margin-top:9px;line-height:1.6}
+.skal.w{background:rgba(217,164,65,.09);border:1px solid rgba(217,164,65,.3);color:var(--warn)}
+.skal.s{background:rgba(255,255,255,.03);border:1px solid var(--line);color:var(--muted)}
+.sksec{font-size:11px;color:var(--faint);letter-spacing:.04em;margin:15px 0 4px}
+.skrow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+.skrow:last-child{border-bottom:none}
+.skrow .nm{font-size:12.5px}
+.skrow .sub{font-size:10.5px;color:var(--faint);margin-top:3px;line-height:1.5}
+.skrow .amt{text-align:right;font-family:'IBM Plex Mono';font-size:12.5px;white-space:nowrap}
+.skrow .bar{height:5px;border-radius:3px;background:var(--surface2);margin-top:6px;overflow:hidden}
+.skrow .bar b{display:block;height:100%;border-radius:3px}
+.pill{display:inline-block;font-size:10px;padding:2px 7px;border-radius:999px;margin-left:5px;white-space:nowrap}
+.pill.hot{background:rgba(217,138,138,.16);color:var(--crit)}
+.pill.warm{background:rgba(217,164,65,.14);color:var(--warn)}
+.pill.cold{background:rgba(255,255,255,.05);color:var(--faint)}
+.sktab{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:4px}
+.sktab th{font-size:10px;color:var(--faint);font-weight:400;text-align:right;padding:6px 0;border-bottom:1px solid var(--line)}
+.sktab th:first-child{text-align:left}
+.sktab td{padding:7px 0;border-bottom:1px solid rgba(50,46,41,.6);text-align:right;font-family:'IBM Plex Mono'}
+.sktab td:first-child{text-align:left;font-family:inherit}
 .hide{display:none}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:12px}
 .card h2{font-weight:600;font-size:15px;margin:0 0 12px;color:var(--fg);display:flex;justify-content:space-between;align-items:center;gap:8px}
@@ -457,7 +481,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P105-LEDGER'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P110-STOCK'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='', SCHED=null, SETTINGS=null, TAB='dash', FULL=false, ROLE='', MYTECH='';
 var THD=['อา','จ','อ','พ','พฤ','ศ','ส'];
 /* ===== สถานะ "กำลังทำงาน" — ใช้ร่วมกันทุกหน้า (admin / pos / receive / Booking) =====
@@ -962,8 +986,8 @@ function renderDash(){ var d=DASHDATA; var p=d.prev||{}; var h='';
   h+='<div class="tiles" style="margin:12px 0">'+
     tile('กำไรสุทธิ','฿'+fmt(d.net!=null?d.net:d.grossProfit),vzDelta(d.grossProfit,p.grossProfit)+' <span class="mini" style="margin:0">margin '+d.margin+'%</span>')+
     tile('จำนวนบิล',fmt(d.count)+' <span style="font-size:13px;color:var(--faint)">บิล</span>',vzDelta(d.count,p.count)+' <span class="mini" style="margin:0">'+cmpName+' '+fmt(p.count||0)+'</span>')+
-    tile('มูลค่าสต็อก','฿'+fmt(d.stockValue),'<span class="mini" style="margin:0">'+fmt(d.stockQR)+' QR'+((d.lowStock&&d.lowStock.length)?(' · <span style="color:var(--crit)">ใกล้หมด '+d.lowStock.length+'</span>'):'')+'</span>')+
     '</div>';
+  h+=stockCard(d.stock);
   /* คาดการณ์สิ้นเดือน — มีเฉพาะตอนดูเดือนปัจจุบัน */
   var fc=d.forecast;
   if(fc){ var fpct=(d.target&&d.target.revenue>0)?Math.round(fc.projected/d.target.revenue*100):0;
@@ -982,7 +1006,8 @@ function renderDash(){ var d=DASHDATA; var p=d.prev||{}; var h='';
     vzSeg(Object.keys(d.byType||{}).map(function(k){return {name:k,value:d.byType[k]};}))+'</div>';
   /* P&L — มีแถบแสดงโครงสร้างต้นทุนด้านบน แล้วตามด้วยงบ */
   var rev=(d.serviceRev||0)+(d.productRev||0);
-  var struct=[{name:'ต้นทุนผม',value:d.hairCost},{name:'ค่ามือช่าง',value:d.commission},{name:'ค่าช่างปั้นช่อ',value:d.craft},{name:'ค่าอุปกรณ์',value:d.equip},
+  var struct=[{name:'ต้นทุนผม',value:d.hairCost},{name:'ค่ามือช่าง',value:d.commission},{name:'ค่าช่างปั้นช่อ',value:d.craft},
+    {name:'ค่าอุปกรณ์ปั้น',value:d.matl||0},{name:'ค่าขนส่ง',value:d.ship||0},{name:'ค่าอุปกรณ์',value:d.equip},
     {name:'ส่วนลด',value:d.discount},{name:'ค่าใช้จ่ายอื่น',value:d.expenses},{name:'กำไรสุทธิ',value:Math.max(0,d.net!=null?d.net:d.grossProfit)}];
   h+='<div class="card"><h2>💰 งบกำไรขาดทุน (P&L)</h2>'+
     '<div class="mini" style="margin:0 0 10px">เงินทุก 100 บาทที่ขายได้ ไปอยู่ตรงไหนบ้าง</div>'+vzSeg(struct)+
@@ -992,6 +1017,8 @@ function renderDash(){ var d=DASHDATA; var p=d.prev||{}; var h='';
     '<div class="pnl neg"><span>− ค่ามือช่าง</span><b>฿'+fmt(d.commission)+'</b></div>'+
     '<div class="pnl neg"><span>− ค่าอุปกรณ์</span><b>฿'+fmt(d.equip)+'</b></div>'+
     ((d.craft>0)?('<div class="pnl neg"><span>− ค่าช่างปั้นช่อ</span><b>฿'+fmt(d.craft)+'</b></div>'):'')+
+    ((d.matl>0)?('<div class="pnl neg"><span>− ค่าอุปกรณ์ปั้น (ในล็อต)</span><b>฿'+fmt(d.matl)+'</b></div>'):'')+
+    ((d.ship>0)?('<div class="pnl neg"><span>− ค่าขนส่งผม (ในล็อต)</span><b>฿'+fmt(d.ship)+'</b></div>'):'')+
     ((d.discount>0)?('<div class="pnl neg"><span>− ส่วนลด/โปรโมชัน</span><b>฿'+fmt(d.discount)+'</b></div>'):'')+
     '<div class="pnl tot"><span>กำไรขั้นต้น</span><b>฿'+fmt(d.grossProfit)+'</b></div>'+
     ((d.expenses>0)?('<div class="pnl neg"><span>− ค่าใช้จ่ายอื่น</span><b>฿'+fmt(d.expenses)+'</b></div>'):'')+
@@ -1018,7 +1045,6 @@ function renderDash(){ var d=DASHDATA; var p=d.prev||{}; var h='';
   if(bd.length){ h+='<div class="card"><h2>📅 วันไหนขายดี</h2><div class="mini" style="margin:0 0 8px">เฉลี่ยต่อวันที่เปิดจริง — ใช้จัดคิวช่างและตั้งโปรวันที่เงียบ</div>'+
     vzBars(bd.map(function(x){ return {name:x.name,value:x.avgPerDay,sub:x.bills+' บิล / '+x.days+' วัน'}; }))+'</div>'; }
   h+='<div class="card"><h2>🏆 ขายดี (ตามยอดเงิน)</h2>'+vzBars((d.topItems||[]).map(function(x){return {name:x.name,value:x.amount};}),{limit:8})+'</div>';
-  h+='<div class="card"><h2>ช่องทางรับเงิน</h2>'+vzBars(Object.keys(d.byMethod||{}).map(function(k){return {name:k,value:d.byMethod[k]};}))+'</div>';
   /* Technician Performance — แท่งเรียงอันดับ แตะดูรายคน */
   h+='<div class="card"><h2>👩‍🔧 ผลงานช่าง'+(d.commPending>0?(' <span class="cmwait">รออนุมัติ ฿'+fmt(d.commPending)+'</span>'):'')+'</h2>'+
     '<div class="mini" style="margin:0 0 8px">แตะชื่อช่างเพื่อดูแดชบอร์ดรายคน (ค่ามือ/ผลงาน/ประวัติ)</div>'+
@@ -1027,7 +1053,6 @@ function renderDash(){ var d=DASHDATA; var p=d.prev||{}; var h='';
   var eb=d.expByType||{}; var ebKeys=Object.keys(eb);
   if(ebKeys.length||d.expenses>0){ h+='<div class="card"><h2>🧾 ค่าใช้จ่ายแยกประเภท <span class="mini" style="margin:0">รวม ฿'+fmt(d.expenses)+'</span></h2>'+
     vzBars(ebKeys.map(function(k){return {name:k,value:eb[k]};}))+'</div>'; }
-  h+='<div class="card"><h2>⚠️ ผมใกล้หมด (≤5 QR)</h2><div class="list">'+((d.lowStock&&d.lowStock.length)?d.lowStock.map(function(x){ return '<div class="li"><span>'+esc(x.name)+'</span><span class="r" style="color:'+(x.available<=0?'var(--crit)':'var(--gold-soft)')+'">'+fmt(x.available)+' QR</span></div>'; }).join(''):'<div class="mini">สต็อกเพียงพอ</div>')+'</div></div>';
   document.getElementById('dashBody').innerHTML=h; renderTrend(); }
 function renderTrend(){ var el=document.getElementById('trendBox'); if(!el||!TRENDDATA)return; var s=TRENDDATA.series||[];
   if(!s.length){ el.innerHTML='<div class="vzempty">ยังไม่มีข้อมูล</div>'; return; }
@@ -1618,7 +1643,7 @@ function renderAcct(){ var d=ACCT; if(!d) return;
   document.getElementById('acctBody').innerHTML=h; renderAcctRows(); }
 /* สรุปสัดส่วน — เงินเข้าแยกตามช่องทางรับเงิน · เงินออกแยกตามประเภท (จัดกลุ่มมาจากเซิร์ฟเวอร์) */
 function flowGroups(d){ var gs=(d.groups||[]); if(!gs.length) return '';
-  var IN=['var(--gold-soft)','var(--gold)','var(--gold-dim)'], OUT=['#4f9e86','#79c08a','#5f8f7f'];
+  var IN=['var(--gold-soft)','var(--gold)','var(--gold-dim)'], OUT=['var(--teal)','var(--ok)','#5f8f7f'];
   function block(kind,title,tot){
     var list=gs.filter(function(x){ return x.kind===kind; }); if(!list.length) return '';
     var max=Math.max.apply(null,list.map(function(x){ return x.amount; }))||1;
@@ -1660,6 +1685,70 @@ function renderAcctRows(){ var el=document.getElementById('acctRows'); if(!el) r
   h+='<div class="mini" style="margin-top:8px">แตะวันไหน กางเฉพาะวันนั้น · ค้นหาแล้วระบบกางวันที่มีผลให้เอง · '+
      'ต้องการรายการทั้งหมดแบบละเอียด กด <b>📥 ดาวน์โหลด Excel</b> ด้านล่าง</div>';
   el.innerHTML=h; }
+/* ===== การ์ดสต็อก =====
+ * เปิดมาเห็นแค่ "เงินจม · ขายได้ · กำไร · พอขายอีกกี่วัน" กับคำเตือน 2 บรรทัด
+ * รายละเอียด 4 บล็อกซ่อนไว้ใต้ปุ่ม กดแล้วกาง (ข้อมูลมากับก้อนเดียวกันแล้ว ไม่ต้องยิงใหม่)
+ * ตัวเลขทั้งหมดมาจาก stockReport_ ที่เซิร์ฟเวอร์ — หน้านี้แค่วาด */
+var STKOPEN=false;
+/* วันไทยสั้น ๆ ให้อ่านง่ายเหมือนหน้าอื่น (ใช้ตาราง MON ชุดเดียวกับทั้งหน้า) */
+function skDate(k){ if(!k) return ''; var d=kDate(k); if(!d||isNaN(d)) return String(k);
+  var y=new Date().getFullYear(); return d.getDate()+' '+MON[d.getMonth()]+(d.getFullYear()!==y?(' '+d.getFullYear()):''); }
+function stockToggle(){ STKOPEN=!STKOPEN; var b=document.getElementById('stkBody'), t=document.getElementById('stkBtn');
+  if(!b||!t) return; b.style.display=STKOPEN?'block':'none'; t.innerHTML=STKOPEN?'ซ่อนรายละเอียด ▴':'ดูรายละเอียดสต็อก ▾'; }
+function stkRow(nm,sub,amt,col,bar){
+  return '<div class="skrow"><div><div class="nm">'+nm+'</div>'+
+    (bar?('<div class="bar"><b style="width:'+bar.w+'%;background:'+bar.c+'"></b></div>'):'')+
+    (sub?('<div class="sub">'+sub+'</div>'):'')+'</div>'+
+    '<div class="amt"'+(col?(' style="color:'+col+'"'):'')+'>'+amt+'</div></div>'; }
+function stockCard(k){ if(!k||!k.summary) return '';
+  var s=k.summary, h='<div class="card"><h2>📦 มูลค่าสต็อก <span class="mini" style="margin:0">'+fmt(s.qr)+' QR · '+fmt(s.variants)+' รุ่น</span></h2>'+
+    '<div class="mini" style="margin:0">เงินจมอยู่ในผม (ต้นทุน)</div>'+
+    '<div style="font-size:28px;color:var(--gold-soft);line-height:1.25;margin:3px 0 2px">฿'+fmt(s.cost)+'</div>'+
+    '<div class="mini">'+(s.perDay>0
+      ? ('ขายเฉลี่ย '+s.perDay+' QR/วัน · <b style="color:var(--fg)">ของพอขายอีกประมาณ '+fmt(s.daysLeft)+' วัน</b>')
+      : ('ยังไม่มีการตัดสต็อกใน '+s.windowDays+' วันที่ผ่านมา'))+'</div>'+
+    '<div class="row2" style="margin-top:12px">'+
+      '<div class="skt"><div class="t">ถ้าต่อให้ลูกค้าหมด<br>จะได้ยอดขาย</div><div class="v" style="color:var(--gold-soft)">฿'+fmt(s.value)+'</div></div>'+
+      '<div class="skt"><div class="t">กำไรที่จะได้<br>(หักค่ามือ+อุปกรณ์แล้ว)</div><div class="v" style="color:var(--teal)">฿'+fmt(s.profit)+'</div></div>'+
+    '</div>';
+  if(k.reorder&&k.reorder.length) h+='<div class="skal w">⚠️ <div><b>ต้องสั่งเพิ่ม '+fmt(k.reorder.length)+' รุ่น</b> — ขายดีแต่ของจะหมดใน '+fmt(Math.max.apply(null,k.reorder.map(function(x){return x.daysLeft;})))+' วัน</div></div>';
+  if(s.agingCost>0) h+='<div class="skal s">💤 <div><b>ค้างเกิน '+s.ageDays+' วัน ฿'+fmt(s.agingCost)+'</b> ('+fmt(s.agingQR)+' QR) — เงินจมที่ยังไม่ขยับ</div></div>';
+  if(s.noPrice>0) h+='<div class="skal w">⚠️ <div><b>ยังไม่ได้ตั้งราคาค่าต่อ '+fmt(s.noPrice)+' รุ่น</b> ('+fmt(s.noPriceQR)+' QR) — ไม่ถูกนับในยอดขายได้/กำไรข้างบน</div></div>';
+  h+='<button class="btn sec" id="stkBtn" style="width:100%;margin-top:11px" onclick="stockToggle()">'+(STKOPEN?'ซ่อนรายละเอียด ▴':'ดูรายละเอียดสต็อก ▾')+'</button>'+
+     '<div id="stkBody" style="display:'+(STKOPEN?'block':'none')+'">';
+
+  if(k.reorder&&k.reorder.length){ h+='<div class="sksec">⚠️ ต้องสั่งเพิ่มก่อน (ขายดี · ใกล้หมด)</div>';
+    h+=k.reorder.map(function(x){
+      var tag=(x.qr<=0?'หมดแล้ว':('หมดใน '+x.daysLeft+' วัน'));
+      return stkRow(esc(x.name)+' <span class="pill '+(x.daysLeft<=5?'hot':'warm')+'">'+tag+'</span>',
+        'เหลือ '+fmt(x.qr)+' QR · ขาย ~'+x.perWeek+' QR/สัปดาห์ · '+s.windowDays+' วันที่ผ่านมาขายไป '+x.soldWin+' QR',
+        fmt(x.qr)+' QR', (x.daysLeft<=5?'var(--crit)':'var(--warn)')); }).join('');
+    if(s.slowLow>0) h+='<div class="mini">อีก '+fmt(s.slowLow)+' รุ่นเหลือน้อย (≤5 QR) แต่ไม่ค่อยมีคนซื้อ — ยังไม่ต้องรีบสั่ง</div>'; }
+
+  if(k.groups&&k.groups.length){ h+='<div class="sksec">💰 เงินจมอยู่กับอะไร</div>';
+    var mx=Math.max.apply(null,k.groups.map(function(g){return g.cost;}))||1;
+    var CL=['var(--gold-soft)','var(--gold)','var(--gold-dim)','#8a7340','#6e5f3f','#5c5038'];
+    h+=k.groups.map(function(g,i){ var pct=(s.cost>0?Math.round(g.cost/s.cost*100):0);
+      return stkRow(esc(g.name), fmt(g.qr)+' QR'+(pct?(' · '+pct+'% ของเงินจม'):''), '฿'+fmt(g.cost),
+        'var(--gold-soft)', {w:Math.max(3,Math.round(g.cost/mx*100)),c:CL[i%6]}); }).join(''); }
+
+  if(k.aging&&k.aging.length){ h+='<div class="sksec">💤 ค้างนาน ไม่ขยับ (เกิน '+s.ageDays+' วัน)</div>';
+    h+=k.aging.map(function(a){
+      return stkRow(esc(a.name)+' <span class="pill cold">'+fmt(a.days)+' วัน</span>',
+        'รับเข้า '+esc(skDate(a.received))+' · เหลือ '+fmt(a.qr)+' QR · '+(a.lastSold?('ขายครั้งล่าสุด '+esc(skDate(a.lastSold))):'<b style="color:var(--warn)">ยังไม่เคยขาย</b>'),
+        '฿'+fmt(a.cost)); }).join(''); }
+
+  if(k.rows&&k.rows.length){ h+='<div class="sksec">📋 รายรุ่น (เรียงตามเงินจม)</div>'+
+    '<table class="sktab"><tr><th>รุ่น</th><th>QR</th><th>ต้นทุน</th><th>ขายได้</th><th>กำไร</th></tr>'+
+    k.rows.map(function(x){ return '<tr><td>'+esc(x.name)+'</td><td>'+fmt(x.qr)+'</td><td>'+fmt(x.cost)+'</td>'+
+      '<td>'+(x.noPrice?'<span style="color:var(--warn)">ยังไม่ตั้งราคา</span>':fmt(x.value))+'</td>'+
+      '<td style="color:'+(x.profit>0?'var(--teal)':'var(--faint)')+'">'+(x.noPrice?'—':fmt(x.profit))+'</td></tr>'; }).join('')+
+    ((k.rowsTotal>k.rows.length)?('<tr><td colspan="5" class="mini" style="text-align:right;padding-top:8px">อีก '+fmt(k.rowsTotal-k.rows.length)+' รุ่น ดูได้ในไฟล์ Excel</td></tr>'):'')+
+    '</table>'; }
+
+  h+='<div class="mini" style="margin-top:10px">“ขายได้/กำไร” คิดจาก<b style="color:var(--muted)">ราคาค่าต่อ</b> ซึ่งเป็นช่องทางหลักของร้าน · กำไรหักค่ามือช่างและค่าอุปกรณ์ต่อแล้ว · อัตราขายนับจาก QR ที่ตัดออกจากล็อตจริงใน '+s.windowDays+' วันล่าสุด</div>';
+  return h+'</div></div>'; }
+
 /* กราฟแท่งคู่ เงินเข้า (ทอง) vs เงินออก (เขียว) ต่อวัน */
 function vzInOut(days){ var n=days.length; if(!n) return '';
   var W=600,H=170,PL=48,PR=10,PT=14,PB=26, iw=W-PL-PR, ih=H-PT-PB, id=vzId();

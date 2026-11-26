@@ -448,7 +448,7 @@ function _busyOff(btn){ _BUSY=Math.max(0,_BUSY-1); if(!_BUSY) _busyBar(false);
  * มือถือลูกค้า (โดยเฉพาะเบราว์เซอร์ใน LINE) แคชหน้าเว็บไว้นานมาก หน้าเก่าคุยกับหลังบ้านใหม่
  * แล้วใบจองโหว่โดยไม่มีใครรู้ (เกิดจริง 16 พ.ย. 2026 — ใบจองขึ้นช่องว่างกับคำว่า undefined)
  * จึงโหลดใหม่ให้เงียบ ๆ ครั้งเดียว ถ้ายังไม่ตรงอีกค่อยบอกลูกค้าให้ติดต่อร้าน */
-var BUILD='P105-LEDGER';
+var BUILD='P110-STOCK';
 /* ❗ 24 พ.ย.: เดิมเทียบแบบต้องเท่ากันเป๊ะ (sv===BUILD) แต่เซิร์ฟเวอร์ส่ง '2026-11-24-P95-DAILY'
  *   ส่วนหน้าเว็บเก็บ 'P95-DAILY' → ไม่มีวันเท่ากัน ลูกค้า "ทุกคน" จึงโดนรีโหลดฟรี 1 รอบ
  *   แล้วเจอคำเตือนค้างหน้าจอตั้งแต่ยังไม่เริ่มจอง ทั้งที่ระบบปกติดี
@@ -540,10 +540,19 @@ function amtPerQr(s){ return svcSellUnit(s)==='ช่อ'?(Number(s&&s.strands_p
 function fmtNum(n){ n=Math.round(Number(n)*100)/100; return String(n); }
 function qtyUnit(s,qr){ return fmtNum(amtPerQr(s)*Math.max(0,Number(qr)||0))+' '+svcSellUnit(s); }
 function unitLabel(){ var s=svc(); return s?(fmtNum(amtPerQr(s))+svcSellUnit(s)):'หน่วย'; }
-/* สีจุดตัวอย่าง: ใช้ hex จากชีต Colors (แนวทางเดิม) · ถ้า hex ว่าง/ผิดรูปแบบ ใช้สีมาตรฐานตามชื่อ */
+/* สีจุดตัวอย่าง: ใช้ hex จากชีต Colors (แนวทางเดิม) · ถ้า hex ว่าง/ผิดรูปแบบ ใช้สีมาตรฐานตามชื่อ
+ * 🆕 25 พ.ย. 2026: ช่องเดียวกันใส่ได้หลายสีคั่นด้วย / หรือ , เช่น `#2B1B12/#A9743F/#E3C083`
+ *   → จุดกลายเป็นสีไล่เฉด ใช้กับสีที่ไม่ใช่เฉดเดียว (บาลายาจ · ไฮไลท์ · ออมเบร)
+ *   เรียงจาก "โคนผม → ปลายผม" · ใส่สีเดียวยังทำงานเหมือนเดิมทุกอย่าง
+ *   ⚠️ ประกอบสตริงจากรหัสสีที่ผ่านการตรวจแล้วเท่านั้น ไม่เอาข้อความจากชีตไปวางตรง ๆ */
 var NAME_HEX={'ดำธรรมชาติ':'#141210','สีดำ':'#000000','ดำ':'#000000','น้ำตาลเข้ม':'#3b2415','น้ำตาลอ่อน':'#8a5a2b','น้ำตาล':'#5b3a1e','น้ำตาลทอง':'#9a6b2f','ทอง':'#c8a75a','สีทอง':'#c8a75a','บลอนด์':'#d8b878','เทา':'#8a8a8a','แดง':'#7a2e2e'};
-function colorHex(meta,name){ var h=String((meta&&meta.hex)||'').trim();
-  if(/^#?[0-9a-fA-F]{6}$/.test(h)||/^#?[0-9a-fA-F]{3}$/.test(h)) return (h.charAt(0)==='#'?h:('#'+h));
+function colorHex(meta,name){
+  var ok=String((meta&&meta.hex)||'').split(/[\/,]/).map(function(x){ return x.trim(); })
+    .filter(function(x){ return /^#?[0-9a-fA-F]{6}$/.test(x)||/^#?[0-9a-fA-F]{3}$/.test(x); })
+    .map(function(x){ return x.charAt(0)==='#'?x:('#'+x); });
+  if(ok.length>1){ var a=ok[0], z=ok[ok.length-1], mid=(ok.length>2?(a+' 26%,'+ok[1]+' 58%,'):'');
+    return 'linear-gradient(160deg,'+a+' 0%,'+mid+z+' 100%)'; }
+  if(ok.length===1) return ok[0];
   return NAME_HEX[String(name).trim()]||'#333'; }
 
 /* ================= LOAD ================= */
