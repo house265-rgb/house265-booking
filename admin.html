@@ -484,7 +484,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P116-LINESLIP'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P117-XLSXFIX'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='', SCHED=null, SETTINGS=null, TAB='dash', FULL=false, ROLE='', MYTECH='';
 var THD=['อา','จ','อ','พ','พฤ','ศ','ส'];
 /* ===== สถานะ "กำลังทำงาน" — ใช้ร่วมกันทุกหน้า (admin / pos / receive / Booking) =====
@@ -1831,12 +1831,18 @@ function loadJS(src){ return new Promise(function(ok,no){
   var el=document.createElement('script'); el.src=src; el.setAttribute('data-lazy',src);
   el.onload=function(){ window.__lazy_=window.__lazy_||{}; window.__lazy_[src]=1; ok(); };
   el.onerror=function(){ no(); }; document.head.appendChild(el); }); }
+/* ตัวช่วย Excel โหลดตอนกดใช้ครั้งแรกเท่านั้น (ไฟล์ ~900KB ไม่ควรถ่วงตอนเปิดหน้า)
+ * ❗ 26 พ.ย. 2026: ทุกปุ่มที่ทำไฟล์ Excel ต้องผ่านตัวนี้ตัวเดียว
+ *   ของเดิมตอนเปลี่ยนมาโหลดแบบ lazy แก้แค่ปุ่มบัญชี ลืมปุ่ม Count Sheet
+ *   ปุ่มนั้นเลยขึ้น "ยังโหลดตัวช่วย Excel ไม่เสร็จ" ตลอดกาล เพราะไม่มีใครสั่งโหลดให้มันเลย */
+function withXLSX(fn){
+  if(typeof XLSX!=='undefined'){ fn(); return; }
+  toast('กำลังเตรียมไฟล์ Excel…');
+  loadJS('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js')
+    .then(function(){ if(typeof XLSX==='undefined') throw new Error('no XLSX'); fn(); })
+    .catch(function(){ toast('โหลดตัวช่วย Excel ไม่สำเร็จ ตรวจอินเทอร์เน็ตแล้วลองใหม่',1); }); }
 function exportAcctExcel(){
-  if(typeof XLSX==='undefined'){ toast('กำลังเตรียมไฟล์ Excel…');
-    loadJS('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js')
-      .then(function(){ exportAcctExcel(); })
-      .catch(function(){ toast('โหลดตัวช่วย Excel ไม่สำเร็จ ลองใหม่อีกครั้ง',1); });
-    return; }
+  if(typeof XLSX==='undefined'){ withXLSX(exportAcctExcel); return; }
   var from=document.getElementById('aFrom').value, to=document.getElementById('aTo').value; if(!from||!to){ toast('เลือกช่วงวันที่',1); return; }
   toast('กำลังดึงข้อมูล…');
   Promise.all([ api('reportAccounting',{from:from,to:to}), api('exportLedger',{from:from,to:to}), api('listExpenses',{from:from,to:to}) ]).then(function(res){
@@ -1867,7 +1873,7 @@ function exportAcctExcel(){
     XLSX.writeFile(wb, 'House265-บัญชี_'+from+'_ถึง_'+to+'.xlsx'); toast('ดาวน์โหลด Excel แล้ว ('+items.length+' รายการ)');
   }).catch(function(){ toast('ดึงข้อมูลไม่สำเร็จ',1); }); }
 /* ---- Export Count Sheet (นับสต๊อกจริงเทียบ QR) ---- */
-function exportCountSheet(){ if(typeof XLSX==='undefined'){ toast('ยังโหลดตัวช่วย Excel ไม่เสร็จ ลองใหม่',1); return; }
+function exportCountSheet(){ if(typeof XLSX==='undefined'){ withXLSX(exportCountSheet); return; }
   var ym=document.getElementById('stYm').value||iso(new Date()).slice(0,7);
   api('listStockTake',{ym:ym}).then(function(r){ var rows=((r&&r.data)||{}).rows||[];
     if(!rows.length){ toast('ยังไม่มีข้อมูลสต๊อก กด "ดึงจากระบบ" ก่อน',1); return; }
