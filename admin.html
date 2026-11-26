@@ -481,7 +481,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P111-COLORORDER'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P113-PURCHASES'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='', SCHED=null, SETTINGS=null, TAB='dash', FULL=false, ROLE='', MYTECH='';
 var THD=['อา','จ','อ','พ','พฤ','ศ','ส'];
 /* ===== สถานะ "กำลังทำงาน" — ใช้ร่วมกันทุกหน้า (admin / pos / receive / Booking) =====
@@ -1626,6 +1626,7 @@ function renderAcct(){ var d=ACCT; if(!d) return;
     '</div>';
   if((d.byDay||[]).length>1) h+='<div style="margin-top:12px">'+vzInOut(d.byDay)+'</div>';
   h+=flowGroups(d);
+  h+=buyCard(d.purchases);
   h+='<div class="mini" style="margin-top:8px">นี่คือมุมมอง <b>กระแสเงินสด</b> (เงินเข้าออกจริงตามวันที่) ไม่ใช่กำไรขาดทุน — กำไรดูที่แท็บภาพรวม</div></div>';
 
   if((d.bigOut||[]).length) h+='<div class="card"><h2>🔎 ค่าใช้จ่ายก้อนใหญ่ช่วงนี้</h2>'+
@@ -1655,6 +1656,38 @@ function flowGroups(d){ var gs=(d.groups||[]); if(!gs.length) return '';
         '<div class="amt" style="color:'+col+'">'+(kind==='in'?'+':'−')+'฿'+fmt(x.amount)+'</div></div>'; }).join(''); }
   return '<div style="margin-top:12px">'+block('in','เงินเข้า — แยกตามช่องทางรับเงิน',d.income)+
          block('out','เงินออก — แยกตามประเภท',d.outcome)+'</div>'; }
+
+/* ===== สมุดซื้อ — เงินที่จ่ายซื้อ/ผลิตผมเข้าร้าน =====
+ * คนละก้อนกับ "เงินออก" ด้านบน จึงต้องบอกให้ชัดว่าไม่ได้นับซ้ำกัน */
+var BUYOPEN=false;
+function buyToggle(){ BUYOPEN=!BUYOPEN; var b=document.getElementById('buyBody'), t=document.getElementById('buyBtn');
+  if(!b||!t) return; b.style.display=BUYOPEN?'block':'none'; t.innerHTML=BUYOPEN?'ซ่อนรายการ ▴':'ดูรายการรับเข้า ▾'; }
+function buyCard(k){ if(!k||!k.count) return '';
+  var h='<div class="card"><h2>🧾 ซื้อผมเข้าร้าน <span class="mini" style="margin:0">'+fmt(k.count)+' ครั้ง · '+fmt(k.qr)+' QR</span></h2>'+
+    '<div class="mini" style="margin:0">เงินที่จ่ายรับผมเข้าร้านในงวดนี้</div>'+
+    '<div style="font-size:28px;color:var(--gold-soft);line-height:1.25;margin:3px 0 2px">฿'+fmt(k.total)+'</div>'+
+    '<div class="mini">เฉลี่ย ฿'+fmt(k.perQr)+' ต่อ QR'+(k.ship>0?(' · ค่าขนส่งรวม ฿'+fmt(k.ship)):'')+'</div>'+
+    '<div class="row2" style="margin-top:12px">'+
+      '<div class="skt"><div class="t">ซื้อผมสำเร็จ</div><div class="v" style="color:var(--gold-soft)">฿'+fmt(k.bought)+'</div></div>'+
+      '<div class="skt"><div class="t">ปั้นเอง (ผมดิบ+ค่าปั้น)</div><div class="v" style="color:var(--gold-soft)">฿'+fmt(k.made)+'</div></div>'+
+    '</div>';
+  if(k.bySupplier&&k.bySupplier.length){ h+='<div class="sksec">แยกตามแหล่งซื้อ</div>';
+    var mx=Math.max.apply(null,k.bySupplier.map(function(x){return x.amount;}))||1;
+    h+=k.bySupplier.map(function(x,i){ var pct=(k.total>0?Math.round(x.amount/k.total*100):0);
+      return stkRow(esc(x.name), fmt(x.count)+' ครั้ง · '+fmt(x.qr)+' QR'+(pct?(' · '+pct+'%'):''),
+        '฿'+fmt(x.amount), 'var(--gold-soft)',
+        {w:Math.max(3,Math.round(x.amount/mx*100)),c:['var(--gold-soft)','var(--gold)','var(--gold-dim)','#8a7340','#6e5f3f','#5c5038'][i%6]}); }).join(''); }
+  h+='<button class="btn sec" id="buyBtn" style="width:100%;margin-top:11px" onclick="buyToggle()">'+(BUYOPEN?'ซ่อนรายการ ▴':'ดูรายการรับเข้า ▾')+'</button>'+
+     '<div id="buyBody" style="display:'+(BUYOPEN?'block':'none')+'">'+
+     '<table class="sktab" style="margin-top:10px"><tr><th>วันที่</th><th style="text-align:left">รุ่น</th><th>QR</th><th>ยอด</th></tr>'+
+     k.rows.map(function(x){ return '<tr><td style="text-align:left">'+esc(skDate(x.date))+'</td>'+
+       '<td style="text-align:left">'+esc(x.name)+(x.made?' <span class="pill cold">ปั้นเอง</span>':'')+
+       '<div class="mini" style="margin:2px 0 0">'+esc(x.receipt_id)+' · '+esc(x.batch_id)+' · '+esc(x.supplier)+'</div></td>'+
+       '<td>'+fmt(x.qty)+'</td><td>'+fmt(x.amount)+'</td></tr>'; }).join('')+
+     ((k.rowsTotal>k.rows.length)?('<tr><td colspan="4" class="mini" style="text-align:right;padding-top:8px">อีก '+fmt(k.rowsTotal-k.rows.length)+' รายการ ดูได้ในชีต Receipts</td></tr>'):'')+
+     '</table></div>'+
+     '<div class="mini" style="margin-top:9px">ก้อนนี้<b style="color:var(--muted)">ไม่ได้รวมอยู่ใน "เงินออก" ด้านบน</b> — เงินค่าผมจะไปโผล่เป็นต้นทุนตอนขายแทน จะได้ไม่นับซ้ำสองรอบ</div>';
+  return h+'</div>'; }
 
 /* รายการเดินบัญชี — วันละ 1 บรรทัด กางเฉพาะวันที่กด
  * (เดิมเทรายการทั้งเดือนต่อกันเป็นตารางเดียว หน้าจอยาวจนหาอะไรไม่เจอ) */
