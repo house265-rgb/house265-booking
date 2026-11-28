@@ -145,6 +145,11 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(17,16,16,.92);backdr
 .passcard .ptop .ts{font-size:9.5px;letter-spacing:.18em;color:var(--faint);margin-top:3px}
 .passcard .pbadge{display:block;max-width:235px;margin:0 auto 8px;text-align:center;font-size:11.5px;color:#1a1a1a;background:var(--gold-soft);border-radius:999px;padding:5px 12px}
 .passcard .pbadge.bad{background:var(--crit);color:#2b1212}
+/* ป้ายไลน์ — ไอคอนแทนคำว่า "LINE" (28 พ.ย. 2026)
+ * บรรทัดติดต่อลูกค้ายาวเกินไปเมื่อสะกด "LINE" เต็มคำทุกการ์ด · ไอคอนสั้นกว่าและกวาดตาหาเจอเร็วกว่า
+ * เป็นป้ายแชทสีเขียวทั่วไป ไม่ใช่โลโก้ LINE ของจริง (ของจริงเป็นเครื่องหมายการค้า) */
+.lineic{display:inline-block;width:15px;height:15px;border-radius:5px;background:#06C755;position:relative;vertical-align:-3px;margin-right:4px;flex:none}
+.lineic::after{content:'';position:absolute;left:3px;top:4px;width:9px;height:5px;border-radius:3px 3px 3px 0;background:#fff}
 .passcard .prep{font-size:11.5px;color:var(--warn);text-align:center;line-height:1.6;margin-bottom:8px}
 .passcard .pwarn{font-size:11.5px;color:var(--gold-soft);line-height:1.7;text-align:center;border:1px solid var(--gold-dim);border-radius:9px;padding:8px 10px;margin-bottom:10px}
 .passcard .timebox{border:1px solid var(--gold-dim);background:rgba(201,169,106,.06);border-radius:10px;padding:12px 13px;margin-bottom:10px}
@@ -350,7 +355,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P118-NEWVARIANT'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P119-QCARD'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='',DATA=null,FULL=false,CART=[],CAT='ต่อผม',PAY='เงินสด',BUSY=false,USERTECH='';
 window._promoId=''; window._recv=0; window._split=false; window._p2m='พร้อมเพย์'; window._p2a=0; window._slips=[];
 window._bookingId=''; window._bookingName=''; window._deposit=0; window._promoName='';
@@ -1263,16 +1268,15 @@ function loadQueue(){ var box=document.getElementById('queueBox'); if(!box)retur
 var THMON=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'], THDOW=['อา','จ','อ','พ','พฤ','ศ','ส'];
 function qDateLabel(d){ if(!d||d==='-')return 'ไม่ระบุวัน'; var p=d.split('-'); if(p.length<3)return d; var dt=new Date(+p[0],+p[1]-1,+p[2]);
   var today=todayStr(); var rel=(d===today)?' (วันนี้)':''; return THDOW[dt.getDay()]+' '+(+p[2])+' '+THMON[+p[1]-1]+rel; }
-/* จำนวนท้ายบรรทัด: detail มักเขียนจำนวนไว้อยู่แล้ว ("...30นิ้ว · 300 ช่อ | ถอด:...")
- * จึงต่อท้ายเฉพาะตอนที่ยังไม่มี — ถ้าสองค่าไม่ตรงกันจะเห็นทั้งคู่ ซึ่งเป็นสัญญาณว่าข้อมูลเพี้ยน ไม่ใช่ของซ้ำ */
-function qtyChip(b){ if(!b.qty_mad) return '';
-  var t=qtyTag(b.technique,b.qty_mad,strandsOfVariant(b.variant_id));
-  return (t && String(b.detail||'').indexOf(t)>=0) ? '' : (' · '+esc(t)); }
+/* ป้ายไลน์บนการ์ดคิว — นิยามเดียวต่อหน้า · ตัดคำว่า "LINE" ออก เหลือไอคอน + ไอดี */
+function lineTag(id){ id=String(id||'').trim(); return id?('<span class="lineic" title="LINE"></span>'+esc(id)):''; }
 function qRow(b){ return '<div class="sliprow" style="cursor:pointer;align-items:flex-start" onclick="openQueueBooking(\''+esc(b.booking_id)+'\')">'+
   '<div style="text-align:center;min-width:54px"><b style="color:var(--gold-soft);font-size:16px">'+esc(b.start||'--')+'</b><div class="mini">'+esc(b.end||'')+'</div></div>'+
   '<div class="meta"><b style="font-weight:500">'+esc(b.name||'ลูกค้า')+'</b> <span class="faint">'+esc(b.booking_id)+'</span>'+
-  '<div class="mini" style="margin-top:2px">'+esc(b.detail||'')+qtyChip(b)+(b.tech_name?(' · '+esc(b.tech_name)):'')+'</div>'+
-  (b.line_id?('<div class="mini" style="margin-top:2px">💬 LINE '+esc(b.line_id)+'</div>'):'')+
+  '<div class="mini" style="margin-top:2px">'+esc(b.spec||b.detail||'')+(b.tech_name?(' · '+esc(b.tech_name)):'')+'</div>'+
+  /* บรรทัดติดต่อ — เบอร์ + ไลน์ รูปแบบเดียวกับการ์ดคิวที่ admin (28 พ.ย. 2026)
+   * เดิม POS มีแต่ไอดีไลน์ ไม่มีเบอร์ ต้องเปิดคิวดูทีละใบถึงจะโทรได้ */
+  '<div class="mini" style="margin-top:2px">📞 '+esc(b.phone||'-')+(b.line_id?(' · '+lineTag(b.line_id)):'')+'</div>'+
   (Number(b.dup_same_day)>1?('<div class="mini" style="margin-top:3px;color:var(--crit)">⚠ เบอร์นี้มี '+Number(b.dup_same_day)+' คิวในวันเดียวกัน — โทรเช็กก่อน แล้วยกเลิกใบที่เกิน</div>'):'')+
   (b.customer_note?('<div class="mini" style="margin-top:3px;color:var(--gold-soft)">📝 '+esc(b.customer_note)+'</div>'):'')+
   '<div style="margin-top:5px">'+qStatusBadge(b.status)+(b.deposit>0?(' <span class="mini">มัดจำ '+fmt(b.deposit)+'฿</span>'):'')+'</div></div>'+
@@ -1283,7 +1287,7 @@ function openQueueBooking(id){ QCANCEL=false; RS=null; RSSLIP=null; var body=doc
     var bk=r.data.booking, v=bk.variant; QBK=bk; QBV=v;
     var h='<div class="mini">'+esc(bk.date)+' · '+esc(bk.start)+'–'+esc(bk.end)+' น. &nbsp;'+qStatusBadge(bk.status)+'</div>';
     h+='<div style="margin:8px 0 2px"><b style="font-weight:500">'+esc(bk.name)+'</b>'+(bk.phone?(' · 📞 '+esc(bk.phone)):'')+
-       (bk.line_id?(' · 💬 LINE '+esc(bk.line_id)):'')+'</div>';
+       (bk.line_id?(' · '+lineTag(bk.line_id)):'')+'</div>';
     /* สลิปมัดจำ — เปิดดูได้เลย ไม่ต้องไปตามหาในชีต/ไดรฟ์ */
     if(bk.slip_id) h+='<div style="margin:6px 0 2px"><button class="btn sec sm" onclick="viewSlip(\''+esc(bk.slip_id)+'\',\'มัดจำ '+esc(bk.booking_id)+'\')">🧾 ดูสลิปมัดจำ</button></div>';
     else h+='<div class="mini" style="margin:6px 0 2px;color:var(--faint)">ไม่มีสลิปมัดจำแนบมากับคิวนี้</div>';

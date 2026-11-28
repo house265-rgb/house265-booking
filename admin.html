@@ -103,6 +103,11 @@ textarea.in{min-height:70px;resize:vertical;font-size:12px;font-family:'IBM Plex
 .passcard .pfoot{font-size:11px;color:var(--faint);text-align:center;line-height:1.7;margin-top:10px;border-top:1px solid var(--line);padding-top:9px}
 .passcard .pissue{font-size:10.5px;color:var(--faint);text-align:right;margin-top:6px}
 .bkact{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+/* ป้ายไลน์ — ไอคอนแทนคำว่า "LINE" (28 พ.ย. 2026)
+ * บรรทัดติดต่อลูกค้ายาวเกินไปเมื่อสะกด "LINE" เต็มคำทุกการ์ด · ไอคอนสั้นกว่าและกวาดตาหาเจอเร็วกว่า
+ * เป็นป้ายแชทสีเขียวทั่วไป ไม่ใช่โลโก้ LINE ของจริง (ของจริงเป็นเครื่องหมายการค้า) */
+.lineic{display:inline-block;width:15px;height:15px;border-radius:5px;background:#06C755;position:relative;vertical-align:-3px;margin-right:4px;flex:none}
+.lineic::after{content:'';position:absolute;left:3px;top:4px;width:9px;height:5px;border-radius:3px 3px 3px 0;background:#fff}
 /* ===== การ์ดสต็อก ===== */
 .skt{background:var(--surface2);border:1px solid var(--line);border-radius:11px;padding:11px}
 .skt .t{font-size:10.5px;color:var(--faint);line-height:1.5}
@@ -484,7 +489,7 @@ input[type=date],input[type=time],input[type=month],input[type=number]{-webkit-a
 
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbxCgCMizPxSpNKDF_Zgrnq9k75wSixVmFKcC2guGhfLRrNmPXJftKvrzCG4m3uR9B-MnA/exec';
-var BUILD='P118-NEWVARIANT'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
+var BUILD='P119-QCARD'; /* เวอร์ชันหน้าเว็บ — เทียบกับเวอร์ชันเซิร์ฟเวอร์ที่มุมบน ถ้าไม่ตรง = ยังไม่ได้ Deploy ครบ */
 var TOKEN='', SCHED=null, SETTINGS=null, TAB='dash', FULL=false, ROLE='', MYTECH='';
 var THD=['อา','จ','อ','พ','พฤ','ศ','ส'];
 /* ===== สถานะ "กำลังทำงาน" — ใช้ร่วมกันทุกหน้า (admin / pos / receive / Booking) =====
@@ -1246,32 +1251,36 @@ function qSetTab(t){ QTAB=t; renderQueue(); }
 function qSelDay(d){ QSELDAY=d; renderQueue(); }
 function kDate(k){ var p=k.split('-'); return new Date(+p[0],+p[1]-1,+p[2]); }
 function prepSummary(list,title){ var pm={};
-  list.forEach(function(b){ if(!b.needs_hair)return; var k=b.technique+'|'+b.size+'|'+b.color+'|'+(b.texture||'');
-    if(!pm[k])pm[k]={tech:b.technique,size:b.size,color:b.color,texture:b.texture||'',qr:0,queues:0}; pm[k].qr+=b.qty_mad; pm[k].queues+=1; });
+  /* ❗ 28 พ.ย. 2026: เดิมจับกลุ่มโดยไม่นับ "เกรด" → ตัดสด กับ ตัดสด พรีเมี่ยม ยุบเป็นแถวเดียว
+   * คนละรุ่น คนละล็อตในสต็อก ถ้ายุบกันช่างหยิบผมผิดรุ่น ต้องแยกแถว */
+  list.forEach(function(b){ if(!b.needs_hair)return;
+    var g=b.grade||'', k=b.technique+'|'+b.size+'|'+g+'|'+b.color+'|'+(b.texture||'');
+    if(!pm[k])pm[k]={tech:b.technique,size:b.size,grade:g,color:b.color,texture:b.texture||'',qr:0,queues:0}; pm[k].qr+=b.qty_mad; pm[k].queues+=1; });
   var rows=Object.keys(pm).map(function(k){return pm[k];}); if(!rows.length)return '<div class="prepcard"><div class="mini" style="margin:0">นำผมมาเอง/ขยับปม/ถอด — ไม่ต้องเตรียมผมใหม่</div></div>';
   rows.sort(function(a,b){ return a.tech<b.tech?-1:(a.tech>b.tech?1:(parseInt(a.size,10)||0)-(parseInt(b.size,10)||0)); });
   var totQR=rows.reduce(function(a,x){return a+x.qr;},0);
   var h='<div class="prepcard"><div class="pt"><span>📦 '+esc(title)+'</span><span>รวม '+fmt(totQR)+' QR</span></div>';
   rows.forEach(function(r){ var sz=r.size?(/^\d+$/.test(String(r.size))?(r.size+'นิ้ว'):r.size):'-';
-    h+='<div class="prow"><span class="l"><b>'+esc(r.tech)+'</b> · '+esc(sz)+' · <span style="color:var(--muted)">'+esc(r.color||'-')+'</span>'+(r.texture?(' · '+esc(r.texture)):'')+' <small>· '+r.queues+' คิว</small></span><span class="q">'+esc(unitOfTech(r.tech,r.qr))+'</span></div>'; });
+    h+='<div class="prow"><span class="l"><b>'+esc(r.tech)+'</b> · '+esc(sz)+(r.grade?(' · เกรด '+esc(r.grade)):'')+' · <span style="color:var(--muted)">'+esc(r.color||'-')+'</span>'+(r.texture?(' · '+esc(r.texture)):'')+' <small>· '+r.queues+' คิว</small></span><span class="q">'+esc(unitOfTech(r.tech,r.qr))+'</span></div>'; });
   return h+'</div>'; }
 /* แปลงจำนวน QR → หน่วยของเทค (อนุมานจาก qty_label ของตัวอย่างในคิว) */
 function unitOfTech(tech,qr){ var s=(QUEUE&&QUEUE.upcoming||[]).filter(function(b){return b.technique===tech&&b.qty_mad>0;})[0];
   if(s){ var m=String(s.qty_label).match(/([\d.,]+)\s*(\S+)/); if(m){ var per=Number(String(m[1]).replace(/,/g,''))/s.qty_mad;
     if(isFinite(per)) return fmt(Math.round(per*qr*100)/100)+' '+m[2]+' ('+fmt(qr)+' QR)'; } }
   return fmt(qr)+' QR'; }
-function qBk(b){ var parts=[];
-  if(b.technique)parts.push(b.technique);
-  if(b.is_byob)parts.push('นำผมมาเอง');
-  if(b.size)parts.push(/^\d+$/.test(String(b.size))?(b.size+'นิ้ว'):b.size);
-  if(b.qty_label)parts.push(b.qty_label);
-  if(b.color)parts.push('สี '+b.color);
-  if(b.texture)parts.push(b.texture);
-  var spec=parts.length?('<b>'+esc(parts.join(' · '))+'</b>'):('<span style="color:var(--faint)">'+esc(b.detail||'งานบริการ')+'</span>');
+/* ❗ 28 พ.ย. 2026: ตรงนี้เคยประกอบบรรทัดสเปกเองแล้วลืม "เกรด" → ลูกค้าจอง ตัดสด กับ ตัดสด พรีเมี่ยม
+ * ดูบนการ์ดแล้วแยกไม่ออก · แถมเรียงคนละแบบกับการ์ดคิวที่ POS
+ * ตอนนี้เซิร์ฟเวอร์ส่ง `spec` มาให้ (bkSpec_ นิยามเดียว) หน้านี้แค่วาด ห้ามประกอบเองอีก */
+/* ป้ายไลน์บนการ์ดคิว — นิยามเดียวต่อหน้า · ตัดคำว่า "LINE" ออก เหลือไอคอน + ไอดี */
+function lineTag(id){ id=String(id||'').trim(); return id?('<span class="lineic" title="LINE"></span>'+esc(id)):''; }
+function qBk(b){
+  var txt=String(b.spec||b.detail||'');
+  var spec=txt?('<b>'+esc(txt+(b.is_byob?' · นำผมมาเอง':''))+'</b>')
+               :('<span style="color:var(--faint)">งานบริการ</span>');
   return '<div class="bk"><div class="tm"><b>'+esc(b.start||'--')+'</b><small>'+esc(b.end||'')+'</small></div>'+
     '<div class="info"><b>'+esc(b.name||'ลูกค้า')+'</b>'+statusBadge(b.status)+'<span class="badge tech">✂ '+esc(b.tech_name||'—')+'</span>'+
     '<div class="bd">'+spec+'</div>'+
-    '<div class="bd">📞 '+esc(b.phone||'-')+(b.line_id?(' · 💬 LINE '+esc(b.line_id)):'')+' · มัดจำ '+fmt(b.deposit)+' ฿ · ยอด '+fmt(b.suggest_total)+' ฿</div>'+
+    '<div class="bd">📞 '+esc(b.phone||'-')+(b.line_id?(' · '+lineTag(b.line_id)):'')+' · มัดจำ '+fmt(b.deposit)+' ฿ · ยอด '+fmt(b.suggest_total)+' ฿</div>'+
     (Number(b.dup_same_day)>1?('<div class="bd" style="color:var(--crit)">⚠ เบอร์นี้มี '+Number(b.dup_same_day)+' คิวในวันเดียวกัน</div>'):'')+
     (b.customer_note?('<div class="bd" style="color:var(--gold-soft)">📝 '+esc(b.customer_note)+'</div>'):'')+
     (Number(b.reschedule_count)>0?('<div class="bd" style="color:var(--warn)">🔁 เลื่อนมาแล้ว '+Number(b.reschedule_count)+' ครั้ง</div>'):'')+
